@@ -23,4 +23,3 @@ const style = `https://api.maptiler.com/maps/streets-v4/style.json?key=${key}`
 const center = [-1.559482, 47.21322] as LngLatLike
 const zoom = 1
 </script>
-

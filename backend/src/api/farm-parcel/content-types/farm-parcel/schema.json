@@ -1,0 +1,70 @@
+{
+  "kind": "collectionType",
+  "collectionName": "farm_parcels",
+  "info": {
+    "singularName": "farm-parcel",
+    "pluralName": "farm-parcels",
+    "displayName": "Farm Parcel"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "parcel_code": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "farm": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::farm.farm",
+      "inversedBy": "farm_parcels"
+    },
+    "boundary_geojson": {
+      "type": "json",
+      "required": true
+    },
+    "area_hectares": {
+      "type": "decimal",
+      "required": true
+    },
+    "land_status": {
+      "type": "enumeration",
+      "required": true,
+      "default": "Idle",
+      "enum": [
+        "Cultivated",
+        "Preparation",
+        "Harvesting",
+        "Fallow",
+        "Idle",
+        "At Risk",
+        "Converted"
+      ]
+    },
+    "current_use": {
+      "type": "string",
+      "required": false
+    },
+    "planting_cycle": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::planting-cycle.planting-cycle",
+      "inversedBy": "parcels"
+    },
+    "inspections": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::inspection.inspection",
+      "mappedBy": "parcel"
+    },
+    "risk_reports": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::risk-report.risk-report",
+      "mappedBy": "farm_parcel"
+    }
+  }
+}

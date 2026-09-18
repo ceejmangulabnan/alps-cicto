@@ -1,0 +1,29 @@
+{
+  "kind": "collectionType",
+  "collectionName": "crops",
+  "info": {
+    "singularName": "crop",
+    "pluralName": "crops",
+    "displayName": "Crop"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "unique": false
+    },
+    "category": {
+      "type": "string"
+    },
+    "planting_cycles": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::planting-cycle.planting-cycle",
+      "mappedBy": "crop"
+    }
+  }
+}

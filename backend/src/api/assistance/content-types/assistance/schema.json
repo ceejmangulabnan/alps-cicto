@@ -1,0 +1,14 @@
+{
+  "kind": "collectionType",
+  "collectionName": "assistances",
+  "info": {
+    "singularName": "assistance",
+    "pluralName": "assistances",
+    "displayName": "Assistance"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {}
+}

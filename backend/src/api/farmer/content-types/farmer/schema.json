@@ -1,0 +1,36 @@
+{
+  "kind": "collectionType",
+  "collectionName": "farmers",
+  "info": {
+    "singularName": "farmer",
+    "pluralName": "farmers",
+    "displayName": "Farmer"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "farmer_code": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "barangays": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::barangay.barangay",
+      "mappedBy": "farmers"
+    },
+    "farms": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::farm.farm",
+      "mappedBy": "farmers"
+    }
+  }
+}

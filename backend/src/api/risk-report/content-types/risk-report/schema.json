@@ -1,0 +1,49 @@
+{
+  "kind": "collectionType",
+  "collectionName": "risk_reports",
+  "info": {
+    "singularName": "risk-report",
+    "pluralName": "risk-reports",
+    "displayName": "Risk Report"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "observed_at": {
+      "type": "date",
+      "required": true
+    },
+    "parcel_status": {
+      "type": "enumeration",
+      "required": true,
+      "default": "Active",
+      "enum": [
+        "Active",
+        "Monitoring",
+        "Resolved"
+      ]
+    },
+    "severity": {
+      "type": "enumeration",
+      "required": true,
+      "enum": [
+        "Low",
+        "Medium",
+        "High",
+        "Critical"
+      ]
+    },
+    "farm_parcel": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::farm-parcel.farm-parcel",
+      "inversedBy": "risk_reports"
+    },
+    "risk_type": {
+      "type": "string",
+      "required": true
+    }
+  }
+}

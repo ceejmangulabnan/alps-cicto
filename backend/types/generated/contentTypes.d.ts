@@ -443,6 +443,380 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiAssistanceAssistance extends Struct.CollectionTypeSchema {
+  collectionName: 'assistances';
+  info: {
+    displayName: 'Assistance';
+    pluralName: 'assistances';
+    singularName: 'assistance';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::assistance.assistance'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiBarangayBarangay extends Struct.CollectionTypeSchema {
+  collectionName: 'barangays';
+  info: {
+    displayName: 'Barangay';
+    pluralName: 'barangays';
+    singularName: 'barangay';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    boundary: Schema.Attribute.JSON;
+    code: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    farmers: Schema.Attribute.Relation<'manyToMany', 'api::farmer.farmer'>;
+    farms: Schema.Attribute.Relation<'oneToMany', 'api::farm.farm'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::barangay.barangay'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiCropCrop extends Struct.CollectionTypeSchema {
+  collectionName: 'crops';
+  info: {
+    displayName: 'Crop';
+    pluralName: 'crops';
+    singularName: 'crop';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    category: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::crop.crop'> &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    planting_cycles: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::planting-cycle.planting-cycle'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiFarmParcelFarmParcel extends Struct.CollectionTypeSchema {
+  collectionName: 'farm_parcels';
+  info: {
+    displayName: 'Farm Parcel';
+    pluralName: 'farm-parcels';
+    singularName: 'farm-parcel';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    area_hectares: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    boundary_geojson: Schema.Attribute.JSON & Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    current_use: Schema.Attribute.String;
+    farm: Schema.Attribute.Relation<'manyToOne', 'api::farm.farm'>;
+    inspections: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::inspection.inspection'
+    >;
+    land_status: Schema.Attribute.Enumeration<
+      [
+        'Cultivated',
+        'Preparation',
+        'Harvesting',
+        'Fallow',
+        'Idle',
+        'At Risk',
+        'Converted',
+      ]
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'Idle'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::farm-parcel.farm-parcel'
+    > &
+      Schema.Attribute.Private;
+    parcel_code: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    planting_cycle: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::planting-cycle.planting-cycle'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    risk_reports: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::risk-report.risk-report'
+    >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiFarmFarm extends Struct.CollectionTypeSchema {
+  collectionName: 'farms';
+  info: {
+    displayName: 'Farm';
+    pluralName: 'farms';
+    singularName: 'farm';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    barangay: Schema.Attribute.Relation<'manyToOne', 'api::barangay.barangay'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    farm_code: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    farm_parcels: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::farm-parcel.farm-parcel'
+    >;
+    farmers: Schema.Attribute.Relation<'manyToMany', 'api::farmer.farmer'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::farm.farm'> &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiFarmerFarmer extends Struct.CollectionTypeSchema {
+  collectionName: 'farmers';
+  info: {
+    displayName: 'Farmer';
+    pluralName: 'farmers';
+    singularName: 'farmer';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    barangays: Schema.Attribute.Relation<
+      'manyToMany',
+      'api::barangay.barangay'
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    farmer_code: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    farms: Schema.Attribute.Relation<'manyToMany', 'api::farm.farm'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::farmer.farmer'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiHarvestHarvest extends Struct.CollectionTypeSchema {
+  collectionName: 'harvests';
+  info: {
+    displayName: 'Harvest';
+    pluralName: 'harvests';
+    singularName: 'harvest';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    harvest_date: Schema.Attribute.Date & Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::harvest.harvest'
+    > &
+      Schema.Attribute.Private;
+    planting_cycle: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::planting-cycle.planting-cycle'
+    >;
+    production_kg: Schema.Attribute.Decimal;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    yield_per_hectare: Schema.Attribute.Decimal;
+  };
+}
+
+export interface ApiInspectionInspection extends Struct.CollectionTypeSchema {
+  collectionName: 'inspections';
+  info: {
+    displayName: 'Inspection';
+    pluralName: 'inspections';
+    singularName: 'inspection';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    condition: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    date: Schema.Attribute.Date & Schema.Attribute.Required;
+    gps_point: Schema.Attribute.JSON;
+    inspector: Schema.Attribute.String & Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::inspection.inspection'
+    > &
+      Schema.Attribute.Private;
+    notes: Schema.Attribute.String;
+    parcel: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::farm-parcel.farm-parcel'
+    >;
+    photos: Schema.Attribute.Media<
+      'images' | 'files' | 'videos' | 'audios',
+      true
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiPlantingCyclePlantingCycle
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'planting_cycles';
+  info: {
+    displayName: 'Planting Cycle';
+    pluralName: 'planting-cycles';
+    singularName: 'planting-cycle';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    crop: Schema.Attribute.Relation<'manyToOne', 'api::crop.crop'>;
+    expected_harvest: Schema.Attribute.Date;
+    harvests: Schema.Attribute.Relation<'oneToMany', 'api::harvest.harvest'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::planting-cycle.planting-cycle'
+    > &
+      Schema.Attribute.Private;
+    parcels: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::farm-parcel.farm-parcel'
+    >;
+    planting_date: Schema.Attribute.Date;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    variety: Schema.Attribute.String;
+  };
+}
+
+export interface ApiRiskReportRiskReport extends Struct.CollectionTypeSchema {
+  collectionName: 'risk_reports';
+  info: {
+    displayName: 'Risk Report';
+    pluralName: 'risk-reports';
+    singularName: 'risk-report';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    farm_parcel: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::farm-parcel.farm-parcel'
+    >;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::risk-report.risk-report'
+    > &
+      Schema.Attribute.Private;
+    observed_at: Schema.Attribute.Date & Schema.Attribute.Required;
+    parcel_status: Schema.Attribute.Enumeration<
+      ['Active', 'Monitoring', 'Resolved']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'Active'>;
+    publishedAt: Schema.Attribute.DateTime;
+    risk_type: Schema.Attribute.String & Schema.Attribute.Required;
+    severity: Schema.Attribute.Enumeration<
+      ['Low', 'Medium', 'High', 'Critical']
+    > &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface PluginContentReleasesRelease
   extends Struct.CollectionTypeSchema {
   collectionName: 'strapi_releases';
@@ -954,6 +1328,16 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
+      'api::assistance.assistance': ApiAssistanceAssistance;
+      'api::barangay.barangay': ApiBarangayBarangay;
+      'api::crop.crop': ApiCropCrop;
+      'api::farm-parcel.farm-parcel': ApiFarmParcelFarmParcel;
+      'api::farm.farm': ApiFarmFarm;
+      'api::farmer.farmer': ApiFarmerFarmer;
+      'api::harvest.harvest': ApiHarvestHarvest;
+      'api::inspection.inspection': ApiInspectionInspection;
+      'api::planting-cycle.planting-cycle': ApiPlantingCyclePlantingCycle;
+      'api::risk-report.risk-report': ApiRiskReportRiskReport;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;

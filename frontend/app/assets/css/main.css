@@ -1,2 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+:root {
+	font-family: 'DM Sans', 'Avenir Next', sans-serif;
+	color: #183328;
+	background: #f7f9f5;
+}
+
+body {
+	min-width: 320px;
+	margin: 0;
+}
+
+h1,
+h2,
+h3,
+.brand-name {
+	font-family: 'Manrope', 'DM Sans', sans-serif;
+}

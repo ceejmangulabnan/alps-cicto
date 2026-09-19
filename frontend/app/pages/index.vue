@@ -11,7 +11,9 @@
                     </div>
                     <div>
                         <p class="brand-name">ALPS</p>
-                        <p class="brand-subtitle">Agricultural Land Profiling System</p>
+                        <p class="brand-subtitle">
+                            Agricultural Land Profiling System
+                        </p>
                     </div>
                 </header>
 
@@ -19,12 +21,11 @@
                     <p class="eyebrow">City Agriculture Office</p>
                     <h1>See the land.<br /><em>Grow the future.</em></h1>
                     <p class="brand-description">
-                        A single source of truth for agricultural land inventory, monitoring, and
-                        smarter decisions across San Fernando, Pampanga.
+                        A single source of truth for agricultural land
+                        inventory, monitoring, and smarter decisions across San
+                        Fernando, Pampanga.
                     </p>
                 </div>
-
-                
             </div>
 
             <p class="brand-panel__footer">OFFICE OF THE CITY AGRICULTURE</p>
@@ -38,7 +39,9 @@
                     </div>
                     <div>
                         <p class="brand-name">ALPS</p>
-                        <p class="brand-subtitle">Agricultural Land Profiling System</p>
+                        <p class="brand-subtitle">
+                            Agricultural Land Profiling System
+                        </p>
                     </div>
                 </div>
 
@@ -75,18 +78,34 @@
                                 <button
                                     type="button"
                                     class="password-toggle"
-                                    :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                                    :aria-label="
+                                        showPassword
+                                            ? 'Hide password'
+                                            : 'Show password'
+                                    "
                                     @click="showPassword = !showPassword"
                                 >
-                                    <UIcon :name="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" class="size-4" />
+                                    <UIcon
+                                        :name="
+                                            showPassword
+                                                ? 'i-lucide-eye-off'
+                                                : 'i-lucide-eye'
+                                        "
+                                        class="size-4"
+                                    />
                                 </button>
                             </template>
                         </UInput>
                     </UFormField>
 
                     <div class="form-options">
-                        <UCheckbox v-model="rememberMe" label="Keep me signed in" />
-                        <a href="#" class="forgot-link" @click.prevent>Forgot password?</a>
+                        <UCheckbox
+                            v-model="rememberMe"
+                            label="Keep me signed in"
+                        />
+                        <a href="#" class="forgot-link" @click.prevent
+                            >Forgot password?</a
+                        >
                     </div>
 
                     <UButton
@@ -99,12 +118,20 @@
                         Sign in to ALPS
                     </UButton>
 
-                    <p v-if="authError" class="form-feedback form-feedback--error" role="alert">
+                    <p
+                        v-if="authError"
+                        class="form-feedback form-feedback--error"
+                        role="alert"
+                    >
                         <UIcon name="i-lucide-circle-alert" class="size-4" />
                         {{ authError }}
                     </p>
 
-                    <p v-if="isAuthenticated" class="form-feedback form-feedback--success" role="status">
+                    <p
+                        v-if="isAuthenticated"
+                        class="form-feedback form-feedback--success"
+                        role="status"
+                    >
                         <UIcon name="i-lucide-circle-check" class="size-4" />
                         Access granted. Welcome to ALPS.
                     </p>
@@ -112,8 +139,13 @@
 
                 <div class="form-footer">
                     <div class="status-line">System operational</div>
-                    <p>Authorized personnel only. Activity is monitored and protected.</p>
-                    <p class="copyright">© 2026 City of San Fernando, Pampanga</p>
+                    <p>
+                        Authorized personnel only. Activity is monitored and
+                        protected.
+                    </p>
+                    <p class="copyright">
+                        © 2026 City of San Fernando, Pampanga
+                    </p>
                 </div>
             </div>
         </section>
@@ -173,7 +205,12 @@ const handleSubmit = () => {
 }
 
 .brand-panel__wash {
-    background: linear-gradient(145deg, rgba(7, 44, 28, 0.96) 0%, rgba(12, 75, 45, 0.8) 48%, rgba(21, 68, 44, 0.64) 100%);
+    background: linear-gradient(
+        145deg,
+        rgba(7, 44, 28, 0.96) 0%,
+        rgba(12, 75, 45, 0.8) 48%,
+        rgba(21, 68, 44, 0.64) 100%
+    );
 }
 
 .brand-panel__content {
@@ -584,4 +621,3 @@ const handleSubmit = () => {
     }
 }
 </style>
-

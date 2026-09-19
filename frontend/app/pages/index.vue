@@ -1,5 +1,9 @@
 <template>
-    <div>
+    <main>
+        <PageHeader
+            title="Dashboard"
+            :description="`City Agricultural Office - San Fernando, Pampanga as of ${date}`"
+        ></PageHeader>
         <h1>Hello Map</h1>
         <ClientOnly>
             <div class="h-[33vh] w-1/2">
@@ -8,15 +12,19 @@
                 </MglMap>
             </div>
         </ClientOnly>
-        <h1>Hello Map Leaflet</h1>
-        <div class="h-[33vh] w-1/2">
-            <MapLeaflet></MapLeaflet>
-        </div>
-    </div>
+    </main>
 </template>
 <script setup lang="ts">
 import type { LngLatLike } from 'maplibre-gl'
 
+const date = new Date().toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+})
 const config = useRuntimeConfig()
 const key = config.public.maptilerKey
 const style = `https://api.maptiler.com/maps/streets-v4/style.json?key=${key}`

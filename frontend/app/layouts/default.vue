@@ -178,14 +178,14 @@
                     <div
                         class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 via-green-600 to-teal-600 text-white shadow-lg shadow-green-500/30"
                     >
-                        <UIcon name="i-lucide-id-card" class="size-5" />
+                        <UIcon name="i-lucide-leaf" class="size-5" />
                     </div>
 
                     <div class="min-w-0">
                         <p
                             class="truncate text-sm font-bold text-slate-900 dark:text-white"
                         >
-                            SNC Custodian
+                            ALPS
                         </p>
 
                         <p
@@ -230,20 +230,44 @@
             <!-- Desktop page header -->
             <div
                 v-if="!hideDesktopHeader"
-                class="sticky top-0 z-20 hidden border-b border-green-100 bg-white/75 px-8 py-5 backdrop-blur-2xl lg:block dark:border-slate-700 dark:bg-slate-900/75"
+                class="sticky top-0 z-20 hidden border-b border-green-100 bg-white/75 px-8 py-3 backdrop-blur-2xl lg:block dark:border-slate-700 dark:bg-slate-900/75"
             >
                 <div class="flex items-center justify-between">
-                    <div>
-                        <h2
-                            class="text-lg font-bold text-slate-900 dark:text-white"
-                        >
-                            {{ pageTitle }}
-                        </h2>
+                    <!-- Breadcrumb Navigation -->
+                    <nav class="flex" aria-label="Breadcrumb">
+                        <ol class="flex items-center">
+                            <li
+                                v-for="(crumb, index) in breadcrumbs"
+                                :key="crumb.to"
+                                class="flex items-center"
+                            >
+                                <!-- Separator Icon -->
+                                <UIcon
+                                    v-if="index > 0"
+                                    name="i-lucide-chevron-right"
+                                    class="mx-2 size-4 shrink-0 text-slate-400"
+                                />
 
-                        <p class="text-xs text-slate-500 dark:text-slate-400">
-                            School Property &amp; Inventory
-                        </p>
-                    </div>
+                                <!-- Clickable link for previous pages -->
+                                <NuxtLink
+                                    v-if="!crumb.isLast"
+                                    :to="crumb.to"
+                                    class="text-sm font-medium text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                                >
+                                    {{ crumb.label }}
+                                </NuxtLink>
+
+                                <!-- Non-clickable bold text for current page -->
+                                <span
+                                    v-else
+                                    class="text-sm font-bold text-slate-900 dark:text-white"
+                                    aria-current="page"
+                                >
+                                    {{ crumb.label }}
+                                </span>
+                            </li>
+                        </ol>
+                    </nav>
 
                     <UColorModeButton
                         color="neutral"
@@ -480,24 +504,60 @@ const isActive = (path: string): boolean => {
     return route.path === path || route.path.startsWith(`${path}/`)
 }
 
+// Add this interface near the top with NavigationLink
+interface BreadcrumbItem {
+    label: string
+    to: string
+    isLast: boolean
+}
+
+/*
+|--------------------------------------------------------------------------
+| Breadcrumbs
+|--------------------------------------------------------------------------
+*/
+
+const breadcrumbs = computed<BreadcrumbItem[]>(() => {
+    const path = route.path
+
+    // Default root breadcrumb
+    const crumbs = [
+        {
+            label: 'Dashboard',
+            to: '/',
+            isLast: path === '/',
+        },
+    ]
+
+    if (path === '/') return crumbs
+
+    // Split the path and remove empty segments
+    const segments = path.split('/').filter(Boolean)
+    let currentPath = ''
+
+    segments.forEach((segment, index) => {
+        currentPath += `/${segment}`
+
+        // Format the segment to be readable (e.g., "planting-crops" -> "Planting Crops")
+        let label = segment.replace(/-/g, ' ')
+        label = label.charAt(0).toUpperCase() + label.slice(1)
+
+        crumbs.push({
+            label,
+            to: currentPath,
+            isLast: index === segments.length - 1,
+        })
+    })
+
+    return crumbs
+})
+
 const pageTitle = computed(() => {
-    if (route.path.startsWith('/admin')) {
-        return 'Admin'
-    }
-
-    if (route.path === '/inventory') {
-        return 'Inventory'
-    }
-
-    if (route.path === '/transactions') {
-        return 'Transactions'
-    }
-
-    return 'City of San Fernando, Pampanga | Agricultural Land Profiling System'
+    return breadcrumbs.value[breadcrumbs.value.length - 1]?.label || 'Dashboard'
 })
 
 const hideDesktopHeader = computed(() => {
-    return route.path.includes('/designer')
+    return false
 })
 
 /*

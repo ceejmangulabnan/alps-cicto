@@ -7,12 +7,15 @@
             >
                 <!-- Background Image -->
                 <div
-                    class="absolute inset-0 bg-cover bg-center bg-no-repeat bg-[url(https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1400&q=85)]"
+                    class="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                    style="
+                        background-image: url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1400&q=85');
+                    "
                     aria-hidden="true"
                 ></div>
                 <!-- Gradient Overlay -->
                 <div
-                    class="absolute inset-0 bg-linear-to-br from-emerald-950/95 via-emerald-900/80 to-emerald-800/65"
+                    class="absolute inset-0 bg-gradient-to-br from-emerald-950/95 via-emerald-900/80 to-emerald-800/65"
                     aria-hidden="true"
                 ></div>
 
@@ -77,7 +80,7 @@
                     <p
                         class="absolute right-8 bottom-6 text-white/45 text-[0.58rem] font-extrabold tracking-widest uppercase"
                     >
-                        CITY AGRICULTURE OFFICE
+                        OFFICE OF THE CITY AGRICULTURE
                     </p>
                 </div>
             </section>
@@ -113,12 +116,22 @@
 
                     <!-- Form Heading -->
                     <div class="mb-8">
+                        <p
+                            class="flex items-center gap-2 mb-2 text-emerald-700 text-xs font-extrabold tracking-widest uppercase text-left"
+                        >
+                            <span
+                                class="h-1 w-1 rounded-full bg-current shadow-[0_0_0_2px_rgba(40,115,78,0.18)]"
+                            ></span>
+                            Secure access
+                        </p>
                         <h2
                             class="text-emerald-950 text-3xl md:text-4xl font-extrabold tracking-tight leading-[1.05]"
                         >
-                            Welcome back!
+                            Welcome back
                         </h2>
-                        <p class="mt-2 text-muted/80 text-sm leading-relaxed">
+                        <p
+                            class="mt-2 text-emerald-600/80 text-sm leading-relaxed"
+                        >
                             Sign in to continue to your agricultural dashboard.
                         </p>
                     </div>
@@ -185,7 +198,7 @@
                             <UCheckbox
                                 v-model="rememberMe"
                                 label="Keep me signed in"
-                                color="success"
+                                color="emerald"
                             />
                             <a
                                 href="#"
@@ -200,9 +213,10 @@
                             type="submit"
                             block
                             size="xl"
-                            class="mt-1 shadow-lg shadow-emerald-600/20 bg-emerald-500"
+                            color="emerald"
+                            class="mt-1 shadow-lg shadow-emerald-600/20"
                         >
-                            Sign in
+                            Sign in to ALPS
                         </UButton>
 
                         <p
@@ -212,7 +226,7 @@
                         >
                             <UIcon
                                 name="i-lucide-circle-alert"
-                                class="h-4 w-4 shrink-0"
+                                class="h-4 w-4 flex-shrink-0"
                             />
                             {{ authError }}
                         </p>
@@ -224,7 +238,7 @@
                         >
                             <UIcon
                                 name="i-lucide-circle-check"
-                                class="h-4 w-4 shrink-0"
+                                class="h-4 w-4 flex-shrink-0"
                             />
                             Access granted. Welcome to ALPS.
                         </p>
@@ -234,7 +248,19 @@
                     <div
                         class="mt-14 text-center text-emerald-600/60 text-xs leading-relaxed"
                     >
-                        <p class="text-muted/80">
+                        <div
+                            class="flex items-center justify-center gap-2 mb-1.5 text-emerald-700 font-bold"
+                        >
+                            <span
+                                class="h-1 w-1 rounded-full bg-emerald-600 shadow-[0_0_0_2px_rgba(78,175,110,0.14)]"
+                            ></span>
+                            System operational
+                        </div>
+                        <p class="mb-3">
+                            Authorized personnel only. Activity is monitored and
+                            protected.
+                        </p>
+                        <p class="text-emerald-400">
                             © 2026 City of San Fernando, Pampanga
                         </p>
                     </div>

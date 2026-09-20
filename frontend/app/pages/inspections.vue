@@ -1,5 +1,4 @@
 <script setup lang="ts">
-definePageMeta({ middleware: 'auth' })
 
 type RiskLevel = 'High' | 'Medium' | 'Low' | 'None'
 type InspStatus = 'Completed' | 'Pending' | 'In Progress'

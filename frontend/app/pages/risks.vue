@@ -1,4 +1,5 @@
 <script setup lang="ts">
+definePageMeta({ middleware: 'auth' })
 
 type InsightPriority = 'High' | 'Medium' | 'Low'
 type InsightType = 'risk' | 'warning' | 'opportunity'

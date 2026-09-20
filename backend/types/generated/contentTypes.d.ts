@@ -443,33 +443,6 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
-export interface ApiAssistanceAssistance extends Struct.CollectionTypeSchema {
-  collectionName: 'assistances';
-  info: {
-    displayName: 'Assistance';
-    pluralName: 'assistances';
-    singularName: 'assistance';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::assistance.assistance'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
 export interface ApiBarangayBarangay extends Struct.CollectionTypeSchema {
   collectionName: 'barangays';
   info: {
@@ -1328,7 +1301,6 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
-      'api::assistance.assistance': ApiAssistanceAssistance;
       'api::barangay.barangay': ApiBarangayBarangay;
       'api::crop.crop': ApiCropCrop;
       'api::farm-parcel.farm-parcel': ApiFarmParcelFarmParcel;

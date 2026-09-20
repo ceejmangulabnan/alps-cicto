@@ -31,6 +31,16 @@
       "relation": "manyToMany",
       "target": "api::farm.farm",
       "mappedBy": "farmers"
+    },
+    "contact": {
+      "type": "biginteger"
+    },
+    "farmer_status": {
+      "type": "enumeration",
+      "enum": [
+        "Active",
+        "Inactive"
+      ]
     }
   }
 }

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 definePageMeta({ middleware: 'auth' })
-
 type LandStatus =
     | 'Cultivated'
     | 'Preparation'
@@ -317,6 +316,14 @@ const areaByFarmer = computed(() => {
 const search = ref('')
 const filterBarangay = ref('All')
 const selectedFarmer = ref<Farmer | null>(null)
+const showRegisterModal = ref(false)
+const registerForm = reactive({
+    farmer_code: '',
+    name: '',
+    barangay: '',
+    contact: '',
+    status: 'Active',
+})
 
 const filtered = computed(() =>
     farmers.filter((f) => {
@@ -465,7 +472,7 @@ const detailStats = computed(() => {
                                 </h2>
                                 <div class="mt-1 flex items-center gap-3">
                                     <span
-                                        class="font-mono text-xs text-gray-400"
+                                        class="font-mono text-xs text-gray-600"
                                     >
                                         {{ selectedFarmer.farmer_code }}
                                     </span>
@@ -580,7 +587,7 @@ const detailStats = computed(() => {
                             :key="p.parcel_code"
                             class="border-b border-gray-50 last:border-0 hover:bg-gray-50/50"
                         >
-                            <td class="py-2.5 font-mono text-gray-600">
+                            <td class="py-2.5 font-mono text-gray-700">
                                 {{ p.parcel_code }}
                             </td>
                             <td class="py-2.5 text-gray-600">
@@ -624,6 +631,7 @@ const detailStats = computed(() => {
             <button
                 type="button"
                 class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
+                @click="showRegisterModal = true"
             >
                 + Register Farmer
             </button>
@@ -718,7 +726,7 @@ const detailStats = computed(() => {
                         class="cursor-pointer border-b border-gray-50 last:border-0 hover:bg-green-50/30"
                         @click="selectedFarmer = f"
                     >
-                        <td class="px-4 py-3 font-mono text-gray-500">
+                        <td class="px-4 py-3 font-mono text-gray-700">
                             {{ f.farmer_code }}
                         </td>
                         <td class="px-4 py-3">
@@ -745,10 +753,14 @@ const detailStats = computed(() => {
                                 {{ farmerBarangay(f) }}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-right font-mono">
+                        <td
+                            class="px-4 py-3 text-right font-mono font-medium text-gray-900"
+                        >
                             {{ f.farms }}
                         </td>
-                        <td class="px-4 py-3 text-right font-mono font-medium">
+                        <td
+                            class="px-4 py-3 text-right font-mono font-semibold text-gray-900"
+                        >
                             {{
                                 (areaByFarmer.get(f.farmer_code) ?? 0).toFixed(
                                     1
@@ -778,4 +790,140 @@ const detailStats = computed(() => {
             </div>
         </div>
     </div>
+
+    <!-- Register Farmer Modal -->
+    <Teleport to="body">
+        <div
+            v-if="showRegisterModal"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            @click.self="showRegisterModal = false"
+        >
+            <div
+                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+                style="font-family: 'DM Sans', sans-serif"
+            >
+                <div class="mb-5 flex items-start justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">
+                            Register Farmer
+                        </h3>
+                        <p class="text-xs text-gray-500">
+                            Add a new farmer to the registry.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+                        @click="showRegisterModal = false"
+                    >
+                        <UIcon name="i-lucide-x" class="size-4" />
+                    </button>
+                </div>
+
+                <form
+                    class="space-y-4"
+                    @submit.prevent="showRegisterModal = false"
+                >
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Farmer Code
+                            </label>
+                            <input
+                                v-model="registerForm.farmer_code"
+                                type="text"
+                                placeholder="e.g. FRM-0005"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Status
+                            </label>
+                            <select
+                                v-model="registerForm.status"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Full Name
+                        </label>
+                        <input
+                            v-model="registerForm.name"
+                            type="text"
+                            placeholder="e.g. Juan Dela Cruz"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                        />
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Barangay
+                            </label>
+                            <input
+                                v-model="registerForm.barangay"
+                                type="text"
+                                list="farmer-barangay-options"
+                                placeholder="Select barangay"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                            <datalist id="farmer-barangay-options">
+                                <option
+                                    v-for="b in barangays"
+                                    :key="b"
+                                    :value="b"
+                                />
+                            </datalist>
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Contact Number
+                            </label>
+                            <input
+                                v-model="registerForm.contact"
+                                type="text"
+                                placeholder="09XX XXX XXXX"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div
+                        class="flex justify-end gap-2 border-t border-gray-100 pt-4"
+                    >
+                        <button
+                            type="button"
+                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            @click="showRegisterModal = false"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
+                        >
+                            Register Farmer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </Teleport>
 </template>

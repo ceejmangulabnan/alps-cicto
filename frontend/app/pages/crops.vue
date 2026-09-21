@@ -1,5 +1,4 @@
 <script setup lang="ts">
-definePageMeta({ middleware: 'auth' })
 
 type PlantingStatus = 'Harvested' | 'Growing'
 

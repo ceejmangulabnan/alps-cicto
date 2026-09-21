@@ -33,6 +33,16 @@
       "relation": "oneToMany",
       "target": "api::farm-parcel.farm-parcel",
       "mappedBy": "farm"
+    },
+    "farmer_status": {
+      "type": "enumeration",
+      "required": true,
+      "default": "Inactive",
+      "enum": [
+        "Active",
+        "Inactive",
+        "Departed"
+      ]
     }
   }
 }

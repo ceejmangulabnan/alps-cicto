@@ -1,48 +1,43 @@
 {
-  "kind": "collectionType",
-  "collectionName": "inspections",
-  "info": {
-    "singularName": "inspection",
-    "pluralName": "inspections",
-    "displayName": "Inspection"
-  },
-  "options": {
-    "draftAndPublish": false
-  },
-  "pluginOptions": {},
-  "attributes": {
-    "parcel": {
-      "type": "relation",
-      "relation": "manyToOne",
-      "target": "api::farm-parcel.farm-parcel",
-      "inversedBy": "inspections"
+    "kind": "collectionType",
+    "collectionName": "inspections",
+    "info": {
+        "singularName": "inspection",
+        "pluralName": "inspections",
+        "displayName": "Inspection"
     },
-    "inspector": {
-      "type": "string",
-      "required": true
+    "options": {
+        "draftAndPublish": false
     },
-    "date": {
-      "type": "date",
-      "required": true
-    },
-    "gps_point": {
-      "type": "json"
-    },
-    "condition": {
-      "type": "string"
-    },
-    "notes": {
-      "type": "string"
-    },
-    "photos": {
-      "type": "media",
-      "multiple": true,
-      "allowedTypes": [
-        "images",
-        "files",
-        "videos",
-        "audios"
-      ]
+    "pluginOptions": {},
+    "attributes": {
+        "parcel": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::farm-parcel.farm-parcel",
+            "inversedBy": "inspections"
+        },
+        "inspector": {
+            "type": "string",
+            "required": true
+        },
+        "date": {
+            "type": "date",
+            "required": true
+        },
+        "gps_point": {
+            "type": "json"
+        },
+        "condition": {
+            "type": "string"
+        },
+        "notes": {
+            "type": "string"
+        },
+        "photos": {
+            "type": "media",
+            "multiple": true,
+            "allowedTypes": ["images", "files", "videos", "audios"]
+        }
     }
-  }
 }

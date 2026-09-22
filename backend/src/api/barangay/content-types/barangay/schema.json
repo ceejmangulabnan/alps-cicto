@@ -1,40 +1,40 @@
 {
-  "kind": "collectionType",
-  "collectionName": "barangays",
-  "info": {
-    "singularName": "barangay",
-    "pluralName": "barangays",
-    "displayName": "Barangay"
-  },
-  "options": {
-    "draftAndPublish": false
-  },
-  "pluginOptions": {},
-  "attributes": {
-    "name": {
-      "type": "string",
-      "required": true,
-      "unique": true
+    "kind": "collectionType",
+    "collectionName": "barangays",
+    "info": {
+        "singularName": "barangay",
+        "pluralName": "barangays",
+        "displayName": "Barangay"
     },
-    "code": {
-      "type": "string",
-      "required": true,
-      "unique": true
+    "options": {
+        "draftAndPublish": false
     },
-    "boundary": {
-      "type": "json"
-    },
-    "farmers": {
-      "type": "relation",
-      "relation": "manyToMany",
-      "target": "api::farmer.farmer",
-      "inversedBy": "barangays"
-    },
-    "farms": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::farm.farm",
-      "mappedBy": "barangay"
+    "pluginOptions": {},
+    "attributes": {
+        "name": {
+            "type": "string",
+            "required": true,
+            "unique": true
+        },
+        "code": {
+            "type": "string",
+            "required": true,
+            "unique": true
+        },
+        "boundary": {
+            "type": "json"
+        },
+        "farmers": {
+            "type": "relation",
+            "relation": "manyToMany",
+            "target": "api::farmer.farmer",
+            "inversedBy": "barangays"
+        },
+        "farms": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "api::farm.farm",
+            "mappedBy": "barangay"
+        }
     }
-  }
 }

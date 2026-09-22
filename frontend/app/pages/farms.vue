@@ -1,5 +1,5 @@
 <script setup lang="ts">
-
+definePageMeta({ middleware: 'auth' })
 type LandStatus =
     | 'Cultivated'
     | 'Preparation'
@@ -334,6 +334,7 @@ const detailFields = computed(() => {
             <button
                 type="button"
                 class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
+                @click="navigateTo('/map?addParcel=1')"
             >
                 <UIcon name="i-lucide-layers" class="size-3.5" />
                 Add Parcel
@@ -436,7 +437,7 @@ const detailFields = computed(() => {
                             "
                             @click="selected = p"
                         >
-                            <td class="px-4 py-2.5 font-mono text-gray-500">
+                            <td class="px-4 py-2.5 font-mono text-gray-700">
                                 {{ p.parcel_code }}
                             </td>
                             <td class="px-4 py-2.5 font-medium text-gray-800">
@@ -445,7 +446,9 @@ const detailFields = computed(() => {
                             <td class="px-4 py-2.5 text-gray-500">
                                 {{ p.barangay }}
                             </td>
-                            <td class="px-4 py-2.5 text-right font-mono">
+                            <td
+                                class="px-4 py-2.5 text-right font-mono font-medium text-gray-900"
+                            >
                                 {{ p.area_hectares }}
                             </td>
                             <td class="px-4 py-2.5">
@@ -488,7 +491,7 @@ const detailFields = computed(() => {
             <!-- Detail Side Panel -->
             <div v-if="selected" class="w-72 flex-shrink-0">
                 <div class="alps-card sticky top-4 p-5">
-                    <div class="mb-1 font-mono text-xs text-gray-400">
+                    <div class="mb-1 font-mono text-xs text-gray-600">
                         {{ selected.parcel_code }}
                     </div>
                     <h3

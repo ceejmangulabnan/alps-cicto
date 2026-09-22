@@ -590,6 +590,11 @@ export interface ApiFarmFarm extends Struct.CollectionTypeSchema {
       'oneToMany',
       'api::farm-parcel.farm-parcel'
     >;
+    farmer_status: Schema.Attribute.Enumeration<
+      ['Active', 'Inactive', 'Departed']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'Inactive'>;
     farmers: Schema.Attribute.Relation<'manyToMany', 'api::farmer.farmer'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::farm.farm'> &
@@ -616,12 +621,14 @@ export interface ApiFarmerFarmer extends Struct.CollectionTypeSchema {
       'manyToMany',
       'api::barangay.barangay'
     >;
+    contact: Schema.Attribute.BigInteger;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     farmer_code: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.Unique;
+    farmer_status: Schema.Attribute.Enumeration<['Active', 'Inactive']>;
     farms: Schema.Attribute.Relation<'manyToMany', 'api::farm.farm'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<

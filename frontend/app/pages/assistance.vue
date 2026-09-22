@@ -1,5 +1,4 @@
 <script setup lang="ts">
-definePageMeta({ middleware: 'auth' })
 
 type AssistanceStatus = 'Released' | 'For Release' | 'Pending' | 'Scheduled'
 

@@ -274,10 +274,7 @@ const riskBarOption = computed(() => ({
         <!-- Header -->
         <div class="flex items-center justify-between">
             <div>
-                <h1
-                    class="text-2xl font-bold text-gray-900"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h1 class="text-2xl font-bold text-gray-900">
                     Risk Monitoring
                 </h1>
                 <p class="mt-0.5 text-sm text-gray-500">
@@ -308,10 +305,9 @@ const riskBarOption = computed(() => ({
                     />
                 </div>
                 <div
-                    class="text-2xl font-bold"
+                    class="text-2xl font-bold font-sans"
                     :style="{
                         color: kpi.color,
-                        fontFamily: 'DM Sans, sans-serif',
                     }"
                 >
                     {{ kpi.val }}
@@ -332,10 +328,7 @@ const riskBarOption = computed(() => ({
                             class="size-3.5 text-white"
                         />
                     </div>
-                    <h2
-                        class="text-base font-bold text-gray-800"
-                        style="font-family: 'DM Sans', sans-serif"
-                    >
+                    <h2 class="text-base font-bold text-gray-800">
                         ALPS Insights
                     </h2>
                     <span
@@ -369,10 +362,7 @@ const riskBarOption = computed(() => ({
                             <div class="flex-1">
                                 <div class="mb-1 flex items-center gap-2">
                                     <span
-                                        class="text-sm font-semibold text-gray-800"
-                                        style="
-                                            font-family: 'DM Sans', sans-serif;
-                                        "
+                                        class="text-sm font-semibold text-gray-800 font-sans"
                                     >
                                         {{ insight.title }}
                                     </span>
@@ -419,9 +409,7 @@ const riskBarOption = computed(() => ({
                                         <span
                                             class="ml-1 font-semibold text-gray-700"
                                         >
-                                            {{
-                                                insight.affectedParcels
-                                            }}
+                                            {{ insight.affectedParcels }}
                                             parcels ·
                                             {{ insight.affectedArea }} ha
                                         </span>
@@ -479,10 +467,7 @@ const riskBarOption = computed(() => ({
         <!-- Charts -->
         <div class="grid grid-cols-12 gap-4">
             <div class="alps-card col-span-12 p-5 md:col-span-7">
-                <h3
-                    class="mb-4 text-sm font-semibold text-gray-700"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h3 class="mb-4 text-sm font-semibold text-gray-700">
                     Risk Distribution by Type
                 </h3>
                 <ClientOnly>
@@ -497,10 +482,7 @@ const riskBarOption = computed(() => ({
             </div>
 
             <div class="alps-card col-span-12 p-5 md:col-span-5">
-                <h3
-                    class="mb-4 text-sm font-semibold text-gray-700"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h3 class="mb-4 text-sm font-semibold text-gray-700">
                     At-Risk Parcels
                 </h3>
                 <div class="space-y-2">

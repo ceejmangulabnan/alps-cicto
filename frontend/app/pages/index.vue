@@ -1,5 +1,4 @@
 <script setup lang="ts">
-
 type RiskItem = {
     type: string
     parcels: number
@@ -466,10 +465,7 @@ const highPriorityCount = computed(
                         {{ kpi.trend }}
                     </span>
                 </div>
-                <div
-                    class="mb-1 text-2xl font-bold text-gray-900"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <div class="mb-1 text-2xl font-bold text-gray-900 font-sans">
                     {{ kpi.value }}
                 </div>
                 <div class="text-xs text-gray-500">{{ kpi.label }}</div>

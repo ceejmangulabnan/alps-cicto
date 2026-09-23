@@ -233,10 +233,7 @@ const barangayOptions = computed(() =>
     <div class="p-6">
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1
-                    class="text-2xl font-bold text-gray-900"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h1 class="text-2xl font-bold text-gray-900">
                     Field Inspections
                 </h1>
                 <p class="mt-0.5 text-sm text-gray-500">
@@ -259,10 +256,9 @@ const barangayOptions = computed(() =>
         <div class="mb-5 grid grid-cols-4 gap-4">
             <div v-for="s in stats" :key="s.label" class="alps-card p-4">
                 <div
-                    class="mb-1 text-2xl font-bold"
+                    class="mb-1 text-2xl font-bold font-sans"
                     :style="{
                         color: s.color,
-                        fontFamily: 'DM Sans, sans-serif',
                     }"
                 >
                     {{ s.val }}
@@ -391,10 +387,7 @@ const barangayOptions = computed(() =>
             <div v-if="selected" class="w-80 flex-shrink-0">
                 <div class="alps-card sticky top-4 p-5">
                     <div class="mb-4 flex items-center justify-between">
-                        <h3
-                            class="text-sm font-bold text-gray-800"
-                            style="font-family: 'DM Sans', sans-serif"
-                        >
+                        <h3 class="text-sm font-bold text-gray-800">
                             {{ selected.id }}
                         </h3>
                         <span

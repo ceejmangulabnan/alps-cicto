@@ -1,48 +1,44 @@
 {
-  "kind": "collectionType",
-  "collectionName": "farms",
-  "info": {
-    "singularName": "farm",
-    "pluralName": "farms",
-    "displayName": "Farm"
-  },
-  "options": {
-    "draftAndPublish": false
-  },
-  "pluginOptions": {},
-  "attributes": {
-    "farm_code": {
-      "type": "string",
-      "required": true,
-      "unique": true
+    "kind": "collectionType",
+    "collectionName": "farms",
+    "info": {
+        "singularName": "farm",
+        "pluralName": "farms",
+        "displayName": "Farm"
     },
-    "farmers": {
-      "type": "relation",
-      "relation": "manyToMany",
-      "target": "api::farmer.farmer",
-      "inversedBy": "farms"
+    "options": {
+        "draftAndPublish": false
     },
-    "barangay": {
-      "type": "relation",
-      "relation": "manyToOne",
-      "target": "api::barangay.barangay",
-      "inversedBy": "farms"
-    },
-    "farm_parcels": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::farm-parcel.farm-parcel",
-      "mappedBy": "farm"
-    },
-    "farmer_status": {
-      "type": "enumeration",
-      "required": true,
-      "default": "Inactive",
-      "enum": [
-        "Active",
-        "Inactive",
-        "Departed"
-      ]
+    "pluginOptions": {},
+    "attributes": {
+        "farm_code": {
+            "type": "string",
+            "required": true,
+            "unique": true
+        },
+        "farmers": {
+            "type": "relation",
+            "relation": "manyToMany",
+            "target": "api::farmer.farmer",
+            "inversedBy": "farms"
+        },
+        "barangay": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::barangay.barangay",
+            "inversedBy": "farms"
+        },
+        "farm_parcels": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "api::farm-parcel.farm-parcel",
+            "mappedBy": "farm"
+        },
+        "farmer_status": {
+            "type": "enumeration",
+            "required": true,
+            "default": "Inactive",
+            "enum": ["Active", "Inactive", "Departed"]
+        }
     }
-  }
 }

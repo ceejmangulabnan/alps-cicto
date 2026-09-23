@@ -2,6 +2,6 @@
  * farm-parcel service
  */
 
-import { factories } from '@strapi/strapi';
+import { factories } from '@strapi/strapi'
 
-export default factories.createCoreService('api::farm-parcel.farm-parcel');
+export default factories.createCoreService('api::farm-parcel.farm-parcel')

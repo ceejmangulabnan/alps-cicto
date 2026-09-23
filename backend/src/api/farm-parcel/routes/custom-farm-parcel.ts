@@ -3,26 +3,25 @@
  */
 
 export default {
-  type: "content-api" as const,
-  routes: [
-    {
-      method: "GET",
-      path: "/farm-parcels/idle-at-risk",
-      handler: "api::farm-parcel.custom-farm-parcel.idleAtRisk",
-      config: {
-        policies: [],
-        middlewares: [],
-      },
-    },
-    {
-      method: "GET",
-      path: "/farm-parcels/recommendations",
-      handler: "api::farm-parcel.custom-farm-parcel.recommendations",
-      config: {
-        policies: [],
-        middlewares: [],
-      },
-    },
-  ],
-};
-
+    type: 'content-api' as const,
+    routes: [
+        {
+            method: 'GET',
+            path: '/farm-parcels/idle-at-risk',
+            handler: 'api::farm-parcel.custom-farm-parcel.idleAtRisk',
+            config: {
+                policies: [],
+                middlewares: [],
+            },
+        },
+        {
+            method: 'GET',
+            path: '/farm-parcels/recommendations',
+            handler: 'api::farm-parcel.custom-farm-parcel.recommendations',
+            config: {
+                policies: [],
+                middlewares: [],
+            },
+        },
+    ],
+}

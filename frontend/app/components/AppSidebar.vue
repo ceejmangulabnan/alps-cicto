@@ -92,10 +92,7 @@ const toggle = () => {
                 <UIcon name="i-lucide-leaf" class="size-4 text-white" />
             </div>
             <div v-if="!collapsed">
-                <div
-                    class="text-sm font-bold tracking-wide leading-tight"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <div class="text-sm font-bold tracking-wide leading-tight">
                     ALPS
                 </div>
                 <div class="text-[10px] text-green-400/70 leading-tight">

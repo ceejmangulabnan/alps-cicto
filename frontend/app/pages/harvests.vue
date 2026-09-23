@@ -1,4 +1,5 @@
 <script setup lang="ts">
+definePageMeta({ middleware: 'auth' })
 
 type HarvestStatus = 'Completed' | 'Upcoming'
 
@@ -13,7 +14,7 @@ type HarvestRecord = {
     harvest_date: string
 }
 
-const harvestRecords: HarvestRecord[] = [
+const harvestRecords = reactive<HarvestRecord[]>([
     {
         id: 'HRV-001',
         farmer: 'Ricardo Santos',
@@ -74,7 +75,7 @@ const harvestRecords: HarvestRecord[] = [
         yield_per_hectare: 4.2,
         harvest_date: '2024-10-30',
     },
-]
+])
 
 const harvestStatus = (h: HarvestRecord): HarvestStatus =>
     h.production_kg != null ? 'Completed' : 'Upcoming'
@@ -216,18 +217,95 @@ const harvestOption = computed(() => ({
         },
     ],
 }))
+
+const showRecordModal = ref(false)
+const harvestForm = reactive({
+    farmer: '',
+    crop: 'Rice',
+    barangay: '',
+    area_hectares: '',
+    production_kg: '',
+    yield_per_hectare: '',
+    harvest_date: '',
+})
+
+const cropOptions = ['Rice', 'Corn', 'Sugarcane', 'Vegetables', 'Root Crops']
+const farmerOptions = computed(() =>
+    [...new Set(harvestRecords.map((h) => h.farmer))].sort()
+)
+const barangayOptions = computed(() =>
+    [...new Set(harvestRecords.map((h) => h.barangay))].sort()
+)
+
+const showEditModal = ref(false)
+const editForm = reactive({
+    id: '',
+    farmer: '',
+    crop: 'Rice',
+    barangay: '',
+    area_hectares: '',
+    production_kg: '',
+    yield_per_hectare: '',
+    harvest_date: '',
+})
+
+function openEditModal(h: HarvestRecord) {
+    editForm.id = h.id
+    editForm.farmer = h.farmer
+    editForm.crop = h.crop
+    editForm.barangay = h.barangay
+    editForm.area_hectares = String(h.area_hectares)
+    editForm.production_kg =
+        h.production_kg != null ? String(h.production_kg) : ''
+    editForm.yield_per_hectare =
+        h.yield_per_hectare != null ? String(h.yield_per_hectare) : ''
+    editForm.harvest_date = h.harvest_date
+    showEditModal.value = true
+}
+
+function saveEdit() {
+    const idx = harvestRecords.findIndex(
+        (r) => r.id === editForm.id
+    )
+    if (idx === -1) return
+    const r = harvestRecords[idx]
+    r.farmer = editForm.farmer
+    r.crop = editForm.crop
+    r.barangay = editForm.barangay
+    r.area_hectares = Number(editForm.area_hectares)
+    r.production_kg =
+        editForm.production_kg !== '' ? Number(editForm.production_kg) : null
+    r.yield_per_hectare =
+        editForm.yield_per_hectare !== ''
+            ? Number(editForm.yield_per_hectare)
+            : null
+    r.harvest_date = editForm.harvest_date
+    showEditModal.value = false
+}
+
+const showDeleteModal = ref(false)
+const deleteTarget = ref<HarvestRecord | null>(null)
+
+function askDelete(h: HarvestRecord) {
+    deleteTarget.value = h
+    showDeleteModal.value = true
+}
+
+function confirmDelete() {
+    const t = deleteTarget.value
+    if (!t) return
+    const idx = harvestRecords.findIndex((r) => r.id === t.id)
+    if (idx !== -1) harvestRecords.splice(idx, 1)
+    deleteTarget.value = null
+    showDeleteModal.value = false
+}
 </script>
 
 <template>
     <div class="space-y-6 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <h1
-                    class="text-2xl font-bold text-gray-900"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
-                    Harvests
-                </h1>
+                <h1 class="text-2xl font-bold text-gray-900">Harvests</h1>
                 <p class="mt-0.5 text-sm text-gray-500">
                     Yield records · Season tracking · Production data
                 </p>
@@ -235,6 +313,7 @@ const harvestOption = computed(() => ({
             <button
                 type="button"
                 class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
+                @click="showRecordModal = true"
             >
                 <UIcon name="i-lucide-wheat" class="size-3.5" />
                 Record Harvest
@@ -255,10 +334,9 @@ const harvestOption = computed(() => ({
                     />
                 </div>
                 <div
-                    class="text-2xl font-bold"
+                    class="text-2xl font-bold font-sans"
                     :style="{
                         color: kpi.color,
-                        fontFamily: 'DM Sans, sans-serif',
                     }"
                 >
                     {{ kpi.val }}
@@ -269,10 +347,7 @@ const harvestOption = computed(() => ({
 
         <!-- Chart -->
         <div class="alps-card p-5">
-            <h3
-                class="mb-4 text-sm font-semibold text-gray-700"
-                style="font-family: 'DM Sans', sans-serif"
-            >
+            <h3 class="mb-4 text-sm font-semibold text-gray-700">
                 Monthly Harvest Volume (ha) — 2024
             </h3>
             <ClientOnly>
@@ -289,10 +364,7 @@ const harvestOption = computed(() => ({
         <!-- Harvest Records Table -->
         <div class="alps-card overflow-hidden">
             <div class="border-b border-gray-100 px-5 py-4">
-                <h3
-                    class="text-sm font-semibold text-gray-700"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h3 class="text-sm font-semibold text-gray-700">
                     Harvest Records
                 </h3>
             </div>
@@ -344,6 +416,7 @@ const harvestOption = computed(() => ({
                         >
                             Status
                         </th>
+                        <th class="px-4 py-3 text-right"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -368,7 +441,7 @@ const harvestOption = computed(() => ({
                                 {{ h.barangay }}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-right font-mono">
+                        <td class="px-4 py-3 text-right font-mono font-semibold text-gray-900">
                             {{ h.area_hectares }}
                         </td>
                         <td
@@ -377,24 +450,463 @@ const harvestOption = computed(() => ({
                             {{ h.production_kg?.toLocaleString() ?? '—' }}
                         </td>
                         <td
-                            class="px-4 py-3 text-right font-mono text-gray-500"
+                            class="px-4 py-3 text-right font-mono text-gray-700"
                         >
                             {{ h.yield_per_hectare ?? '—' }}
                         </td>
                         <td class="px-4 py-3 text-gray-500">
                             {{ h.harvest_date }}
                         </td>
-                        <td class="px-4 py-3">
-                            <span
-                                :class="statusClass(harvestStatus(h))"
-                                class="rounded px-2 py-0.5 text-[10px] font-medium"
-                            >
-                                {{ harvestStatus(h) }}
-                            </span>
-                        </td>
-                    </tr>
+<td class="px-4 py-3">
+                                <span
+                                    :class="statusClass(harvestStatus(h))"
+                                    class="rounded px-2 py-0.5 text-[10px] font-medium"
+                                >
+                                    {{ harvestStatus(h) }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div
+                                    class="flex items-center justify-end gap-1"
+                                >
+                                    <button
+                                        type="button"
+                                        class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                                        @click="openEditModal(h)"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-pencil"
+                                            class="size-3.5"
+                                        />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                        @click="askDelete(h)"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-trash-2"
+                                            class="size-3.5"
+                                        />
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
                 </tbody>
             </table>
         </div>
     </div>
+
+    <!-- Record Harvest Modal -->
+    <Teleport to="body">
+        <div
+            v-if="showRecordModal"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            @click.self="showRecordModal = false"
+        >
+            <div
+                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+                style="font-family: 'DM Sans', sans-serif"
+            >
+                <div class="mb-5 flex items-start justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">
+                            Record Harvest
+                        </h3>
+                        <p class="text-xs text-gray-500">
+                            Record a harvest or schedule an upcoming one.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+                        @click="showRecordModal = false"
+                    >
+                        <UIcon name="i-lucide-x" class="size-4" />
+                    </button>
+                </div>
+
+                <form
+                    class="space-y-4"
+                    @submit.prevent="showRecordModal = false"
+                >
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Farmer
+                            </label>
+                            <input
+                                v-model="harvestForm.farmer"
+                                type="text"
+                                list="harvest-farmer-options"
+                                placeholder="e.g. Ricardo Santos"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                            <datalist id="harvest-farmer-options">
+                                <option
+                                    v-for="f in farmerOptions"
+                                    :key="f"
+                                    :value="f"
+                                />
+                            </datalist>
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Barangay
+                            </label>
+                            <input
+                                v-model="harvestForm.barangay"
+                                type="text"
+                                list="harvest-barangay-options"
+                                placeholder="Select barangay"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                            <datalist id="harvest-barangay-options">
+                                <option
+                                    v-for="b in barangayOptions"
+                                    :key="b"
+                                    :value="b"
+                                />
+                            </datalist>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Crop
+                            </label>
+                            <select
+                                v-model="harvestForm.crop"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option
+                                    v-for="c in cropOptions"
+                                    :key="c"
+                                    :value="c"
+                                >
+                                    {{ c }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Area (ha)
+                            </label>
+                            <input
+                                v-model="harvestForm.area_hectares"
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                placeholder="0.0"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Production (kg)
+                            </label>
+                            <input
+                                v-model="harvestForm.production_kg"
+                                type="number"
+                                step="1"
+                                min="0"
+                                placeholder="Optional"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Yield (t/ha)
+                            </label>
+                            <input
+                                v-model="harvestForm.yield_per_hectare"
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                placeholder="Optional"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Harvest Date
+                        </label>
+                        <input
+                            v-model="harvestForm.harvest_date"
+                            type="date"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                        />
+                    </div>
+
+                    <div
+                        class="flex justify-end gap-2 border-t border-gray-100 pt-4"
+                    >
+                        <button
+                            type="button"
+                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            @click="showRecordModal = false"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
+                        >
+                            Record Harvest
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </Teleport>
+
+    <!-- Edit Harvest Record Modal -->
+    <Teleport to="body">
+        <div
+            v-if="showEditModal"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            @click.self="showEditModal = false"
+        >
+            <div
+                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+                style="font-family: 'DM Sans', sans-serif"
+            >
+                <div class="mb-5 flex items-start justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">
+                            Edit Harvest Record
+                        </h3>
+                        <p class="text-xs text-gray-500">
+                            Update the yield and production details.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+                        @click="showEditModal = false"
+                    >
+                        <UIcon name="i-lucide-x" class="size-4" />
+                    </button>
+                </div>
+
+                <form class="space-y-4" @submit.prevent="saveEdit">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Farmer
+                            </label>
+                            <input
+                                v-model="editForm.farmer"
+                                type="text"
+                                list="harvest-farmer-options-edit"
+                                placeholder="e.g. Ricardo Santos"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                            <datalist id="harvest-farmer-options-edit">
+                                <option
+                                    v-for="f in farmerOptions"
+                                    :key="f"
+                                    :value="f"
+                                />
+                            </datalist>
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Barangay
+                            </label>
+                            <input
+                                v-model="editForm.barangay"
+                                type="text"
+                                list="harvest-barangay-options-edit"
+                                placeholder="Select barangay"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                            <datalist id="harvest-barangay-options-edit">
+                                <option
+                                    v-for="b in barangayOptions"
+                                    :key="b"
+                                    :value="b"
+                                />
+                            </datalist>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Crop
+                            </label>
+                            <select
+                                v-model="editForm.crop"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option
+                                    v-for="c in cropOptions"
+                                    :key="c"
+                                    :value="c"
+                                >
+                                    {{ c }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Area (ha)
+                            </label>
+                            <input
+                                v-model="editForm.area_hectares"
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                placeholder="0.0"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Production (kg)
+                            </label>
+                            <input
+                                v-model="editForm.production_kg"
+                                type="number"
+                                step="1"
+                                min="0"
+                                placeholder="Optional"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Yield (t/ha)
+                            </label>
+                            <input
+                                v-model="editForm.yield_per_hectare"
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                placeholder="Optional"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Harvest Date
+                        </label>
+                        <input
+                            v-model="editForm.harvest_date"
+                            type="date"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                        />
+                    </div>
+
+                    <div
+                        class="flex justify-end gap-2 border-t border-gray-100 pt-4"
+                    >
+                        <button
+                            type="button"
+                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            @click="showEditModal = false"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
+                        >
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </Teleport>
+
+    <!-- Delete Harvest Record Modal -->
+    <Teleport to="body">
+        <div
+            v-if="showDeleteModal"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            @click.self="showDeleteModal = false"
+        >
+            <div
+                class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"
+                style="font-family: 'DM Sans', sans-serif"
+            >
+                <div
+                    class="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-red-50"
+                >
+                    <UIcon
+                        name="i-lucide-trash-2"
+                        class="size-5 text-red-600"
+                    />
+                </div>
+                <h3 class="text-lg font-bold text-gray-900">
+                    Delete Harvest Record
+                </h3>
+                <p class="mt-1 text-xs text-gray-500">
+                    Remove
+                    <span class="font-mono text-gray-700">
+                        {{ deleteTarget?.id }}
+                    </span>
+                    for {{ deleteTarget?.farmer }}? This action cannot be
+                    undone.
+                </p>
+                <div class="mt-6 flex justify-end gap-2">
+                    <button
+                        type="button"
+                        class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                        @click="showDeleteModal = false"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-lg bg-red-600 px-4 py-2 text-xs font-medium text-white hover:bg-red-700"
+                        @click="confirmDelete"
+                    >
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </Teleport>
 </template>

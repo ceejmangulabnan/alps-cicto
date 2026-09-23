@@ -324,6 +324,23 @@ const registerForm = reactive({
     contact: '',
     status: 'Active',
 })
+const showEditModal = ref(false)
+const editForm = reactive({
+    farmer_code: '',
+    name: '',
+    barangay: '',
+    contact: '',
+    status: 'Active',
+})
+
+function openEditModal(farmer: Farmer) {
+    editForm.farmer_code = farmer.farmer_code
+    editForm.name = farmer.name
+    editForm.barangay = farmerBarangay(farmer)
+    editForm.contact = ''
+    editForm.status = 'Active'
+    showEditModal.value = true
+}
 
 const filtered = computed(() =>
     farmers.filter((f) => {
@@ -485,6 +502,7 @@ const detailStats = computed(() => {
                                 <button
                                     type="button"
                                     class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                                    @click="openEditModal(selectedFarmer)"
                                 >
                                     Edit Profile
                                 </button>
@@ -835,7 +853,7 @@ const detailStats = computed(() => {
                                 v-model="registerForm.farmer_code"
                                 type="text"
                                 placeholder="e.g. FRM-0005"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
                             />
                         </div>
                         <div>
@@ -846,7 +864,7 @@ const detailStats = computed(() => {
                             </label>
                             <select
                                 v-model="registerForm.status"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
                             >
                                 <option value="Active">Active</option>
                                 <option value="Inactive">Inactive</option>
@@ -864,7 +882,7 @@ const detailStats = computed(() => {
                             v-model="registerForm.name"
                             type="text"
                             placeholder="e.g. Juan Dela Cruz"
-                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
                         />
                     </div>
 
@@ -880,7 +898,7 @@ const detailStats = computed(() => {
                                 type="text"
                                 list="farmer-barangay-options"
                                 placeholder="Select barangay"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
                             />
                             <datalist id="farmer-barangay-options">
                                 <option
@@ -900,7 +918,7 @@ const detailStats = computed(() => {
                                 v-model="registerForm.contact"
                                 type="text"
                                 placeholder="09XX XXX XXXX"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
                             />
                         </div>
                     </div>
@@ -920,6 +938,139 @@ const detailStats = computed(() => {
                             class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
                         >
                             Register Farmer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </Teleport>
+
+    <!-- Edit Farmer Profile Modal -->
+    <Teleport to="body">
+        <div
+            v-if="showEditModal"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            @click.self="showEditModal = false"
+        >
+            <div
+                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+                style="font-family: 'DM Sans', sans-serif"
+            >
+                <div class="mb-5 flex items-start justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">
+                            Edit Profile
+                        </h3>
+                        <p class="text-xs text-gray-500">
+                            Update the farmer's details.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+                        @click="showEditModal = false"
+                    >
+                        <UIcon name="i-lucide-x" class="size-4" />
+                    </button>
+                </div>
+
+                <form class="space-y-4" @submit.prevent="showEditModal = false">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Farmer Code
+                            </label>
+                            <input
+                                v-model="editForm.farmer_code"
+                                type="text"
+                                placeholder="e.g. FRM-0005"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Status
+                            </label>
+                            <select
+                                v-model="editForm.status"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Full Name
+                        </label>
+                        <input
+                            v-model="editForm.name"
+                            type="text"
+                            placeholder="e.g. Juan Dela Cruz"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                        />
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Barangay
+                            </label>
+                            <input
+                                v-model="editForm.barangay"
+                                type="text"
+                                list="farmer-barangay-options"
+                                placeholder="Select barangay"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                            <datalist id="farmer-barangay-options">
+                                <option
+                                    v-for="b in barangays"
+                                    :key="b"
+                                    :value="b"
+                                />
+                            </datalist>
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Contact Number
+                            </label>
+                            <input
+                                v-model="editForm.contact"
+                                type="text"
+                                placeholder="09XX XXX XXXX"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div
+                        class="flex justify-end gap-2 border-t border-gray-100 pt-4"
+                    >
+                        <button
+                            type="button"
+                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            @click="showEditModal = false"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
+                        >
+                            Save Changes
                         </button>
                     </div>
                 </form>

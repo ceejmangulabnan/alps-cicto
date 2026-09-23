@@ -226,10 +226,7 @@ function confirmDelete() {
     <div class="space-y-6 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <h1
-                    class="text-2xl font-bold text-gray-900"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h1 class="text-2xl font-bold text-gray-900">
                     Assistance Programs
                 </h1>
                 <p class="mt-0.5 text-sm text-gray-500">
@@ -260,10 +257,9 @@ function confirmDelete() {
                     />
                 </div>
                 <div
-                    class="text-2xl font-bold"
+                    class="text-2xl font-bold font-sans"
                     :style="{
                         color: kpi.color,
-                        fontFamily: 'DM Sans, sans-serif',
                     }"
                 >
                     {{ kpi.val }}
@@ -274,10 +270,7 @@ function confirmDelete() {
 
         <div class="alps-card overflow-hidden">
             <div class="border-b border-gray-100 px-5 py-4">
-                <h3
-                    class="text-sm font-semibold text-gray-700"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h3 class="text-sm font-semibold text-gray-700">
                     Assistance Records
                 </h3>
             </div>

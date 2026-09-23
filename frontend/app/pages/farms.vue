@@ -262,6 +262,21 @@ const search = ref('')
 const filterStatus = ref('All')
 const selected = ref<Parcel | null>(null)
 
+function goEditParcel(p: Parcel) {
+    navigateTo({
+        path: '/map',
+        query: {
+            editParcel: '1',
+            parcel_code: p.parcel_code,
+            farm_code: p.farm_code,
+            farmer_name: p.farmerName,
+            area: String(p.area_hectares),
+            land_status: p.land_status,
+            current_use: p.current_use ?? '',
+        },
+    })
+}
+
 const filtered = computed(() =>
     parcels.filter((p) => {
         const match =
@@ -320,10 +335,7 @@ const detailFields = computed(() => {
     <div class="p-6">
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1
-                    class="text-2xl font-bold text-gray-900"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h1 class="text-2xl font-bold text-gray-900">
                     Farms & Parcels
                 </h1>
                 <p class="mt-0.5 text-sm text-gray-500">
@@ -352,7 +364,6 @@ const detailFields = computed(() => {
                     class="mb-1 text-2xl font-bold"
                     :style="{
                         color: card.color,
-                        fontFamily: 'DM Sans, sans-serif',
                     }"
                 >
                     {{ card.val }}
@@ -494,10 +505,7 @@ const detailFields = computed(() => {
                     <div class="mb-1 font-mono text-xs text-gray-600">
                         {{ selected.parcel_code }}
                     </div>
-                    <h3
-                        class="mb-1 text-sm font-bold text-gray-800"
-                        style="font-family: 'DM Sans', sans-serif"
-                    >
+                    <h3 class="mb-1 text-sm font-bold text-gray-800">
                         {{ selected.farm_code }}
                     </h3>
                     <span
@@ -525,9 +533,11 @@ const detailFields = computed(() => {
                     <div class="mt-4 space-y-2">
                         <button
                             type="button"
-                            class="w-full rounded-lg bg-[#2d6a2d] py-2.5 text-xs font-medium text-white hover:bg-[#245524]"
+                            class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d6a2d] py-2.5 text-xs font-medium text-white hover:bg-[#245524]"
+                            @click="goEditParcel(selected)"
                         >
-                            View Full Profile
+                            <UIcon name="i-lucide-pencil" class="size-3.5" />
+                            Edit Parcel
                         </button>
                         <button
                             type="button"

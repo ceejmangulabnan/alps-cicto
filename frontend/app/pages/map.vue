@@ -49,7 +49,9 @@ const attributionControl = {
 }
 
 const coordinatesText = computed(() => {
-    const [lng, lat] = mapCenter.value
+    const c = mapCenter.value
+    const lng = Array.isArray(c) ? c[0] : (c?.lng ?? 0)
+    const lat = Array.isArray(c) ? c[1] : (c?.lat ?? 0)
     const ns = lat >= 0 ? 'N' : 'S'
     const ew = lng >= 0 ? 'E' : 'W'
     return `${Math.abs(lat).toFixed(4)}°${ns}, ${Math.abs(lng).toFixed(4)}°${ew} · Zoom ${Math.round(mapZoom.value)}`
@@ -83,7 +85,16 @@ const route = useRoute()
 const router = useRouter()
 
 const isAddingParcel = () => route.query.addParcel !== undefined
-const showSidebar = ref(isAddingParcel())
+const isEditingParcel = () => route.query.editParcel !== undefined
+const showSidebar = ref(isAddingParcel() || isEditingParcel())
+const sidebarTitle = computed(() =>
+    isEditingParcel() ? 'Edit Parcel' : 'New Parcel'
+)
+const sidebarSubtitle = computed(() =>
+    isEditingParcel()
+        ? 'Update the parcel details for this farmland.'
+        : 'Fill in the parcel details, then plot it on the map.'
+)
 
 function closeSidebar() {
     showSidebar.value = false
@@ -100,12 +111,37 @@ const parcelForm = reactive({
     current_use: '',
 })
 
+if (isEditingParcel()) {
+    parcelForm.farm = (route.query.farm_code as string) ?? ''
+    parcelForm.parcel_code = (route.query.parcel_code as string) ?? ''
+    parcelForm.area_hectares = (route.query.area as string) ?? ''
+    parcelForm.land_status = (route.query.land_status as string) ?? 'Cultivated'
+    parcelForm.current_use = (route.query.current_use as string) ?? ''
+}
+
 const farmOptions = [
     { code: 'FAR-1001', label: 'Jose Mendoza' },
     { code: 'FAR-1002', label: 'Rosa Dizon' },
     { code: 'FAR-1003', label: 'Pedro Santos' },
     { code: 'FAR-1004', label: 'Luz Villanueva' },
 ]
+
+const farmSelectOptions = computed(() => {
+    if (isEditingParcel() && route.query.farm_code) {
+        const code = String(route.query.farm_code)
+        const known = farmOptions.some((f) => f.code === code)
+        if (!known) {
+            return [
+                ...farmOptions,
+                {
+                    code,
+                    label: String(route.query.farmer_name ?? 'Farm'),
+                },
+            ]
+        }
+    }
+    return farmOptions
+})
 
 function isParcel(feature: GeoJSONStoreFeatures): boolean {
     return feature.properties?.mode === 'polygon'
@@ -189,6 +225,13 @@ function clearParcels() {
     persistParcels(instance)
     drawMode.value = 'view'
 }
+
+function openAddParcel() {
+    showSidebar.value = true
+    router.replace({ path: '/map', query: { addParcel: '1' } })
+    draw.value?.setMode('polygon')
+    drawMode.value = 'plot'
+}
 </script>
 
 <template>
@@ -207,11 +250,22 @@ function clearParcels() {
                     San Fernando, Pampanga
                 </span>
             </div>
-            <span
-                class="rounded-md bg-gray-100 px-2 py-1 font-mono text-[10px] text-gray-600"
-            >
-                {{ parcelCount }} parcel{{ parcelCount === 1 ? '' : 's' }} drawn
-            </span>
+            <div class="flex items-center gap-3">
+                <span
+                    class="rounded-md bg-gray-100 px-2 py-1 font-mono text-[10px] text-gray-600"
+                >
+                    {{ parcelCount }} parcel{{ parcelCount === 1 ? '' : 's' }}
+                    drawn
+                </span>
+                <button
+                    type="button"
+                    class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
+                    @click="openAddParcel"
+                >
+                    <UIcon name="i-lucide-layers" class="size-3.5" />
+                    Add Parcel
+                </button>
+            </div>
         </div>
 
         <div class="flex flex-1 overflow-hidden">
@@ -275,10 +329,10 @@ function clearParcels() {
                 <div class="mb-5 flex items-start justify-between">
                     <div>
                         <h2 class="text-base font-bold text-gray-900">
-                            New Parcel
+                            {{ sidebarTitle }}
                         </h2>
                         <p class="text-[11px] text-gray-500">
-                            Fill in the parcel details, then plot it on the map.
+                            {{ sidebarSubtitle }}
                         </p>
                     </div>
                     <button
@@ -299,11 +353,11 @@ function clearParcels() {
                         </label>
                         <select
                             v-model="parcelForm.farm"
-                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
                         >
                             <option value="" disabled>Select a farm...</option>
                             <option
-                                v-for="f in farmOptions"
+                                v-for="f in farmSelectOptions"
                                 :key="f.code"
                                 :value="f.code"
                             >
@@ -322,7 +376,7 @@ function clearParcels() {
                             v-model="parcelForm.parcel_code"
                             type="text"
                             placeholder="e.g. PLC-1201"
-                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
                         />
                     </div>
 
@@ -339,7 +393,7 @@ function clearParcels() {
                                 step="0.1"
                                 min="0"
                                 placeholder="0.0"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
                             />
                         </div>
                         <div>
@@ -350,7 +404,7 @@ function clearParcels() {
                             </label>
                             <select
                                 v-model="parcelForm.land_status"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
                             >
                                 <option
                                     v-for="s in landStatusOptions"
@@ -373,7 +427,7 @@ function clearParcels() {
                             v-model="parcelForm.current_use"
                             type="text"
                             placeholder="e.g. Rice / Corn / Sugarcane"
-                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
                         />
                     </div>
                 </form>
@@ -383,12 +437,22 @@ function clearParcels() {
                         type="button"
                         class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#245524]"
                     >
-                        <UIcon name="i-lucide-vector-polygon" class="size-4" />
-                        Plot Parcel
+                        <UIcon
+                            :name="
+                                isEditingParcel()
+                                    ? 'i-lucide-save'
+                                    : 'i-lucide-vector-polygon'
+                            "
+                            class="size-4"
+                        />
+                        {{ isEditingParcel() ? 'Save Changes' : 'Plot Parcel' }}
                     </button>
                     <p class="mt-2 text-center text-[10px] text-gray-400">
-                        Click the map to drop points — click the first point
-                        again to close the parcel.
+                        {{
+                            isEditingParcel()
+                                ? 'Changes are saved to the parcel record.'
+                                : 'Click the map to drop points — click the first point again to close the parcel.'
+                        }}
                     </p>
                 </div>
             </aside>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-
 type HarvestStatus = 'Completed' | 'Upcoming'
 
 type HarvestRecord = {
@@ -222,12 +221,7 @@ const harvestOption = computed(() => ({
     <div class="space-y-6 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <h1
-                    class="text-2xl font-bold text-gray-900"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
-                    Harvests
-                </h1>
+                <h1 class="text-2xl font-bold text-gray-900">Harvests</h1>
                 <p class="mt-0.5 text-sm text-gray-500">
                     Yield records · Season tracking · Production data
                 </p>
@@ -255,10 +249,9 @@ const harvestOption = computed(() => ({
                     />
                 </div>
                 <div
-                    class="text-2xl font-bold"
+                    class="text-2xl font-bold font-sans"
                     :style="{
                         color: kpi.color,
-                        fontFamily: 'DM Sans, sans-serif',
                     }"
                 >
                     {{ kpi.val }}
@@ -269,10 +262,7 @@ const harvestOption = computed(() => ({
 
         <!-- Chart -->
         <div class="alps-card p-5">
-            <h3
-                class="mb-4 text-sm font-semibold text-gray-700"
-                style="font-family: 'DM Sans', sans-serif"
-            >
+            <h3 class="mb-4 text-sm font-semibold text-gray-700">
                 Monthly Harvest Volume (ha) — 2024
             </h3>
             <ClientOnly>
@@ -289,10 +279,7 @@ const harvestOption = computed(() => ({
         <!-- Harvest Records Table -->
         <div class="alps-card overflow-hidden">
             <div class="border-b border-gray-100 px-5 py-4">
-                <h3
-                    class="text-sm font-semibold text-gray-700"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h3 class="text-sm font-semibold text-gray-700">
                     Harvest Records
                 </h3>
             </div>

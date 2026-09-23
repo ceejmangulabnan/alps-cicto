@@ -23,5 +23,14 @@ export default {
                 middlewares: [],
             },
         },
+        {
+            method: 'POST',
+            path: '/farm-parcels/from-map',
+            handler: 'api::farm-parcel.custom-farm-parcel.createFromMap',
+            config: {
+                policies: [],
+                middlewares: [],
+            },
+        },
     ],
 }

@@ -127,6 +127,20 @@ export default {
     async beforeCreate(event: { params: { data: Record<string, unknown> } }) {
         const { data } = event.params
 
+        // Auto-generate parcel_code if not provided
+        if (!data.parcel_code) {
+            const currentYear = new Date().getFullYear()
+            const count = await strapi.db.query('api::farm-parcel.farm-parcel').count({
+                where: {
+                    parcel_code: {
+                        $startsWith: `PLC-${currentYear}-`,
+                    },
+                },
+            })
+            const sequence = (count + 1).toString().padStart(4, '0')
+            data.parcel_code = `PLC-${currentYear}-${sequence}`
+        }
+
         if (data.land_status !== undefined) {
             const statusValidation = validateLandStatus(data.land_status)
             if (!statusValidation.valid) {

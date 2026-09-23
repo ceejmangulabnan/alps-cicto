@@ -201,6 +201,61 @@ export default factories.createCoreController(
                 )
             }
         },
+
+        /**
+         * POST /farm-parcels/from-map
+         * Create a farm parcel from map drawing with GeoJSON
+         */
+        async createFromMap(ctx) {
+            try {
+                const { body } = ctx.request
+
+                // Validate required fields
+                if (!body.farm) {
+                    return ctx.badRequest('Farm is required')
+                }
+                if (!body.boundary_geojson) {
+                    return ctx.badRequest('boundary_geojson is required')
+                }
+                if (!body.land_status) {
+                    return ctx.badRequest('land_status is required')
+                }
+
+                // Verify farm exists
+                const farm = await strapi.documents('api::farm.farm').findOne({
+                    documentId: body.farm,
+                    fields: ['documentId'],
+                })
+                if (!farm) {
+                    return ctx.badRequest('Invalid farm ID')
+                }
+
+                // Prepare data for creation
+                // parcel_code will be auto-generated in beforeCreate lifecycle
+                const parcelData: Record<string, unknown> = {
+                    farm: body.farm,
+                    boundary_geojson: body.boundary_geojson,
+                    land_status: body.land_status,
+                    current_use: body.current_use || '',
+                    // area_hectares is optional - will be auto-calculated in lifecycle if not provided
+                    ...(body.area_hectares !== undefined && { area_hectares: body.area_hectares }),
+                }
+
+                // Create parcel using Document Service (triggers lifecycle validation)
+                const parcel = await strapi.documents('api::farm-parcel.farm-parcel').create({
+                    data: parcelData as any,
+                    populate: ['farm', 'farm.barangay', 'farm.farmers', 'planting_cycle', 'inspections'],
+                })
+
+                ctx.body = { data: parcel }
+            } catch (err) {
+                if (err instanceof Error) {
+                    // Return validation errors from lifecycle
+                    return ctx.badRequest(err.message)
+                }
+                ctx.throw(500, 'An error occurred while creating parcel')
+            }
+        },
     })
 )
 

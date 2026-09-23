@@ -262,6 +262,21 @@ const search = ref('')
 const filterStatus = ref('All')
 const selected = ref<Parcel | null>(null)
 
+function goEditParcel(p: Parcel) {
+    navigateTo({
+        path: '/map',
+        query: {
+            editParcel: '1',
+            parcel_code: p.parcel_code,
+            farm_code: p.farm_code,
+            farmer_name: p.farmerName,
+            area: String(p.area_hectares),
+            land_status: p.land_status,
+            current_use: p.current_use ?? '',
+        },
+    })
+}
+
 const filtered = computed(() =>
     parcels.filter((p) => {
         const match =
@@ -518,9 +533,11 @@ const detailFields = computed(() => {
                     <div class="mt-4 space-y-2">
                         <button
                             type="button"
-                            class="w-full rounded-lg bg-[#2d6a2d] py-2.5 text-xs font-medium text-white hover:bg-[#245524]"
+                            class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d6a2d] py-2.5 text-xs font-medium text-white hover:bg-[#245524]"
+                            @click="goEditParcel(selected)"
                         >
-                            View Full Profile
+                            <UIcon name="i-lucide-pencil" class="size-3.5" />
+                            Edit Parcel
                         </button>
                         <button
                             type="button"

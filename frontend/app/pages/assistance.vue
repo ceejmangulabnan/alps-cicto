@@ -1,4 +1,5 @@
 <script setup lang="ts">
+definePageMeta({ middleware: 'auth' })
 
 type AssistanceStatus = 'Released' | 'For Release' | 'Pending' | 'Scheduled'
 
@@ -13,7 +14,7 @@ type AssistanceProgram = {
     status: AssistanceStatus
 }
 
-const assistancePrograms: AssistanceProgram[] = [
+const assistancePrograms = reactive<AssistanceProgram[]>([
     {
         id: 'AST-001',
         program: 'Rice Seed Subsidy',
@@ -94,7 +95,7 @@ const assistancePrograms: AssistanceProgram[] = [
         date: '2024-12-08',
         status: 'Pending',
     },
-]
+])
 
 const STATUS_STYLE: Record<AssistanceStatus, string> = {
     Released: 'status-cultivated',
@@ -135,6 +136,90 @@ const kpis = computed(() => [
         bg: '#e0f0fb',
     },
 ])
+
+const showRecordModal = ref(false)
+const assistanceForm = reactive({
+    program: '',
+    recipient: '',
+    barangay: '',
+    items: '',
+    value: '',
+    date: '',
+    status: 'Pending',
+})
+
+const programOptions = computed(() =>
+    [...new Set(assistancePrograms.map((a) => a.program))].sort()
+)
+const recipientOptions = computed(() =>
+    [...new Set(assistancePrograms.map((a) => a.recipient))].sort()
+)
+const barangayOptions = computed(() =>
+    [...new Set(assistancePrograms.map((a) => a.barangay))].sort()
+)
+const assistStatusOptions: AssistanceStatus[] = [
+    'Released',
+    'For Release',
+    'Pending',
+    'Scheduled',
+]
+
+const showEditModal = ref(false)
+const editForm = reactive({
+    id: '',
+    program: '',
+    recipient: '',
+    barangay: '',
+    items: '',
+    value: '',
+    date: '',
+    status: 'Pending',
+})
+
+function openEditModal(a: AssistanceProgram) {
+    editForm.id = a.id
+    editForm.program = a.program
+    editForm.recipient = a.recipient
+    editForm.barangay = a.barangay
+    editForm.items = a.items
+    editForm.value = String(a.value)
+    editForm.date = a.date
+    editForm.status = a.status
+    showEditModal.value = true
+}
+
+function saveEdit() {
+    const idx = assistancePrograms.findIndex(
+        (r) => r.id === editForm.id
+    )
+    if (idx === -1) return
+    const a = assistancePrograms[idx]
+    a.program = editForm.program
+    a.recipient = editForm.recipient
+    a.barangay = editForm.barangay
+    a.items = editForm.items
+    a.value = Number(editForm.value)
+    a.date = editForm.date
+    a.status = editForm.status as AssistanceStatus
+    showEditModal.value = false
+}
+
+const showDeleteModal = ref(false)
+const deleteTarget = ref<AssistanceProgram | null>(null)
+
+function askDelete(a: AssistanceProgram) {
+    deleteTarget.value = a
+    showDeleteModal.value = true
+}
+
+function confirmDelete() {
+    const t = deleteTarget.value
+    if (!t) return
+    const idx = assistancePrograms.findIndex((r) => r.id === t.id)
+    if (idx !== -1) assistancePrograms.splice(idx, 1)
+    deleteTarget.value = null
+    showDeleteModal.value = false
+}
 </script>
 
 <template>
@@ -154,6 +239,7 @@ const kpis = computed(() => [
             <button
                 type="button"
                 class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
+                @click="showRecordModal = true"
             >
                 <UIcon name="i-lucide-hand-heart" class="size-3.5" />
                 Record Assistance
@@ -238,6 +324,7 @@ const kpis = computed(() => [
                         >
                             Status
                         </th>
+                        <th class="px-4 py-3 text-right"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -287,9 +374,456 @@ const kpis = computed(() => [
                                 {{ a.status }}
                             </span>
                         </td>
+                        <td class="px-4 py-3">
+                            <div
+                                class="flex items-center justify-end gap-1"
+                            >
+                                <button
+                                    type="button"
+                                    class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                                    @click="openEditModal(a)"
+                                >
+                                    <UIcon
+                                        name="i-lucide-pencil"
+                                        class="size-3.5"
+                                    />
+                                </button>
+                                <button
+                                    type="button"
+                                    class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                    @click="askDelete(a)"
+                                >
+                                    <UIcon
+                                        name="i-lucide-trash-2"
+                                        class="size-3.5"
+                                    />
+                                </button>
+                            </div>
+                        </td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
+
+    <!-- Record Assistance Modal -->
+    <Teleport to="body">
+        <div
+            v-if="showRecordModal"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            @click.self="showRecordModal = false"
+        >
+            <div
+                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+                style="font-family: 'DM Sans', sans-serif"
+            >
+                <div class="mb-5 flex items-start justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">
+                            Record Assistance
+                        </h3>
+                        <p class="text-xs text-gray-500">
+                            Log an assistance program for a farmer.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+                        @click="showRecordModal = false"
+                    >
+                        <UIcon name="i-lucide-x" class="size-4" />
+                    </button>
+                </div>
+
+                <form
+                    class="space-y-4"
+                    @submit.prevent="showRecordModal = false"
+                >
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Program
+                            </label>
+                            <select
+                                v-model="assistanceForm.program"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option value="" disabled>
+                                    Select a program...
+                                </option>
+                                <option
+                                    v-for="p in programOptions"
+                                    :key="p"
+                                    :value="p"
+                                >
+                                    {{ p }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Recipient
+                            </label>
+                            <input
+                                v-model="assistanceForm.recipient"
+                                type="text"
+                                list="assist-recipient-options"
+                                placeholder="e.g. Rosa Dizon"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                            <datalist id="assist-recipient-options">
+                                <option
+                                    v-for="r in recipientOptions"
+                                    :key="r"
+                                    :value="r"
+                                />
+                            </datalist>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Barangay
+                            </label>
+                            <input
+                                v-model="assistanceForm.barangay"
+                                type="text"
+                                list="assist-barangay-options"
+                                placeholder="Select barangay"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                            <datalist id="assist-barangay-options">
+                                <option
+                                    v-for="b in barangayOptions"
+                                    :key="b"
+                                    :value="b"
+                                />
+                            </datalist>
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Value (₱)
+                            </label>
+                            <input
+                                v-model="assistanceForm.value"
+                                type="number"
+                                step="1"
+                                min="0"
+                                placeholder="0.00"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Items
+                        </label>
+                        <textarea
+                            v-model="assistanceForm.items"
+                            rows="2"
+                            placeholder="e.g. 4 bags certified rice seed (40 kg), 1 bag fertilizer"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                        ></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Date
+                            </label>
+                            <input
+                                v-model="assistanceForm.date"
+                                type="date"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Status
+                            </label>
+                            <select
+                                v-model="assistanceForm.status"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option
+                                    v-for="s in assistStatusOptions"
+                                    :key="s"
+                                    :value="s"
+                                >
+                                    {{ s }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div
+                        class="flex justify-end gap-2 border-t border-gray-100 pt-4"
+                    >
+                        <button
+                            type="button"
+                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            @click="showRecordModal = false"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
+                        >
+                            Record Assistance
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </Teleport>
+
+    <!-- Edit Assistance Modal -->
+    <Teleport to="body">
+        <div
+            v-if="showEditModal"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            @click.self="showEditModal = false"
+        >
+            <div
+                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+                style="font-family: 'DM Sans', sans-serif"
+            >
+                <div class="mb-5 flex items-start justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">
+                            Edit Assistance
+                        </h3>
+                        <p class="text-xs text-gray-500">
+                            Update the assistance program details.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+                        @click="showEditModal = false"
+                    >
+                        <UIcon name="i-lucide-x" class="size-4" />
+                    </button>
+                </div>
+
+                <form class="space-y-4" @submit.prevent="saveEdit">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Program
+                            </label>
+                            <select
+                                v-model="editForm.program"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option
+                                    v-for="p in programOptions"
+                                    :key="p"
+                                    :value="p"
+                                >
+                                    {{ p }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Recipient
+                            </label>
+                            <input
+                                v-model="editForm.recipient"
+                                type="text"
+                                list="assist-recipient-options-edit"
+                                placeholder="e.g. Rosa Dizon"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                            <datalist id="assist-recipient-options-edit">
+                                <option
+                                    v-for="r in recipientOptions"
+                                    :key="r"
+                                    :value="r"
+                                />
+                            </datalist>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Barangay
+                            </label>
+                            <input
+                                v-model="editForm.barangay"
+                                type="text"
+                                list="assist-barangay-options-edit"
+                                placeholder="Select barangay"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                            <datalist id="assist-barangay-options-edit">
+                                <option
+                                    v-for="b in barangayOptions"
+                                    :key="b"
+                                    :value="b"
+                                />
+                            </datalist>
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Value (₱)
+                            </label>
+                            <input
+                                v-model="editForm.value"
+                                type="number"
+                                step="1"
+                                min="0"
+                                placeholder="0.00"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Items
+                        </label>
+                        <textarea
+                            v-model="editForm.items"
+                            rows="2"
+                            placeholder="e.g. 4 bags certified rice seed (40 kg)"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                        ></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Date
+                            </label>
+                            <input
+                                v-model="editForm.date"
+                                type="date"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Status
+                            </label>
+                            <select
+                                v-model="editForm.status"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option
+                                    v-for="s in assistStatusOptions"
+                                    :key="s"
+                                    :value="s"
+                                >
+                                    {{ s }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div
+                        class="flex justify-end gap-2 border-t border-gray-100 pt-4"
+                    >
+                        <button
+                            type="button"
+                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            @click="showEditModal = false"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
+                        >
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </Teleport>
+
+    <!-- Delete Assistance Modal -->
+    <Teleport to="body">
+        <div
+            v-if="showDeleteModal"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            @click.self="showDeleteModal = false"
+        >
+            <div
+                class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"
+                style="font-family: 'DM Sans', sans-serif"
+            >
+                <div
+                    class="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-red-50"
+                >
+                    <UIcon
+                        name="i-lucide-trash-2"
+                        class="size-5 text-red-600"
+                    />
+                </div>
+                <h3 class="text-lg font-bold text-gray-900">
+                    Delete Assistance
+                </h3>
+                <p class="mt-1 text-xs text-gray-500">
+                    Remove
+                    <span class="font-mono text-gray-700">
+                        {{ deleteTarget?.id }}
+                    </span>
+                    ({{ deleteTarget?.program }}) for
+                    {{ deleteTarget?.recipient }}? This action cannot be
+                    undone.
+                </p>
+                <div class="mt-6 flex justify-end gap-2">
+                    <button
+                        type="button"
+                        class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                        @click="showDeleteModal = false"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-lg bg-red-600 px-4 py-2 text-xs font-medium text-white hover:bg-red-700"
+                        @click="confirmDelete"
+                    >
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </Teleport>
 </template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+definePageMeta({ middleware: 'auth' })
 
 type RiskLevel = 'High' | 'Medium' | 'Low' | 'None'
 type InspStatus = 'Completed' | 'Pending' | 'In Progress'
@@ -194,6 +195,38 @@ const detailFields = computed(() => {
         { label: 'GPS Coordinates', val: s.gps },
     ]
 })
+
+const showNewModal = ref(false)
+const inspectionForm = reactive({
+    parcel: '',
+    farmer: '',
+    barangay: '',
+    type: 'Pre-harvest Assessment',
+    date: '',
+    officer: '',
+    gps: '',
+    photos: '',
+    findings: '',
+    riskLevel: 'Low',
+    status: 'Pending',
+})
+
+const inspectionTypeOptions = [
+    'Pre-harvest Assessment',
+    'Pest & Disease Scouting',
+    'Compliance Check',
+    'Crop Establishment Visit',
+    'Irrigation Audit',
+    'Harvest Monitoring',
+]
+const riskLevelOptions: RiskLevel[] = ['High', 'Medium', 'Low', 'None']
+const inspStatusOptions: InspStatus[] = ['Completed', 'Pending', 'In Progress']
+const farmerOptions = computed(() =>
+    [...new Set(inspections.map((i) => i.farmer))].sort()
+)
+const barangayOptions = computed(() =>
+    [...new Set(inspections.map((i) => i.barangay))].sort()
+)
 </script>
 
 <template>
@@ -215,6 +248,7 @@ const detailFields = computed(() => {
             <button
                 type="button"
                 class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
+                @click="showNewModal = true"
             >
                 <UIcon name="i-lucide-plus" class="size-3.5" />
                 New Inspection
@@ -425,4 +459,250 @@ const detailFields = computed(() => {
             </div>
         </div>
     </div>
+
+    <!-- New Inspection Modal -->
+    <Teleport to="body">
+        <div
+            v-if="showNewModal"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            @click.self="showNewModal = false"
+        >
+            <div
+                class="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl"
+                style="font-family: 'DM Sans', sans-serif"
+            >
+                <div class="mb-5 flex items-start justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">
+                            New Inspection
+                        </h3>
+                        <p class="text-xs text-gray-500">
+                            Log a field inspection visit with findings.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+                        @click="showNewModal = false"
+                    >
+                        <UIcon name="i-lucide-x" class="size-4" />
+                    </button>
+                </div>
+
+                <form class="space-y-4" @submit.prevent="showNewModal = false">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Parcel
+                            </label>
+                            <input
+                                v-model="inspectionForm.parcel"
+                                type="text"
+                                placeholder="e.g. PLC-0202"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Farmer
+                            </label>
+                            <input
+                                v-model="inspectionForm.farmer"
+                                type="text"
+                                list="insp-farmer-options"
+                                placeholder="e.g. Rosa Dizon"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                            <datalist id="insp-farmer-options">
+                                <option
+                                    v-for="f in farmerOptions"
+                                    :key="f"
+                                    :value="f"
+                                />
+                            </datalist>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Barangay
+                            </label>
+                            <input
+                                v-model="inspectionForm.barangay"
+                                type="text"
+                                list="insp-barangay-options"
+                                placeholder="Select barangay"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                            <datalist id="insp-barangay-options">
+                                <option
+                                    v-for="b in barangayOptions"
+                                    :key="b"
+                                    :value="b"
+                                />
+                            </datalist>
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Type
+                            </label>
+                            <select
+                                v-model="inspectionForm.type"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option
+                                    v-for="t in inspectionTypeOptions"
+                                    :key="t"
+                                    :value="t"
+                                >
+                                    {{ t }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Date
+                            </label>
+                            <input
+                                v-model="inspectionForm.date"
+                                type="date"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Officer
+                            </label>
+                            <input
+                                v-model="inspectionForm.officer"
+                                type="text"
+                                placeholder="e.g. J. Villanueva"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                GPS Coordinates
+                            </label>
+                            <input
+                                v-model="inspectionForm.gps"
+                                type="text"
+                                placeholder="15.03° N, 120.69° E"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                No. of Photos
+                            </label>
+                            <input
+                                v-model="inspectionForm.photos"
+                                type="number"
+                                step="1"
+                                min="0"
+                                placeholder="0"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Findings
+                        </label>
+                        <textarea
+                            v-model="inspectionForm.findings"
+                            rows="3"
+                            placeholder="Observations, potential issues, and recommended follow-ups..."
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                        ></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Risk Level
+                            </label>
+                            <select
+                                v-model="inspectionForm.riskLevel"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option
+                                    v-for="r in riskLevelOptions"
+                                    :key="r"
+                                    :value="r"
+                                >
+                                    {{ r }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Status
+                            </label>
+                            <select
+                                v-model="inspectionForm.status"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option
+                                    v-for="s in inspStatusOptions"
+                                    :key="s"
+                                    :value="s"
+                                >
+                                    {{ s }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div
+                        class="flex justify-end gap-2 border-t border-gray-100 pt-4"
+                    >
+                        <button
+                            type="button"
+                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            @click="showNewModal = false"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
+                        >
+                            Start Inspection
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </Teleport>
 </template>

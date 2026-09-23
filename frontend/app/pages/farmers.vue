@@ -464,10 +464,7 @@ const detailStats = computed(() => {
                     <div class="flex-1">
                         <div class="flex items-start justify-between">
                             <div>
-                                <h2
-                                    class="text-xl font-bold text-gray-900"
-                                    style="font-family: 'DM Sans', sans-serif"
-                                >
+                                <h2 class="text-xl font-bold text-gray-900">
                                     {{ selectedFarmer.name }}
                                 </h2>
                                 <div class="mt-1 flex items-center gap-3">
@@ -539,10 +536,7 @@ const detailStats = computed(() => {
                             :style="{ color: stat.color }"
                         />
                     </div>
-                    <div
-                        class="text-xl font-bold text-gray-900"
-                        style="font-family: 'DM Sans', sans-serif"
-                    >
+                    <div class="text-xl font-bold text-gray-900">
                         {{ stat.val }}
                     </div>
                     <div class="text-xs text-gray-500">{{ stat.label }}</div>
@@ -551,10 +545,7 @@ const detailStats = computed(() => {
 
             <!-- Parcels -->
             <div class="alps-card p-5">
-                <h3
-                    class="mb-4 text-sm font-semibold text-gray-700"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h3 class="mb-4 text-sm font-semibold text-gray-700">
                     Registered Parcels
                 </h3>
                 <div
@@ -618,10 +609,7 @@ const detailStats = computed(() => {
     <div v-else class="p-6">
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1
-                    class="text-2xl font-bold text-gray-900"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h1 class="text-2xl font-bold text-gray-900">
                     Farmers Registry
                 </h1>
                 <p class="mt-0.5 text-sm text-gray-500">
@@ -645,10 +633,9 @@ const detailStats = computed(() => {
                 class="alps-card p-4"
             >
                 <div
-                    class="mb-1 text-xl font-bold"
+                    class="mb-1 text-xl font-bold font-sans"
                     :style="{
                         color: card.color,
-                        fontFamily: 'DM Sans, sans-serif',
                     }"
                 >
                     {{ card.val }}
@@ -799,8 +786,7 @@ const detailStats = computed(() => {
             @click.self="showRegisterModal = false"
         >
             <div
-                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
-                style="font-family: 'DM Sans', sans-serif"
+                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl font-sans"
             >
                 <div class="mb-5 flex items-start justify-between">
                     <div>

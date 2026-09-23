@@ -1,5 +1,4 @@
 <script setup lang="ts">
-
 const systemStats = [
     {
         label: 'Total System Users',
@@ -105,12 +104,7 @@ const systemInfo = [
     <div class="space-y-6 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <h1
-                    class="text-2xl font-bold text-gray-900"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
-                    Administration
-                </h1>
+                <h1 class="text-2xl font-bold text-gray-900">Administration</h1>
                 <p class="mt-0.5 text-sm text-gray-500">
                     System users · Data management · GIS configuration
                 </p>
@@ -137,10 +131,9 @@ const systemInfo = [
                     />
                 </div>
                 <div
-                    class="text-2xl font-bold"
+                    class="text-2xl font-bold font-sans"
                     :style="{
                         color: s.color,
-                        fontFamily: 'DM Sans, sans-serif',
                     }"
                 >
                     {{ s.val }}
@@ -178,10 +171,7 @@ const systemInfo = [
 
             <div class="alps-card col-span-12 overflow-hidden md:col-span-8">
                 <div class="border-b border-gray-100 px-5 py-4">
-                    <h3
-                        class="text-sm font-semibold text-gray-700"
-                        style="font-family: 'DM Sans', sans-serif"
-                    >
+                    <h3 class="text-sm font-semibold text-gray-700">
                         System Users
                     </h3>
                 </div>

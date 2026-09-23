@@ -2,6 +2,6 @@
  * crop router
  */
 
-import { factories } from '@strapi/strapi';
+import { factories } from '@strapi/strapi'
 
-export default factories.createCoreRouter('api::crop.crop');
+export default factories.createCoreRouter('api::crop.crop')

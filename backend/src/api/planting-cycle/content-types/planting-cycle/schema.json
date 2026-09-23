@@ -1,42 +1,42 @@
 {
-  "kind": "collectionType",
-  "collectionName": "planting_cycles",
-  "info": {
-    "singularName": "planting-cycle",
-    "pluralName": "planting-cycles",
-    "displayName": "Planting Cycle"
-  },
-  "options": {
-    "draftAndPublish": false
-  },
-  "pluginOptions": {},
-  "attributes": {
-    "parcels": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::farm-parcel.farm-parcel",
-      "mappedBy": "planting_cycle"
+    "kind": "collectionType",
+    "collectionName": "planting_cycles",
+    "info": {
+        "singularName": "planting-cycle",
+        "pluralName": "planting-cycles",
+        "displayName": "Planting Cycle"
     },
-    "crop": {
-      "type": "relation",
-      "relation": "manyToOne",
-      "target": "api::crop.crop",
-      "inversedBy": "planting_cycles"
+    "options": {
+        "draftAndPublish": false
     },
-    "variety": {
-      "type": "string"
-    },
-    "planting_date": {
-      "type": "date"
-    },
-    "expected_harvest": {
-      "type": "date"
-    },
-    "harvests": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::harvest.harvest",
-      "mappedBy": "planting_cycle"
+    "pluginOptions": {},
+    "attributes": {
+        "parcels": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "api::farm-parcel.farm-parcel",
+            "mappedBy": "planting_cycle"
+        },
+        "crop": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::crop.crop",
+            "inversedBy": "planting_cycles"
+        },
+        "variety": {
+            "type": "string"
+        },
+        "planting_date": {
+            "type": "date"
+        },
+        "expected_harvest": {
+            "type": "date"
+        },
+        "harvests": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "api::harvest.harvest",
+            "mappedBy": "planting_cycle"
+        }
     }
-  }
 }

@@ -1,31 +1,31 @@
 {
-  "kind": "collectionType",
-  "collectionName": "harvests",
-  "info": {
-    "singularName": "harvest",
-    "pluralName": "harvests",
-    "displayName": "Harvest"
-  },
-  "options": {
-    "draftAndPublish": false
-  },
-  "pluginOptions": {},
-  "attributes": {
-    "planting_cycle": {
-      "type": "relation",
-      "relation": "manyToOne",
-      "target": "api::planting-cycle.planting-cycle",
-      "inversedBy": "harvests"
+    "kind": "collectionType",
+    "collectionName": "harvests",
+    "info": {
+        "singularName": "harvest",
+        "pluralName": "harvests",
+        "displayName": "Harvest"
     },
-    "harvest_date": {
-      "type": "date",
-      "required": true
+    "options": {
+        "draftAndPublish": false
     },
-    "production_kg": {
-      "type": "decimal"
-    },
-    "yield_per_hectare": {
-      "type": "decimal"
+    "pluginOptions": {},
+    "attributes": {
+        "planting_cycle": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::planting-cycle.planting-cycle",
+            "inversedBy": "harvests"
+        },
+        "harvest_date": {
+            "type": "date",
+            "required": true
+        },
+        "production_kg": {
+            "type": "decimal"
+        },
+        "yield_per_hectare": {
+            "type": "decimal"
+        }
     }
-  }
 }

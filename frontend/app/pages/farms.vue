@@ -320,10 +320,7 @@ const detailFields = computed(() => {
     <div class="p-6">
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1
-                    class="text-2xl font-bold text-gray-900"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h1 class="text-2xl font-bold text-gray-900">
                     Farms & Parcels
                 </h1>
                 <p class="mt-0.5 text-sm text-gray-500">
@@ -352,7 +349,6 @@ const detailFields = computed(() => {
                     class="mb-1 text-2xl font-bold"
                     :style="{
                         color: card.color,
-                        fontFamily: 'DM Sans, sans-serif',
                     }"
                 >
                     {{ card.val }}
@@ -494,10 +490,7 @@ const detailFields = computed(() => {
                     <div class="mb-1 font-mono text-xs text-gray-600">
                         {{ selected.parcel_code }}
                     </div>
-                    <h3
-                        class="mb-1 text-sm font-bold text-gray-800"
-                        style="font-family: 'DM Sans', sans-serif"
-                    >
+                    <h3 class="mb-1 text-sm font-bold text-gray-800">
                         {{ selected.farm_code }}
                     </h3>
                     <span

@@ -243,10 +243,7 @@ function openAddParcel() {
         >
             <div class="flex items-center gap-2">
                 <UIcon name="i-lucide-map" class="size-4 text-[#2d6a2d]" />
-                <span
-                    class="text-sm font-semibold text-gray-800"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <span class="text-sm font-semibold text-gray-800 font-sans">
                     Agricultural Parcel Map
                 </span>
                 <span class="text-[11px] text-gray-400">
@@ -307,8 +304,7 @@ function openAddParcel() {
                         class="rounded-lg bg-white/90 px-4 py-2 shadow-sm backdrop-blur-sm"
                     >
                         <div
-                            class="text-xs font-semibold text-gray-700"
-                            style="font-family: 'DM Sans', sans-serif"
+                            class="text-xs font-semibold text-gray-700 font-sans"
                         >
                             Agricultural Parcel Map — San Fernando, Pampanga
                         </div>
@@ -332,10 +328,7 @@ function openAddParcel() {
             >
                 <div class="mb-5 flex items-start justify-between">
                     <div>
-                        <h2
-                            class="text-base font-bold text-gray-900"
-                            style="font-family: 'DM Sans', sans-serif"
-                        >
+                        <h2 class="text-base font-bold text-gray-900">
                             {{ sidebarTitle }}
                         </h2>
                         <p class="text-[11px] text-gray-500">

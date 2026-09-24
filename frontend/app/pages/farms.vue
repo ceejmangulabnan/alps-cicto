@@ -258,6 +258,42 @@ const STATUS_OPTIONS: LandStatus[] = [
     'Converted',
 ]
 
+const STATUS_DOT: Record<LandStatus, string> = {
+    Cultivated: '#166534',
+    Preparation: '#0369a1',
+    Harvesting: '#a16207',
+    Fallow: '#b45309',
+    Idle: '#4b5563',
+    'At Risk': '#b91c1c',
+    Converted: '#0f766e',
+}
+
+const AVATAR_COLORS = [
+    '#2d6a2d',
+    '#3b82f6',
+    '#7c3aed',
+    '#d97706',
+    '#dc2626',
+    '#0891b2',
+    '#db2777',
+    '#65a30d',
+]
+
+function initials(name: string) {
+    return name
+        .split(' ')
+        .map((w) => w[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+}
+
+function avatarColor(name: string) {
+    let h = 0
+    for (const c of name) h = (h * 31 + c.charCodeAt(0)) % AVATAR_COLORS.length
+    return AVATAR_COLORS[h]
+}
+
 const search = ref('')
 const filterStatus = ref('All')
 const selected = ref<Parcel | null>(null)
@@ -289,18 +325,28 @@ const filtered = computed(() =>
     })
 )
 
+const farmerCount = computed(
+    () => new Set(parcels.map((p) => p.farmerName)).size
+)
+
+const barangayCount = computed(
+    () => new Set(parcels.map((p) => p.barangay)).size
+)
+
 const summaryCards = computed(() => [
     {
         label: 'Total Parcels',
         val: parcels.length,
         color: '#2d6a2d',
         bg: '#e8f5e8',
+        icon: 'i-lucide-layers',
     },
     {
         label: 'Cultivated',
         val: parcels.filter((p) => p.land_status === 'Cultivated').length,
         color: '#16a34a',
         bg: '#dcfce7',
+        icon: 'i-lucide-sprout',
     },
     {
         label: 'Idle / Fallow',
@@ -309,12 +355,14 @@ const summaryCards = computed(() => [
         ).length,
         color: '#9ca3af',
         bg: '#f3f4f6',
+        icon: 'i-lucide-pause',
     },
     {
         label: 'At Risk',
         val: parcels.filter((p) => p.land_status === 'At Risk').length,
         color: '#dc2626',
         bg: '#fee2e2',
+        icon: 'i-lucide-triangle-alert',
     },
 ])
 
@@ -323,9 +371,6 @@ const detailFields = computed(() => {
     if (!s) return []
     return [
         { label: 'Farm Code', val: s.farm_code },
-        { label: 'Farmer', val: s.farmerName },
-        { label: 'Barangay', val: s.barangay },
-        { label: 'Area', val: `${s.area_hectares} ha` },
         { label: 'Current Use', val: s.current_use ?? '—' },
     ]
 })
@@ -335,12 +380,29 @@ const detailFields = computed(() => {
     <div class="p-6">
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">
-                    Farms & Parcels
-                </h1>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-2xl font-bold text-gray-900">
+                        Farms & Parcels
+                    </h1>
+                    <span
+                        class="rounded-full bg-[#e8f5e8] px-2 py-0.5 text-[11px] font-semibold text-[#2d6a2d]"
+                    >
+                        {{ parcels.length }} parcels
+                    </span>
+                    <span
+                        class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500"
+                    >
+                        {{ farmerCount }} farmers
+                    </span>
+                    <span
+                        class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500"
+                    >
+                        {{ barangayCount }} barangays
+                    </span>
+                </div>
                 <p class="mt-0.5 text-sm text-gray-500">
-                    Agricultural land inventory ·
-                    {{ parcels.length }} registered parcels
+                    Agricultural land inventory · cultivated, idle & at-risk
+                    parcels
                 </p>
             </div>
             <button
@@ -358,10 +420,26 @@ const detailFields = computed(() => {
             <div
                 v-for="card in summaryCards"
                 :key="card.label"
-                class="alps-card p-4"
+                class="alps-card relative overflow-hidden p-4"
             >
                 <div
-                    class="mb-1 text-2xl font-bold"
+                    class="absolute inset-x-0 top-0 h-0.5 opacity-70"
+                    :style="{
+                        backgroundImage: `linear-gradient(90deg, ${card.color}, transparent)`,
+                    }"
+                />
+                <div
+                    class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg"
+                    :style="{ background: card.bg }"
+                >
+                    <UIcon
+                        :name="card.icon"
+                        class="size-4.5"
+                        :style="{ color: card.color }"
+                    />
+                </div>
+                <div
+                    class="mb-1 text-xl font-bold font-sans"
                     :style="{
                         color: card.color,
                     }"
@@ -373,28 +451,56 @@ const detailFields = computed(() => {
         </div>
 
         <!-- Filters -->
-        <div class="mb-5 flex gap-3">
-            <div class="relative max-w-xs flex-1">
-                <UIcon
-                    name="i-lucide-search"
-                    class="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-gray-400"
-                />
-                <input
-                    v-model="search"
-                    type="text"
-                    placeholder="Search farmer or parcel code..."
-                    class="w-full rounded-lg border border-gray-200 py-2 pl-8 pr-3 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
-                />
+        <div class="mb-5 space-y-3">
+            <div class="flex items-center gap-3">
+                <div class="relative max-w-xs flex-1">
+                    <UIcon
+                        name="i-lucide-search"
+                        class="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Search farmer or parcel code..."
+                        class="w-full rounded-full border border-gray-200 bg-white py-2 pl-8 pr-8 text-xs shadow-sm focus:border-[#2d6a2d] focus:outline-none focus:ring-1 focus:ring-green-500"
+                    />
+                    <button
+                        v-if="search"
+                        type="button"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:text-gray-600"
+                        @click="search = ''"
+                    >
+                        <UIcon name="i-lucide-x" class="size-3" />
+                    </button>
+                </div>
+                <div
+                    class="ml-auto flex items-center gap-1.5 text-xs text-gray-400"
+                >
+                    <UIcon name="i-lucide-filter" class="size-3" />
+                    {{ filtered.length }} of {{ parcels.length }} parcels
+                </div>
             </div>
-            <select
-                v-model="filterStatus"
-                class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
-            >
-                <option value="All">All Statuses</option>
-                <option v-for="s in STATUS_OPTIONS" :key="s" :value="s">
+            <div class="flex flex-wrap items-center gap-1.5">
+                <button
+                    v-for="s in ['All', ...STATUS_OPTIONS]"
+                    :key="s"
+                    type="button"
+                    class="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors"
+                    :class="
+                        filterStatus === s
+                            ? 'bg-[#2d6a2d] text-white border-[#2d6a2d] shadow-sm'
+                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                    "
+                    @click="filterStatus = s"
+                >
+                    <span
+                        v-if="s !== 'All'"
+                        class="h-1.5 w-1.5 rounded-full"
+                        :style="{ background: STATUS_DOT[s as LandStatus] }"
+                    />
                     {{ s }}
-                </option>
-            </select>
+                </button>
+            </div>
         </div>
 
         <div class="flex gap-4">
@@ -438,21 +544,39 @@ const detailFields = computed(() => {
                     </thead>
                     <tbody>
                         <tr
-                            v-for="p in filtered"
+                            v-for="(p, i) in filtered"
                             :key="p.parcel_code"
-                            class="cursor-pointer border-b border-gray-50 last:border-0 hover:bg-green-50/30"
-                            :class="
+                            class="group cursor-pointer border-b border-gray-50 last:border-0 transition-colors hover:bg-green-50/30"
+                            :class="[
+                                i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white',
                                 selected?.parcel_code === p.parcel_code
-                                    ? 'bg-green-50/50'
-                                    : ''
-                            "
+                                    ? '!bg-green-50/60'
+                                    : '',
+                            ]"
                             @click="selected = p"
                         >
-                            <td class="px-4 py-2.5 font-mono text-gray-700">
+                            <td
+                                class="px-4 py-2.5 font-mono text-gray-700"
+                            >
                                 {{ p.parcel_code }}
                             </td>
-                            <td class="px-4 py-2.5 font-medium text-gray-800">
-                                {{ p.farmerName }}
+                            <td class="px-4 py-2.5">
+                                <div class="flex items-center gap-2.5">
+                                    <span
+                                        class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                                        :style="{
+                                            backgroundColor:
+                                                avatarColor(p.farmerName),
+                                        }"
+                                    >
+                                        {{ initials(p.farmerName) }}
+                                    </span>
+                                    <span
+                                        class="font-medium text-gray-800"
+                                    >
+                                        {{ p.farmerName }}
+                                    </span>
+                                </div>
                             </td>
                             <td class="px-4 py-2.5 text-gray-500">
                                 {{ p.barangay }}
@@ -468,8 +592,15 @@ const detailFields = computed(() => {
                                         STATUS_CLASS[p.land_status] ||
                                         'status-idle'
                                     "
-                                    class="rounded px-2 py-0.5 text-[10px] font-medium"
+                                    class="flex w-fit items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-medium"
                                 >
+                                    <span
+                                        class="h-1.5 w-1.5 rounded-full"
+                                        :style="{
+                                            background:
+                                                STATUS_DOT[p.land_status],
+                                        }"
+                                    />
                                     {{ p.land_status }}
                                 </span>
                             </td>
@@ -477,10 +608,19 @@ const detailFields = computed(() => {
                                 {{ p.current_use ?? '—' }}
                             </td>
                             <td class="px-4 py-2.5">
-                                <UIcon
-                                    name="i-lucide-chevron-right"
-                                    class="size-3.5 text-gray-400"
-                                />
+                                <div
+                                    class="flex items-center justify-end gap-1.5"
+                                >
+                                    <span
+                                        class="text-[10px] font-semibold text-[#2d6a2d] opacity-0 transition-opacity group-hover:opacity-100"
+                                    >
+                                        View
+                                    </span>
+                                    <UIcon
+                                        name="i-lucide-chevron-right"
+                                        class="size-3.5 text-gray-400 transition-all group-hover:translate-x-0.5 group-hover:text-[#2d6a2d]"
+                                    />
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -501,50 +641,124 @@ const detailFields = computed(() => {
 
             <!-- Detail Side Panel -->
             <div v-if="selected" class="w-72 flex-shrink-0">
-                <div class="alps-card sticky top-4 p-5">
-                    <div class="mb-1 font-mono text-xs text-gray-600">
-                        {{ selected.parcel_code }}
-                    </div>
-                    <h3 class="mb-1 text-sm font-bold text-gray-800">
-                        {{ selected.farm_code }}
-                    </h3>
-                    <span
-                        :class="
-                            STATUS_CLASS[selected.land_status] || 'status-idle'
-                        "
-                        class="rounded px-2 py-0.5 text-[10px] font-medium"
-                    >
-                        {{ selected.land_status }}
-                    </span>
-
-                    <div class="mt-4 space-y-2 text-xs">
-                        <div
-                            v-for="(f, i) in detailFields"
-                            :key="i"
-                            class="flex justify-between border-b border-gray-50 py-1 last:border-0"
-                        >
-                            <span class="text-gray-400">{{ f.label }}</span>
-                            <span class="font-medium text-gray-700">{{
-                                f.val
-                            }}</span>
+                <div class="alps-card sticky top-4 overflow-hidden">
+                    <div
+                        class="absolute inset-x-0 top-0 h-1 opacity-80"
+                        :style="{
+                            backgroundImage: `linear-gradient(90deg, ${STATUS_DOT[selected.land_status]}, transparent)`,
+                        }"
+                    />
+                    <div class="p-5">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <div
+                                    class="font-mono text-xs text-gray-600"
+                                >
+                                    {{ selected.parcel_code }}
+                                </div>
+                                <h3
+                                    class="mt-0.5 text-sm font-bold text-gray-800"
+                                >
+                                    {{ selected.farm_code }}
+                                </h3>
+                            </div>
+                            <span
+                                :class="
+                                    STATUS_CLASS[selected.land_status] ||
+                                    'status-idle'
+                                "
+                                class="flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-medium"
+                            >
+                                <span
+                                    class="h-1.5 w-1.5 rounded-full"
+                                    :style="{
+                                        background:
+                                            STATUS_DOT[selected.land_status],
+                                    }"
+                                />
+                                {{ selected.land_status }}
+                            </span>
                         </div>
-                    </div>
 
-                    <div class="mt-4 space-y-2">
-                        <button
-                            type="button"
-                            class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d6a2d] py-2.5 text-xs font-medium text-white hover:bg-[#245524]"
-                            @click="goEditParcel(selected)"
+                        <div
+                            class="mt-4 rounded-xl bg-gradient-to-br from-[#f0faf0] to-[#e8f5e8] p-4"
                         >
-                            <UIcon name="i-lucide-pencil" class="size-3.5" />
-                            Edit Parcel
-                        </button>
-                        <button
-                            type="button"
-                            class="w-full rounded-lg border border-gray-200 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                        >
-                            View on Map
-                        </button>
+                            <div
+                                class="text-2xl font-bold text-[#2d6a2d]"
+                            >
+                                {{ selected.area_hectares }}
+                                ha
+                            </div>
+                            <div class="text-[11px] text-gray-500">
+                                Declared land area
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex items-center gap-2.5">
+                            <span
+                                class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+                                :style="{
+                                    backgroundColor: avatarColor(
+                                        selected.farmerName
+                                    ),
+                                }"
+                            >
+                                {{ initials(selected.farmerName) }}
+                            </span>
+                            <div>
+                                <div
+                                    class="text-xs font-semibold text-gray-800"
+                                >
+                                    {{ selected.farmerName }}
+                                </div>
+                                <div
+                                    class="flex items-center gap-1 text-[11px] text-gray-400"
+                                >
+                                    <UIcon
+                                        name="i-lucide-map-pin"
+                                        class="size-2.5"
+                                    />
+                                    {{ selected.barangay }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 space-y-2 text-xs">
+                            <div
+                                v-for="(f, i) in detailFields"
+                                :key="i"
+                                class="flex justify-between border-b border-gray-50 py-1 last:border-0"
+                            >
+                                <span class="text-gray-400">{{ f.label }}</span>
+                                <span class="font-medium text-gray-700">{{
+                                    f.val
+                                }}</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 space-y-2">
+                            <button
+                                type="button"
+                                class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d6a2d] py-2.5 text-xs font-medium text-white hover:bg-[#245524]"
+                                @click="goEditParcel(selected)"
+                            >
+                                <UIcon
+                                    name="i-lucide-pencil"
+                                    class="size-3.5"
+                                />
+                                Edit Parcel
+                            </button>
+                            <button
+                                type="button"
+                                class="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            >
+                                <UIcon
+                                    name="i-lucide-map-pin"
+                                    class="size-3.5"
+                                />
+                                View on Map
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

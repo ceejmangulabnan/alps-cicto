@@ -194,10 +194,7 @@ const barangayOption = computed(() => ({
     <div class="space-y-6 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <h1
-                    class="text-2xl font-bold text-gray-900"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h1 class="text-2xl font-bold text-gray-900">
                     Reports & Analytics
                 </h1>
                 <p class="mt-0.5 text-sm text-gray-500">
@@ -216,10 +213,7 @@ const barangayOption = computed(() => ({
         <!-- Charts Row -->
         <div class="grid grid-cols-12 gap-4">
             <div class="alps-card col-span-12 p-5 md:col-span-8">
-                <h3
-                    class="mb-4 text-sm font-semibold text-gray-700"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h3 class="mb-4 text-sm font-semibold text-gray-700">
                     Rice & Corn Yield Trend (t/ha) vs. National Average
                 </h3>
                 <ClientOnly>
@@ -234,10 +228,7 @@ const barangayOption = computed(() => ({
             </div>
 
             <div class="alps-card col-span-12 p-5 md:col-span-4">
-                <h3
-                    class="mb-4 text-sm font-semibold text-gray-700"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h3 class="mb-4 text-sm font-semibold text-gray-700">
                     Land Status
                 </h3>
                 <ClientOnly>
@@ -269,10 +260,7 @@ const barangayOption = computed(() => ({
         </div>
 
         <div class="alps-card p-5">
-            <h3
-                class="mb-4 text-sm font-semibold text-gray-700"
-                style="font-family: 'DM Sans', sans-serif"
-            >
+            <h3 class="mb-4 text-sm font-semibold text-gray-700">
                 Barangay Comparative Analysis
             </h3>
             <ClientOnly>
@@ -289,10 +277,7 @@ const barangayOption = computed(() => ({
         <!-- Report Library -->
         <div class="alps-card overflow-hidden">
             <div class="border-b border-gray-100 px-5 py-4">
-                <h3
-                    class="text-sm font-semibold text-gray-700"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h3 class="text-sm font-semibold text-gray-700">
                     Report Library
                 </h3>
             </div>

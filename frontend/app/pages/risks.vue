@@ -267,6 +267,25 @@ const riskBarOption = computed(() => ({
         },
     ],
 }))
+
+const showReportModal = ref(false)
+const reportForm = reactive({
+    title: '',
+    category: 'Pest/Disease',
+    priority: 'High',
+    date_from: '',
+    date_to: '',
+    notes: '',
+})
+
+const riskCategoryOptions = [
+    'Pest/Disease',
+    'Drought',
+    'Flood Risk',
+    'Soil Issue',
+    'Pest Spread',
+]
+const priorityOptions: InsightPriority[] = ['High', 'Medium', 'Low']
 </script>
 
 <template>
@@ -274,10 +293,7 @@ const riskBarOption = computed(() => ({
         <!-- Header -->
         <div class="flex items-center justify-between">
             <div>
-                <h1
-                    class="text-2xl font-bold text-gray-900"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h1 class="text-2xl font-bold text-gray-900">
                     Risk Monitoring
                 </h1>
                 <p class="mt-0.5 text-sm text-gray-500">
@@ -288,6 +304,7 @@ const riskBarOption = computed(() => ({
             <button
                 type="button"
                 class="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                @click="showReportModal = true"
             >
                 <UIcon name="i-lucide-alert-triangle" class="size-3.5" />
                 Generate Risk Report
@@ -308,10 +325,9 @@ const riskBarOption = computed(() => ({
                     />
                 </div>
                 <div
-                    class="text-2xl font-bold"
+                    class="text-2xl font-bold font-sans"
                     :style="{
                         color: kpi.color,
-                        fontFamily: 'DM Sans, sans-serif',
                     }"
                 >
                     {{ kpi.val }}
@@ -332,10 +348,7 @@ const riskBarOption = computed(() => ({
                             class="size-3.5 text-white"
                         />
                     </div>
-                    <h2
-                        class="text-base font-bold text-gray-800"
-                        style="font-family: 'DM Sans', sans-serif"
-                    >
+                    <h2 class="text-base font-bold text-gray-800">
                         ALPS Insights
                     </h2>
                     <span
@@ -369,10 +382,7 @@ const riskBarOption = computed(() => ({
                             <div class="flex-1">
                                 <div class="mb-1 flex items-center gap-2">
                                     <span
-                                        class="text-sm font-semibold text-gray-800"
-                                        style="
-                                            font-family: 'DM Sans', sans-serif;
-                                        "
+                                        class="text-sm font-semibold text-gray-800 font-sans"
                                     >
                                         {{ insight.title }}
                                     </span>
@@ -419,9 +429,7 @@ const riskBarOption = computed(() => ({
                                         <span
                                             class="ml-1 font-semibold text-gray-700"
                                         >
-                                            {{
-                                                insight.affectedParcels
-                                            }}
+                                            {{ insight.affectedParcels }}
                                             parcels ·
                                             {{ insight.affectedArea }} ha
                                         </span>
@@ -479,10 +487,7 @@ const riskBarOption = computed(() => ({
         <!-- Charts -->
         <div class="grid grid-cols-12 gap-4">
             <div class="alps-card col-span-12 p-5 md:col-span-7">
-                <h3
-                    class="mb-4 text-sm font-semibold text-gray-700"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h3 class="mb-4 text-sm font-semibold text-gray-700">
                     Risk Distribution by Type
                 </h3>
                 <ClientOnly>
@@ -497,10 +502,7 @@ const riskBarOption = computed(() => ({
             </div>
 
             <div class="alps-card col-span-12 p-5 md:col-span-5">
-                <h3
-                    class="mb-4 text-sm font-semibold text-gray-700"
-                    style="font-family: 'DM Sans', sans-serif"
-                >
+                <h3 class="mb-4 text-sm font-semibold text-gray-700">
                     At-Risk Parcels
                 </h3>
                 <div class="space-y-2">
@@ -537,4 +539,156 @@ const riskBarOption = computed(() => ({
             </div>
         </div>
     </div>
+
+    <!-- Generate Risk Report Modal -->
+    <Teleport to="body">
+        <div
+            v-if="showReportModal"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            @click.self="showReportModal = false"
+        >
+            <div
+                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+                style="font-family: 'DM Sans', sans-serif"
+            >
+                <div class="mb-5 flex items-start justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">
+                            Generate Risk Report
+                        </h3>
+                        <p class="text-xs text-gray-500">
+                            Run a rule-based risk assessment for the selected
+                            scope.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+                        @click="showReportModal = false"
+                    >
+                        <UIcon name="i-lucide-x" class="size-4" />
+                    </button>
+                </div>
+
+                <form
+                    class="space-y-4"
+                    @submit.prevent="showReportModal = false"
+                >
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Report Title
+                        </label>
+                        <input
+                            v-model="reportForm.title"
+                            type="text"
+                            placeholder="e.g. Monsoon Waterlogging Assessment"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                        />
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Risk Category
+                            </label>
+                            <select
+                                v-model="reportForm.category"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option
+                                    v-for="c in riskCategoryOptions"
+                                    :key="c"
+                                    :value="c"
+                                >
+                                    {{ c }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Priority
+                            </label>
+                            <select
+                                v-model="reportForm.priority"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option
+                                    v-for="p in priorityOptions"
+                                    :key="p"
+                                    :value="p"
+                                >
+                                    {{ p }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Date From
+                            </label>
+                            <input
+                                v-model="reportForm.date_from"
+                                type="date"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Date To
+                            </label>
+                            <input
+                                v-model="reportForm.date_to"
+                                type="date"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Notes
+                        </label>
+                        <textarea
+                            v-model="reportForm.notes"
+                            rows="3"
+                            placeholder="Scope, assumptions, or follow-up actions for this report..."
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                        ></textarea>
+                    </div>
+
+                    <div
+                        class="flex justify-end gap-2 border-t border-gray-100 pt-4"
+                    >
+                        <button
+                            type="button"
+                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            @click="showReportModal = false"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            class="rounded-lg bg-red-600 px-4 py-2 text-xs font-medium text-white hover:bg-red-700"
+                        >
+                            Generate Report
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </Teleport>
 </template>

@@ -3,9 +3,14 @@
 @import '@nuxt/ui';
 
 :root {
-    font-family: 'DM Sans', 'Avenir Next', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     color: #183328;
     background: #f7f9f5;
+}
+
+@theme {
+    --font-sans: 'DM Sans', sans-serif;
+    --font-manrope: 'Manrope', 'DM Sans', sans-serif;
 }
 
 body {

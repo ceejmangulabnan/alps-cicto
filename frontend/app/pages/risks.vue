@@ -17,7 +17,7 @@ type AlpsInsight = {
     recommendation: string
 }
 
-const alpsInsights: AlpsInsight[] = [
+const alpsInsights = reactive<AlpsInsight[]>([
     {
         id: 1,
         type: 'risk',
@@ -74,7 +74,7 @@ const alpsInsights: AlpsInsight[] = [
         recommendation:
             'Coordinate with barangay captains to validate ownership records before Q1 planting.',
     },
-]
+])
 
 const atRiskParcels = [
     {
@@ -175,6 +175,93 @@ const TYPE_BG: Record<InsightType, string> = {
     risk: '#fee2e2',
     warning: '#fef9c3',
     opportunity: '#dcfce7',
+}
+
+const TYPE_TEXT: Record<InsightType, string> = {
+    risk: '#b91c1c',
+    warning: '#a16207',
+    opportunity: '#166534',
+}
+
+const TYPE_LABEL: Record<InsightType, string> = {
+    risk: 'Risk',
+    warning: 'Warning',
+    opportunity: 'Opportunity',
+}
+
+const insightTypeFilterOptions = [
+    'All',
+    'risk',
+    'warning',
+    'opportunity',
+] as string[]
+
+const filterType = ref('All')
+
+const filteredInsights = computed(() =>
+    alpsInsights.filter(
+        (i) =>
+            filterType.value === 'All' || i.type === filterType.value
+    )
+)
+
+const insightTotals = computed(() => ({
+    parcels: filteredInsights.value.reduce(
+        (s, i) => s + i.affectedParcels,
+        0
+    ),
+    area:
+        Math.round(
+            filteredInsights.value.reduce((s, i) => s + i.affectedArea, 0) *
+                10
+        ) / 10,
+}))
+
+const riskBarTotals = computed(() => ({
+    high: riskBarData.reduce((s, d) => s + d.high, 0),
+    medium: riskBarData.reduce((s, d) => s + d.medium, 0),
+    low: riskBarData.reduce((s, d) => s + d.low, 0),
+}))
+
+const atRiskTotals = computed(() => ({
+    area:
+        Math.round(atRiskParcels.reduce((s, p) => s + p.area, 0) * 10) / 10,
+    count: atRiskParcels.length,
+}))
+
+const PARCEL_RISK_DOT: Record<string, string> = {
+    High: '#dc2626',
+    Medium: '#ea580c',
+}
+
+const AVATAR_COLORS = [
+    '#2d6a2d',
+    '#3b82f6',
+    '#7c3aed',
+    '#d97706',
+    '#dc2626',
+    '#0891b2',
+    '#db2777',
+    '#65a30d',
+]
+
+function initials(name: string) {
+    return name
+        .split(' ')
+        .map((w) => w[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+}
+
+function avatarColor(name: string) {
+    let h = 0
+    for (const c of name) h = (h * 31 + c.charCodeAt(0)) % AVATAR_COLORS.length
+    return AVATAR_COLORS[h]
+}
+
+function formatCoord(v: number) {
+    return v.toFixed(5)
 }
 
 const riskBarData = [
@@ -286,6 +373,70 @@ const riskCategoryOptions = [
     'Pest Spread',
 ]
 const priorityOptions: InsightPriority[] = ['High', 'Medium', 'Low']
+const insightTypeOptions: InsightType[] = ['risk', 'warning', 'opportunity']
+
+const showEditModal = ref(false)
+const editForm = reactive({
+    id: 0,
+    type: 'risk',
+    priority: 'High',
+    title: '',
+    description: '',
+    rule: '',
+    affectedParcels: '',
+    affectedArea: '',
+    potentialScore: '',
+    recommendation: '',
+})
+
+function openEditModal(insight: AlpsInsight) {
+    editForm.id = insight.id
+    editForm.type = insight.type
+    editForm.priority = insight.priority
+    editForm.title = insight.title
+    editForm.description = insight.description
+    editForm.rule = insight.rule
+    editForm.affectedParcels = String(insight.affectedParcels)
+    editForm.affectedArea = String(insight.affectedArea)
+    editForm.potentialScore = insight.potentialScore
+    editForm.recommendation = insight.recommendation
+    showEditModal.value = true
+}
+
+function saveEdit() {
+    const idx = alpsInsights.findIndex(
+        (r) => r.id === editForm.id
+    )
+    if (idx === -1) return
+    const i = alpsInsights[idx]
+    i.type = editForm.type as InsightType
+    i.priority = editForm.priority as InsightPriority
+    i.title = editForm.title
+    i.description = editForm.description
+    i.rule = editForm.rule
+    i.affectedParcels = Number(editForm.affectedParcels)
+    i.affectedArea = Number(editForm.affectedArea)
+    i.potentialScore = editForm.potentialScore
+    i.recommendation = editForm.recommendation
+    showEditModal.value = false
+}
+
+const showDeleteModal = ref(false)
+const deleteTarget = ref<AlpsInsight | null>(null)
+
+function askDelete(insight: AlpsInsight) {
+    deleteTarget.value = insight
+    showDeleteModal.value = true
+}
+
+function confirmDelete() {
+    const t = deleteTarget.value
+    if (!t) return
+    const idx = alpsInsights.findIndex((r) => r.id === t.id)
+    if (idx !== -1) alpsInsights.splice(idx, 1)
+    deleteTarget.value = null
+    showDeleteModal.value = false
+}
 </script>
 
 <template>
@@ -293,9 +444,26 @@ const priorityOptions: InsightPriority[] = ['High', 'Medium', 'Low']
         <!-- Header -->
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">
-                    Risk Monitoring
-                </h1>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-2xl font-bold text-gray-900">
+                        Risk Monitoring
+                    </h1>
+                    <span
+                        class="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700"
+                    >
+                        {{ kpis[0].val }} high risk
+                    </span>
+                    <span
+                        class="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-semibold text-orange-700"
+                    >
+                        {{ kpis[2].val }} area at risk
+                    </span>
+                    <span
+                        class="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700"
+                    >
+                        {{ kpis[3].val }} interventions
+                    </span>
+                </div>
                 <p class="mt-0.5 text-sm text-gray-500">
                     Active alerts · ALPS decision support · Intervention
                     tracking
@@ -313,7 +481,13 @@ const priorityOptions: InsightPriority[] = ['High', 'Medium', 'Low']
 
         <!-- Risk KPIs -->
         <div class="grid grid-cols-4 gap-4">
-            <div v-for="kpi in kpis" :key="kpi.label" class="alps-card p-5">
+            <div v-for="kpi in kpis" :key="kpi.label" class="alps-card relative overflow-hidden p-5">
+                <div
+                    class="absolute inset-x-0 top-0 h-0.5 opacity-70"
+                    :style="{
+                        backgroundImage: `linear-gradient(90deg, ${kpi.color}, transparent)`,
+                    }"
+                />
                 <div
                     class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg"
                     :style="{ background: kpi.bg }"
@@ -356,11 +530,34 @@ const priorityOptions: InsightPriority[] = ['High', 'Medium', 'Low']
                     >
                         Rule-based · Transparent
                     </span>
+                    <span
+                        class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500"
+                    >
+                        {{ filteredInsights.length }} active ·
+                        {{ insightTotals.parcels }} parcels ·
+                        {{ insightTotals.area }} ha
+                    </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <button
+                        v-for="t in insightTypeFilterOptions"
+                        :key="t"
+                        type="button"
+                        class="rounded-full border px-3 py-1.5 text-[11px] font-medium capitalize transition-colors"
+                        :class="
+                            filterType === t
+                                ? 'border-[#2d6a2d] bg-[#2d6a2d] text-white shadow-sm'
+                                : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                        "
+                        @click="filterType = t"
+                    >
+                        {{ t }}
+                    </button>
                 </div>
             </div>
             <div class="space-y-4">
                 <div
-                    v-for="insight in alpsInsights"
+                    v-for="insight in filteredInsights"
                     :key="insight.id"
                     class="alps-card border-l-4 p-5"
                     :style="{
@@ -387,6 +584,15 @@ const priorityOptions: InsightPriority[] = ['High', 'Medium', 'Low']
                                         {{ insight.title }}
                                     </span>
                                     <span
+                                        class="rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                                        :style="{
+                                            background: TYPE_BG[insight.type],
+                                            color: TYPE_TEXT[insight.type],
+                                        }"
+                                    >
+                                        {{ TYPE_LABEL[insight.type] }}
+                                    </span>
+                                    <span
                                         class="rounded px-2 py-0.5 text-[10px] font-semibold"
                                         :style="{
                                             background:
@@ -410,8 +616,12 @@ const priorityOptions: InsightPriority[] = ['High', 'Medium', 'Low']
                                     class="mb-3 rounded-lg bg-gray-50 px-3 py-2"
                                 >
                                     <div
-                                        class="mb-1 text-[10px] font-medium text-gray-400"
+                                        class="mb-1 flex items-center gap-1 text-[10px] font-semibold text-gray-400"
                                     >
+                                        <UIcon
+                                            name="i-lucide-code-2"
+                                            class="size-3"
+                                        />
                                         Detection Rule
                                     </div>
                                     <code
@@ -421,29 +631,29 @@ const priorityOptions: InsightPriority[] = ['High', 'Medium', 'Low']
                                     </code>
                                 </div>
 
-                                <div class="flex items-start gap-4 text-xs">
-                                    <div>
-                                        <span class="text-gray-400"
-                                            >Affected:</span
-                                        >
-                                        <span
-                                            class="ml-1 font-semibold text-gray-700"
-                                        >
-                                            {{ insight.affectedParcels }}
-                                            parcels ·
-                                            {{ insight.affectedArea }} ha
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span class="text-gray-400"
-                                            >Impact:</span
-                                        >
-                                        <span
-                                            class="ml-1 font-semibold text-green-700"
-                                        >
-                                            {{ insight.potentialScore }}
-                                        </span>
-                                    </div>
+                                <div
+                                    class="flex flex-wrap items-center gap-2 text-xs"
+                                >
+                                    <span
+                                        class="inline-flex items-center gap-1.5 rounded-full bg-gray-50 px-2.5 py-1 text-[11px] text-gray-600"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-map-pin"
+                                            class="size-3 text-gray-400"
+                                        />
+                                        {{ insight.affectedParcels }} parcels ·
+                                        {{ insight.affectedArea }} ha
+                                    </span>
+                                    <span
+                                        class="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-medium text-green-700"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-trending-up"
+                                            class="size-3 text-green-600"
+                                        />
+                                        Impact score
+                                        {{ insight.potentialScore }}
+                                    </span>
                                 </div>
 
                                 <!-- Recommendation -->
@@ -478,6 +688,30 @@ const priorityOptions: InsightPriority[] = ['High', 'Medium', 'Low']
                             >
                                 Create Action
                             </button>
+                            <div
+                                class="flex justify-end gap-1 border-t border-gray-100 pt-2"
+                            >
+                                <button
+                                    type="button"
+                                    class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                                    @click="openEditModal(insight)"
+                                >
+                                    <UIcon
+                                        name="i-lucide-pencil"
+                                        class="size-3.5"
+                                    />
+                                </button>
+                                <button
+                                    type="button"
+                                    class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                    @click="askDelete(insight)"
+                                >
+                                    <UIcon
+                                        name="i-lucide-trash-2"
+                                        class="size-3.5"
+                                    />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -487,9 +721,31 @@ const priorityOptions: InsightPriority[] = ['High', 'Medium', 'Low']
         <!-- Charts -->
         <div class="grid grid-cols-12 gap-4">
             <div class="alps-card col-span-12 p-5 md:col-span-7">
-                <h3 class="mb-4 text-sm font-semibold text-gray-700">
-                    Risk Distribution by Type
-                </h3>
+                <div class="mb-4 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div
+                            class="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50"
+                        >
+                            <UIcon
+                                name="i-lucide-bar-chart-3"
+                                class="size-4 text-red-600"
+                            />
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-700">
+                                Risk Distribution by Type
+                            </h3>
+                            <p class="text-[11px] text-gray-400">
+                                Parcels flagged by category and severity
+                            </p>
+                        </div>
+                    </div>
+                    <span
+                        class="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700"
+                    >
+                        {{ riskBarTotals.high + riskBarTotals.medium + riskBarTotals.low }} flagged
+                    </span>
+                </div>
                 <ClientOnly>
                     <div class="w-full" :style="{ height: '220px' }">
                         <VChart
@@ -499,30 +755,93 @@ const priorityOptions: InsightPriority[] = ['High', 'Medium', 'Low']
                         />
                     </div>
                 </ClientOnly>
+                <div
+                    class="mt-3 flex items-center justify-end gap-4 border-t border-gray-100 pt-3 text-[11px] font-medium"
+                >
+                    <span class="flex items-center gap-1.5 text-gray-600">
+                        <span
+                            class="h-2 w-2 rounded-full"
+                            style="background: #dc2626"
+                        />
+                        High {{ riskBarTotals.high }}
+                    </span>
+                    <span class="flex items-center gap-1.5 text-gray-600">
+                        <span
+                            class="h-2 w-2 rounded-full"
+                            style="background: #f59e0b"
+                        />
+                        Medium {{ riskBarTotals.medium }}
+                    </span>
+                    <span class="flex items-center gap-1.5 text-gray-600">
+                        <span
+                            class="h-2 w-2 rounded-full"
+                            style="background: #22c55e"
+                        />
+                        Low {{ riskBarTotals.low }}
+                    </span>
+                </div>
             </div>
 
             <div class="alps-card col-span-12 p-5 md:col-span-5">
-                <h3 class="mb-4 text-sm font-semibold text-gray-700">
-                    At-Risk Parcels
-                </h3>
+                <div class="mb-4 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div
+                            class="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50"
+                        >
+                            <UIcon
+                                name="i-lucide-alert-octagon"
+                                class="size-4 text-orange-600"
+                            />
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-700">
+                                At-Risk Parcels
+                            </h3>
+                            <p class="text-[11px] text-gray-400">
+                                Parcels under active risk monitoring
+                            </p>
+                        </div>
+                    </div>
+                    <span
+                        class="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-semibold text-orange-700"
+                    >
+                        {{ atRiskTotals.count }} parcels
+                    </span>
+                </div>
                 <div class="space-y-2">
                     <div
                         v-for="p in atRiskParcels"
                         :key="p.id"
                         class="flex items-center justify-between border-b border-gray-50 py-2 text-xs last:border-0"
                     >
-                        <div>
-                            <div class="font-medium text-gray-800">
-                                {{ p.farmerName }}
-                            </div>
-                            <div class="text-gray-400">
-                                {{ p.id }} · {{ p.barangay }}
+                        <div class="flex items-center gap-2.5">
+                            <span
+                                class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white"
+                                :style="{
+                                    background: avatarColor(p.farmerName),
+                                }"
+                            >
+                                {{ initials(p.farmerName) }}
+                            </span>
+                            <div>
+                                <div class="font-medium text-gray-800">
+                                    {{ p.farmerName }}
+                                </div>
+                                <div class="text-gray-400">
+                                    {{ p.id }} · {{ p.barangay }}
+                                </div>
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
                             <span class="font-mono text-gray-500"
                                 >{{ p.area }} ha</span
                             >
+                            <span
+                                :style="{
+                                    background: PARCEL_RISK_DOT[p.risk],
+                                }"
+                                class="h-1.5 w-1.5 rounded-full"
+                            />
                             <span
                                 :class="
                                     p.risk === 'High'
@@ -535,6 +854,22 @@ const priorityOptions: InsightPriority[] = ['High', 'Medium', 'Low']
                             </span>
                         </div>
                     </div>
+                </div>
+                <div
+                    class="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 text-[11px] text-gray-500"
+                >
+                    <span class="font-medium">
+                        {{ atRiskTotals.area }} ha total monitored
+                    </span>
+                    <span>
+                        avg
+                        {{
+                            Math.round(
+                                (atRiskTotals.area / atRiskTotals.count) * 10
+                            ) / 10
+                        }}
+                        ha / parcel
+                    </span>
                 </div>
             </div>
         </div>
@@ -552,14 +887,25 @@ const priorityOptions: InsightPriority[] = ['High', 'Medium', 'Low']
                 style="font-family: 'DM Sans', sans-serif"
             >
                 <div class="mb-5 flex items-start justify-between">
-                    <div>
-                        <h3 class="text-lg font-bold text-gray-900">
-                            Generate Risk Report
-                        </h3>
-                        <p class="text-xs text-gray-500">
-                            Run a rule-based risk assessment for the selected
-                            scope.
-                        </p>
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600"
+                            style="box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12)"
+                        >
+                            <UIcon
+                                name="i-lucide-alert-triangle"
+                                class="size-5"
+                            />
+                        </span>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">
+                                Generate Risk Report
+                            </h3>
+                            <p class="text-xs text-gray-500">
+                                Run a rule-based risk assessment for the
+                                selected scope.
+                            </p>
+                        </div>
                     </div>
                     <button
                         type="button"
@@ -688,6 +1034,253 @@ const priorityOptions: InsightPriority[] = ['High', 'Medium', 'Low']
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </Teleport>
+
+    <!-- Edit Insight Modal -->
+    <Teleport to="body">
+        <div
+            v-if="showEditModal"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            @click.self="showEditModal = false"
+        >
+            <div
+                class="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl"
+                style="font-family: 'DM Sans', sans-serif"
+            >
+                <div class="mb-5 flex items-start justify-between">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-[#e0f0fb] text-[#1d6ab3]"
+                            style="box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12)"
+                        >
+                            <UIcon name="i-lucide-pencil" class="size-5" />
+                        </span>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">
+                                Edit Insight
+                            </h3>
+                            <p class="text-xs text-gray-500">
+                                Update the ALPS rule-based insight details.
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+                        @click="showEditModal = false"
+                    >
+                        <UIcon name="i-lucide-x" class="size-4" />
+                    </button>
+                </div>
+
+                <form class="space-y-4" @submit.prevent="saveEdit">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Type
+                            </label>
+                            <select
+                                v-model="editForm.type"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option
+                                    v-for="t in insightTypeOptions"
+                                    :key="t"
+                                    :value="t"
+                                >
+                                    {{ t }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Priority
+                            </label>
+                            <select
+                                v-model="editForm.priority"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option
+                                    v-for="p in priorityOptions"
+                                    :key="p"
+                                    :value="p"
+                                >
+                                    {{ p }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Title
+                        </label>
+                        <input
+                            v-model="editForm.title"
+                            type="text"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Description
+                        </label>
+                        <textarea
+                            v-model="editForm.description"
+                            rows="2"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                        ></textarea>
+                    </div>
+
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Detection Rule
+                        </label>
+                        <textarea
+                            v-model="editForm.rule"
+                            rows="2"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 font-mono text-[10px] text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                        ></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Affected Parcels
+                            </label>
+                            <input
+                                v-model="editForm.affectedParcels"
+                                type="number"
+                                step="1"
+                                min="0"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Affected Area (ha)
+                            </label>
+                            <input
+                                v-model="editForm.affectedArea"
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Impact Score
+                        </label>
+                        <input
+                            v-model="editForm.potentialScore"
+                            type="text"
+                            placeholder="e.g. 4.2 t/ha potential loss"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Recommendation
+                        </label>
+                        <textarea
+                            v-model="editForm.recommendation"
+                            rows="2"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                        ></textarea>
+                    </div>
+
+                    <div
+                        class="flex justify-end gap-2 border-t border-gray-100 pt-4"
+                    >
+                        <button
+                            type="button"
+                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            @click="showEditModal = false"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
+                        >
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </Teleport>
+
+    <!-- Delete Insight Modal -->
+    <Teleport to="body">
+        <div
+            v-if="showDeleteModal"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            @click.self="showDeleteModal = false"
+        >
+            <div
+                class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"
+                style="font-family: 'DM Sans', sans-serif"
+            >
+                <div
+                    class="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-red-50"
+                >
+                    <UIcon
+                        name="i-lucide-trash-2"
+                        class="size-5 text-red-600"
+                    />
+                </div>
+                <h3 class="text-lg font-bold text-gray-900">
+                    Delete Insight
+                </h3>
+                <p class="mt-1 text-xs text-gray-500">
+                    Remove insight
+                    <span class="font-mono text-gray-700">
+                        #{{ deleteTarget?.id }}
+                    </span>
+                    “{{ deleteTarget?.title }}”? This action cannot be undone.
+                </p>
+                <div class="mt-6 flex justify-end gap-2">
+                    <button
+                        type="button"
+                        class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                        @click="showDeleteModal = false"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-lg bg-red-600 px-4 py-2 text-xs font-medium text-white hover:bg-red-700"
+                        @click="confirmDelete"
+                    >
+                        Delete
+                    </button>
+                </div>
             </div>
         </div>
     </Teleport>

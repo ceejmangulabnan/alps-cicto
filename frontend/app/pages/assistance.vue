@@ -104,6 +104,74 @@ const STATUS_STYLE: Record<AssistanceStatus, string> = {
     Scheduled: 'status-idle',
 }
 
+const STATUS_DOT: Record<AssistanceStatus, string> = {
+    Released: '#166534',
+    'For Release': '#0369a1',
+    Pending: '#a16207',
+    Scheduled: '#4b5563',
+}
+
+const PROGRAM_COLORS: Record<string, string> = {
+    'Rice Seed Subsidy': '#16a34a',
+    'Corn Seed Assistance': '#ca8a04',
+    'Veggie Growers Kit': '#7c3aed',
+    'Farm Machinery Access': '#1d6fa4',
+    'Livelihood Starter Pack': '#0891b2',
+    'Training - Rice Production': '#6b7280',
+    'Soil Amendment Support': '#d97706',
+}
+
+const AVATAR_COLORS = [
+    '#2d6a2d',
+    '#3b82f6',
+    '#7c3aed',
+    '#d97706',
+    '#dc2626',
+    '#0891b2',
+    '#db2777',
+    '#65a30d',
+]
+
+function initials(name: string) {
+    return name
+        .split(' ')
+        .map((w) => w[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+}
+
+function avatarColor(name: string) {
+    let h = 0
+    for (const c of name) h = (h * 31 + c.charCodeAt(0)) % AVATAR_COLORS.length
+    return AVATAR_COLORS[h]
+}
+
+const statusFilterOptions = [
+    'All',
+    'Released',
+    'For Release',
+    'Pending',
+    'Scheduled',
+] as string[]
+
+const search = ref('')
+const filterStatus = ref('All')
+
+const filtered = computed(() =>
+    assistancePrograms.filter((a) => {
+        const match =
+            !search.value ||
+            a.recipient.toLowerCase().includes(search.value.toLowerCase()) ||
+            a.program.toLowerCase().includes(search.value.toLowerCase()) ||
+            a.barangay.toLowerCase().includes(search.value.toLowerCase()) ||
+            a.items.toLowerCase().includes(search.value.toLowerCase())
+        const status =
+            filterStatus.value === 'All' || a.status === filterStatus.value
+        return match && status
+    })
+)
+
 const kpis = computed(() => [
     {
         label: 'Total Programs',
@@ -226,9 +294,26 @@ function confirmDelete() {
     <div class="space-y-6 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">
-                    Assistance Programs
-                </h1>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-2xl font-bold text-gray-900">
+                        Assistance Programs
+                    </h1>
+                    <span
+                        class="rounded-full bg-[#e8f5e8] px-2 py-0.5 text-[11px] font-semibold text-[#2d6a2d]"
+                    >
+                        {{ assistancePrograms.length }} programs
+                    </span>
+                    <span
+                        class="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700"
+                    >
+                        {{ kpis[1].val }} released
+                    </span>
+                    <span
+                        class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700"
+                    >
+                        {{ kpis[2].val }} on queue
+                    </span>
+                </div>
                 <p class="mt-0.5 text-sm text-gray-500">
                     Seed, fertilizer, training, and livelihood support
                 </p>
@@ -245,7 +330,13 @@ function confirmDelete() {
 
         <!-- KPIs -->
         <div class="grid grid-cols-4 gap-4">
-            <div v-for="kpi in kpis" :key="kpi.label" class="alps-card p-5">
+            <div v-for="kpi in kpis" :key="kpi.label" class="alps-card relative overflow-hidden p-5">
+                <div
+                    class="absolute inset-x-0 top-0 h-0.5 opacity-70"
+                    :style="{
+                        backgroundImage: `linear-gradient(90deg, ${kpi.color}, transparent)`,
+                    }"
+                />
                 <div
                     class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg"
                     :style="{ background: kpi.bg }"
@@ -269,10 +360,65 @@ function confirmDelete() {
         </div>
 
         <div class="alps-card overflow-hidden">
-            <div class="border-b border-gray-100 px-5 py-4">
+            <div
+                class="flex flex-wrap items-center gap-3 border-b border-gray-100 px-5 py-4"
+            >
                 <h3 class="text-sm font-semibold text-gray-700">
                     Assistance Records
                 </h3>
+                <div class="relative ml-auto w-64">
+                    <UIcon
+                        name="i-lucide-search"
+                        class="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Search recipient, program, item..."
+                        class="w-full rounded-full border border-gray-200 bg-white py-1.5 pl-8 pr-8 text-xs shadow-sm focus:border-[#2d6a2d] focus:outline-none focus:ring-1 focus:ring-green-500"
+                    />
+                    <button
+                        v-if="search"
+                        type="button"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:text-gray-600"
+                        @click="search = ''"
+                    >
+                        <UIcon name="i-lucide-x" class="size-3" />
+                    </button>
+                </div>
+            </div>
+            <div
+                class="flex flex-wrap items-center gap-1.5 border-b border-gray-100 bg-gray-50/60 px-5 py-2.5"
+            >
+                <span
+                    class="mr-1 text-[10px] font-semibold tracking-wide text-gray-400 uppercase"
+                >
+                    Status
+                </span>
+                <button
+                    v-for="s in statusFilterOptions"
+                    :key="s"
+                    type="button"
+                    class="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium transition-colors"
+                    :class="
+                        filterStatus === s
+                            ? 'border-[#2d6a2d] bg-[#2d6a2d] text-white shadow-sm'
+                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                    "
+                    @click="filterStatus = s"
+                >
+                    <span
+                        v-if="s !== 'All'"
+                        class="h-1.5 w-1.5 rounded-full"
+                        :style="{
+                            background: STATUS_DOT[s as AssistanceStatus],
+                        }"
+                    />
+                    {{ s }}
+                </button>
+                <span class="ml-auto text-[11px] text-gray-400">
+                    {{ filtered.length }} of {{ assistancePrograms.length }} shown
+                </span>
             </div>
             <table class="w-full text-xs">
                 <thead class="border-b border-gray-100 bg-gray-50">
@@ -322,23 +468,61 @@ function confirmDelete() {
                 </thead>
                 <tbody>
                     <tr
-                        v-for="a in assistancePrograms"
+                        v-for="(a, i) in filtered"
                         :key="a.id"
-                        class="cursor-pointer border-b border-gray-50 last:border-0 hover:bg-gray-50/50"
+                        class="border-b border-gray-50 last:border-0 transition-colors hover:bg-green-50/30"
+                        :class="
+                            i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'
+                        "
                     >
                         <td class="px-5 py-3 font-mono text-gray-400">
                             {{ a.id }}
                         </td>
-                        <td class="px-4 py-3 font-medium text-gray-800">
-                            {{ a.program }}
+                        <td class="px-4 py-3">
+                            <span
+                                class="flex items-center gap-1.5 rounded-full px-2 py-0.5 font-medium"
+                                :style="{
+                                    background: `${
+                                        PROGRAM_COLORS[a.program] ?? '#6b7280'
+                                    }1a`,
+                                    color:
+                                        PROGRAM_COLORS[a.program] ?? '#6b7280',
+                                }"
+                            >
+                                <span
+                                    class="h-1.5 w-1.5 rounded-full"
+                                    :style="{
+                                        background:
+                                            PROGRAM_COLORS[a.program] ??
+                                            '#6b7280',
+                                    }"
+                                />
+                                {{ a.program }}
+                            </span>
                         </td>
-                        <td class="px-4 py-3 text-gray-700">
-                            {{ a.recipient }}
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-2.5">
+                                <span
+                                    class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                                    :style="{
+                                        backgroundColor: avatarColor(
+                                            a.recipient
+                                        ),
+                                    }"
+                                >
+                                    {{ initials(a.recipient) }}
+                                </span>
+                                <span class="font-medium text-gray-800">
+                                    {{ a.recipient }}
+                                </span>
+                            </div>
                         </td>
                         <td class="px-4 py-3 text-gray-500">
                             {{ a.barangay }}
                         </td>
-                        <td class="max-w-xs truncate px-4 py-3 text-gray-600">
+                        <td
+                            class="max-w-xs truncate px-4 py-3 text-gray-600"
+                        >
                             {{ a.items }}
                         </td>
                         <td
@@ -362,8 +546,14 @@ function confirmDelete() {
                         <td class="px-4 py-3">
                             <span
                                 :class="STATUS_STYLE[a.status] || 'status-idle'"
-                                class="rounded px-2 py-0.5 text-[10px] font-medium"
+                                class="flex w-fit items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-medium"
                             >
+                                <span
+                                    class="h-1.5 w-1.5 rounded-full"
+                                    :style="{
+                                        background: STATUS_DOT[a.status],
+                                    }"
+                                />
                                 {{ a.status }}
                             </span>
                         </td>
@@ -411,13 +601,23 @@ function confirmDelete() {
                 style="font-family: 'DM Sans', sans-serif"
             >
                 <div class="mb-5 flex items-start justify-between">
-                    <div>
-                        <h3 class="text-lg font-bold text-gray-900">
-                            Record Assistance
-                        </h3>
-                        <p class="text-xs text-gray-500">
-                            Log an assistance program for a farmer.
-                        </p>
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8f5e8]"
+                        >
+                            <UIcon
+                                name="i-lucide-hand-heart"
+                                class="size-5 text-[#2d6a2d]"
+                            />
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">
+                                Record Assistance
+                            </h3>
+                            <p class="text-xs text-gray-500">
+                                Log an assistance program for a farmer.
+                            </p>
+                        </div>
                     </div>
                     <button
                         type="button"
@@ -599,13 +799,23 @@ function confirmDelete() {
                 style="font-family: 'DM Sans', sans-serif"
             >
                 <div class="mb-5 flex items-start justify-between">
-                    <div>
-                        <h3 class="text-lg font-bold text-gray-900">
-                            Edit Assistance
-                        </h3>
-                        <p class="text-xs text-gray-500">
-                            Update the assistance program details.
-                        </p>
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e0f0fb]"
+                        >
+                            <UIcon
+                                name="i-lucide-pencil"
+                                class="size-5 text-[#1d6fa4]"
+                            />
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">
+                                Edit Assistance
+                            </h3>
+                            <p class="text-xs text-gray-500">
+                                Update the assistance program details.
+                            </p>
+                        </div>
                     </div>
                     <button
                         type="button"

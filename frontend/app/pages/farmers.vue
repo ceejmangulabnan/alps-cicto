@@ -285,6 +285,28 @@ const parcels: Parcel[] = [
 
 const farmerBarangay = (f: Farmer) => f.barangays.map((b) => b.name).join(', ')
 
+const initials = (name: string) =>
+    name
+        .split(' ')
+        .map((p) => p[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+
+const AVATAR_COLORS = [
+    '#2d6a2d',
+    '#1d6fa4',
+    '#7c3aed',
+    '#b45309',
+    '#0f766e',
+    '#be123c',
+]
+const avatarColor = (name: string) =>
+    AVATAR_COLORS[
+        name.split('').reduce((s, c) => s + c.charCodeAt(0), 0) %
+            AVATAR_COLORS.length
+    ]
+
 const parcelStatusClass = (s: LandStatus) =>
     s === 'At Risk'
         ? 'status-atrisk'
@@ -365,18 +387,21 @@ const summaryCards = computed(() => [
         val: farmers.length,
         color: '#2d6a2d',
         bg: '#e8f5e8',
+        icon: 'i-lucide-users',
     },
     {
         label: 'Barangays Covered',
         val: barangays.value.length,
         color: '#1d6fa4',
         bg: '#e0f0fb',
+        icon: 'i-lucide-map-pin',
     },
     {
         label: 'Registered Parcels',
         val: parcels.length,
         color: '#16a34a',
         bg: '#dcfce7',
+        icon: 'i-lucide-layers',
     },
     {
         label: 'Total Registered Area',
@@ -385,6 +410,7 @@ const summaryCards = computed(() => [
             .toFixed(1)} ha`,
         color: '#ca8a04',
         bg: '#fef3c7',
+        icon: 'i-lucide-wheat',
     },
 ])
 
@@ -471,19 +497,28 @@ const detailStats = computed(() => {
             <div class="alps-card mb-5 p-6">
                 <div class="flex items-start gap-5">
                     <div
-                        class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-xl bg-[#e8f5e8]"
+                        class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#5cba5c] to-[#2f7d2f] text-xl font-bold text-white shadow-lg shadow-black/10"
                     >
-                        <UIcon
-                            name="i-lucide-user"
-                            class="size-7 text-[#2d6a2d]"
-                        />
+                        {{ initials(selectedFarmer.name) }}
                     </div>
                     <div class="flex-1">
                         <div class="flex items-start justify-between">
                             <div>
-                                <h2 class="text-xl font-bold text-gray-900">
-                                    {{ selectedFarmer.name }}
-                                </h2>
+                                <div class="flex items-center gap-3">
+                                    <h2
+                                        class="text-xl font-bold text-gray-900"
+                                    >
+                                        {{ selectedFarmer.name }}
+                                    </h2>
+                                    <span
+                                        class="flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-700 ring-1 ring-green-100"
+                                    >
+                                        <span
+                                            class="h-1.5 w-1.5 rounded-full bg-green-500"
+                                        ></span>
+                                        Active
+                                    </span>
+                                </div>
                                 <div class="mt-1 flex items-center gap-3">
                                     <span
                                         class="font-mono text-xs text-gray-600"
@@ -542,8 +577,14 @@ const detailStats = computed(() => {
                 <div
                     v-for="stat in detailStats"
                     :key="stat.label"
-                    class="alps-card p-4"
+                    class="alps-card relative overflow-hidden p-4"
                 >
+                    <div
+                        class="absolute inset-x-0 top-0 h-0.5 opacity-70"
+                        :style="{
+                            backgroundImage: `linear-gradient(90deg, ${stat.color}, transparent)`,
+                        }"
+                    />
                     <div
                         class="mb-2 flex h-8 w-8 items-center justify-center rounded-lg"
                         :style="{ background: stat.bg }"
@@ -648,8 +689,24 @@ const detailStats = computed(() => {
             <div
                 v-for="card in summaryCards"
                 :key="card.label"
-                class="alps-card p-4"
+                class="alps-card relative overflow-hidden p-4"
             >
+                <div
+                    class="absolute inset-x-0 top-0 h-0.5 opacity-70"
+                    :style="{
+                        backgroundImage: `linear-gradient(90deg, ${card.color}, transparent)`,
+                    }"
+                />
+                <div
+                    class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg"
+                    :style="{ background: card.bg }"
+                >
+                    <UIcon
+                        :name="card.icon"
+                        class="size-4.5"
+                        :style="{ color: card.color }"
+                    />
+                </div>
                 <div
                     class="mb-1 text-xl font-bold font-sans"
                     :style="{
@@ -663,31 +720,48 @@ const detailStats = computed(() => {
         </div>
 
         <!-- Filters -->
-        <div class="mb-5 flex gap-3">
-            <div class="relative max-w-xs flex-1">
-                <UIcon
-                    name="i-lucide-search"
-                    class="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-gray-400"
-                />
-                <input
-                    v-model="search"
-                    type="text"
-                    placeholder="Search name or Farmer Code..."
-                    class="w-full rounded-lg border border-gray-200 py-2 pl-8 pr-3 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
-                />
+        <div class="mb-5 space-y-3">
+            <div class="flex items-center gap-3">
+                <div class="relative max-w-xs flex-1">
+                    <UIcon
+                        name="i-lucide-search"
+                        class="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Search name or Farmer Code..."
+                        class="w-full rounded-full border border-gray-200 bg-white py-2 pl-8 pr-8 text-xs shadow-sm focus:outline-none focus:border-[#2d6a2d] focus:ring-1 focus:ring-green-500"
+                    />
+                    <button
+                        v-if="search"
+                        type="button"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:text-gray-600"
+                        @click="search = ''"
+                    >
+                        <UIcon name="i-lucide-x" class="size-3" />
+                    </button>
+                </div>
+                <div class="ml-auto flex items-center gap-1.5 text-xs text-gray-400">
+                    <UIcon name="i-lucide-filter" class="size-3" />
+                    {{ filtered.length }} of {{ farmers.length }} farmers
+                </div>
             </div>
-            <select
-                v-model="filterBarangay"
-                class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
-            >
-                <option value="All">All Barangays</option>
-                <option v-for="b in barangays" :key="b" :value="b">
+            <div class="flex flex-wrap items-center gap-1.5">
+                <button
+                    v-for="b in ['All', ...barangays]"
+                    :key="b"
+                    type="button"
+                    class="rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors"
+                    :class="
+                        filterBarangay === b
+                            ? 'border-[#2d6a2d] bg-[#2d6a2d] text-white shadow-sm'
+                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                    "
+                    @click="filterBarangay = b"
+                >
                     {{ b }}
-                </option>
-            </select>
-            <div class="ml-auto flex items-center gap-1 text-xs text-gray-400">
-                <UIcon name="i-lucide-filter" class="size-3" />
-                {{ filtered.length }} of {{ farmers.length }} farmers
+                </button>
             </div>
         </div>
 
@@ -726,24 +800,25 @@ const detailStats = computed(() => {
                 </thead>
                 <tbody>
                     <tr
-                        v-for="f in filtered"
+                        v-for="(f, i) in filtered"
                         :key="f.farmer_code"
-                        class="cursor-pointer border-b border-gray-50 last:border-0 hover:bg-green-50/30"
+                        class="group cursor-pointer border-b border-gray-50 transition-colors last:border-0 hover:bg-green-50/40"
+                        :class="i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'"
                         @click="selectedFarmer = f"
                     >
                         <td class="px-4 py-3 font-mono text-gray-700">
                             {{ f.farmer_code }}
                         </td>
                         <td class="px-4 py-3">
-                            <div class="flex items-center gap-2">
-                                <div
-                                    class="flex h-7 w-7 items-center justify-center rounded-full bg-[#e8f5e8]"
+                            <div class="flex items-center gap-2.5">
+                                <span
+                                    class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                                    :style="{
+                                        backgroundColor: avatarColor(f.name),
+                                    }"
                                 >
-                                    <UIcon
-                                        name="i-lucide-user"
-                                        class="size-3 text-[#2d6a2d]"
-                                    />
-                                </div>
+                                    {{ initials(f.name) }}
+                                </span>
                                 <span class="font-medium text-gray-800">
                                     {{ f.name }}
                                 </span>
@@ -773,10 +848,17 @@ const detailStats = computed(() => {
                             }}
                         </td>
                         <td class="px-4 py-3">
-                            <UIcon
-                                name="i-lucide-chevron-right"
-                                class="size-3.5 text-gray-400"
-                            />
+                            <div class="flex items-center justify-end gap-1.5">
+                                <span
+                                    class="text-[10px] font-semibold text-[#2d6a2d] opacity-0 transition-opacity group-hover:opacity-100"
+                                >
+                                    View
+                                </span>
+                                <UIcon
+                                    name="i-lucide-chevron-right"
+                                    class="size-3.5 text-gray-400 transition-all group-hover:translate-x-0.5 group-hover:text-[#2d6a2d]"
+                                />
+                            </div>
                         </td>
                     </tr>
                 </tbody>

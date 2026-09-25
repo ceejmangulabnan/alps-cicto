@@ -78,6 +78,39 @@ const landStatusOptions = [
     'Converted',
 ]
 
+const STATUS_COLOR: Record<string, string> = {
+    Cultivated: '#16a34a',
+    Preparation: '#0369a1',
+    Harvesting: '#ca8a04',
+    Fallow: '#b45309',
+    Idle: '#6b7280',
+    'At Risk': '#dc2626',
+    Converted: '#0f766e',
+}
+
+const MODE_META: Record<
+    DrawMode,
+    { label: string; icon: string; cls: string }
+> = {
+    view: {
+        label: 'View Mode',
+        icon: 'i-lucide-mouse-pointer-2',
+        cls: 'bg-white/85 text-gray-600',
+    },
+    plot: {
+        label: 'Plotting Active',
+        icon: 'i-lucide-vector-polygon',
+        cls: 'bg-[#2d6a2d]/90 text-white',
+    },
+    edit: {
+        label: 'Editing',
+        icon: 'i-lucide-pencil',
+        cls: 'bg-amber-500/90 text-white',
+    },
+}
+
+const modeMeta = computed(() => MODE_META[drawMode.value])
+
 // ---------------------------------------------------------------------------
 // New Parcel sidebar (layout only — not yet connected to the backend)
 // ---------------------------------------------------------------------------
@@ -239,27 +272,48 @@ function openAddParcel() {
         class="relative flex h-[calc(100vh-56px)] w-full flex-col overflow-hidden bg-[#e8f0e5]"
     >
         <div
-            class="z-10 flex items-center justify-between gap-4 border-b border-gray-200 bg-white px-4 py-2 shadow-sm"
+            class="z-10 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3 shadow-sm"
         >
-            <div class="flex items-center gap-2">
-                <UIcon name="i-lucide-map" class="size-4 text-[#2d6a2d]" />
-                <span class="text-sm font-semibold text-gray-800 font-sans">
-                    Agricultural Parcel Map
+            <div class="flex items-center gap-3">
+                <span
+                    class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#2d6a2d] text-white shadow-sm"
+                >
+                    <UIcon name="i-lucide-map" class="size-4.5" />
                 </span>
-                <span class="text-[11px] text-gray-400">
-                    San Fernando, Pampanga
-                </span>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="text-sm font-bold text-gray-900 font-sans"
+                        >
+                            Agricultural Parcel Map
+                        </span>
+                        <span
+                            class="rounded-full bg-[#e8f5e8] px-2 py-0.5 text-[10px] font-medium text-[#2d6a2d] ring-1 ring-green-100"
+                        >
+                            San Fernando, Pampanga
+                        </span>
+                    </div>
+                    <div class="text-[11px] text-gray-400">
+                        Base map · OpenStreetMap / MapTiler GL
+                    </div>
+                </div>
             </div>
             <div class="flex items-center gap-3">
                 <span
-                    class="rounded-md bg-gray-100 px-2 py-1 font-mono text-[10px] text-gray-600"
+                    class="flex items-center gap-1.5 rounded-md bg-gray-100 px-2.5 py-1.5 text-xs text-gray-600"
                 >
-                    {{ parcelCount }} parcel{{ parcelCount === 1 ? '' : 's' }}
-                    drawn
+                    <UIcon
+                        name="i-lucide-vector-polygon"
+                        class="size-3.5 text-[#2d6a2d]"
+                    />
+                    <span class="font-semibold text-gray-800">
+                        {{ parcelCount }}
+                    </span>
+                    parcel{{ parcelCount === 1 ? '' : 's' }} drawn
                 </span>
                 <button
                     type="button"
-                    class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
+                    class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#245524]"
                     @click="openAddParcel"
                 >
                     <UIcon name="i-lucide-layers" class="size-3.5" />
@@ -299,25 +353,64 @@ function openAddParcel() {
                     </template>
                 </ClientOnly>
 
-                <div class="pointer-events-none absolute left-4 top-4 z-10">
+                <div
+                    v-if="showSidebar || drawMode === 'plot' || drawMode === 'edit'"
+                    class="pointer-events-none absolute left-4 top-4 z-10"
+                >
                     <div
-                        class="rounded-lg bg-white/90 px-4 py-2 shadow-sm backdrop-blur-sm"
+                        class="rounded-xl bg-white/95 px-4 py-3 shadow-lg ring-1 ring-black/5 backdrop-blur-sm"
                     >
-                        <div
-                            class="text-xs font-semibold text-gray-700 font-sans"
-                        >
-                            Agricultural Parcel Map — San Fernando, Pampanga
+                        <div class="flex items-center gap-2">
+                            <span
+                                class="flex h-6 w-6 items-center justify-center rounded-md bg-[#2d6a2d]"
+                            >
+                                <UIcon
+                                    name="i-lucide-pen-tool"
+                                    class="size-3 text-white"
+                                />
+                            </span>
+                            <span class="text-xs font-semibold text-gray-800">
+                                Plotting Guide
+                            </span>
                         </div>
-                        <div class="text-[10px] text-gray-500">
-                            Base map · MapLibre GL
+                        <div class="mt-2.5 space-y-1.5 text-[11px] text-gray-500">
+                            <div class="flex items-center gap-2">
+                                <span
+                                    class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#2d6a2d]"
+                                ></span>
+                                Click points to trace the parcel boundary
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span
+                                    class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#2d6a2d]"
+                                ></span>
+                                Click the first point again to close the parcel
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span
+                                    class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-amber-500"
+                                ></span>
+                                Use Edit mode to adjust existing vertices
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div
-                    class="pointer-events-none absolute bottom-4 left-4 z-10 rounded bg-white/80 px-2 py-1 font-mono text-[10px] text-gray-600 backdrop-blur-sm"
+                    class="pointer-events-none absolute bottom-4 left-4 z-10 flex items-center gap-2"
                 >
-                    {{ coordinatesText }}
+                    <div
+                        class="rounded-lg bg-white/85 px-2 py-1.5 font-mono text-[10px] text-gray-600 shadow-sm backdrop-blur-sm"
+                    >
+                        {{ coordinatesText }}
+                    </div>
+                    <div
+                        class="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[10px] font-semibold shadow-sm backdrop-blur-sm"
+                        :class="modeMeta.cls"
+                    >
+                        <UIcon :name="modeMeta.icon" class="size-3" />
+                        {{ modeMeta.label }}
+                    </div>
                 </div>
             </div>
 
@@ -345,42 +438,63 @@ function openAddParcel() {
                 </div>
 
                 <form class="space-y-4">
-                    <div>
-                        <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
+                    <div class="border-b border-gray-100 pb-4">
+                        <div
+                            class="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400"
                         >
-                            Farm
-                        </label>
-                        <select
-                            v-model="parcelForm.farm"
-                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                        >
-                            <option value="" disabled>Select a farm...</option>
-                            <option
-                                v-for="f in farmSelectOptions"
-                                :key="f.code"
-                                :value="f.code"
+                            <UIcon
+                                name="i-lucide-tractor"
+                                class="size-3.5 text-[#2d6a2d]"
+                            />
+                            Farm Reference
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
                             >
-                                {{ f.code }} · {{ f.label }}
-                            </option>
-                        </select>
+                                Farm
+                            </label>
+                            <select
+                                v-model="parcelForm.farm"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option value="" disabled>
+                                    Select a farm...
+                                </option>
+                                <option
+                                    v-for="f in farmSelectOptions"
+                                    :key="f.code"
+                                    :value="f.code"
+                                >
+                                    {{ f.code }} · {{ f.label }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="mt-3">
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Parcel Code
+                            </label>
+                            <input
+                                v-model="parcelForm.parcel_code"
+                                type="text"
+                                placeholder="e.g. PLC-1201"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
                     </div>
 
-                    <div>
-                        <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
+                    <div class="border-b border-gray-100 pb-4">
+                        <div
+                            class="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400"
                         >
-                            Parcel Code
-                        </label>
-                        <input
-                            v-model="parcelForm.parcel_code"
-                            type="text"
-                            placeholder="e.g. PLC-1201"
-                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                        />
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
+                            <UIcon
+                                name="i-lucide-layers"
+                                class="size-3.5 text-[#2d6a2d]"
+                            />
+                            Land Details
+                        </div>
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -396,28 +510,47 @@ function openAddParcel() {
                                 class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
                             />
                         </div>
-                        <div>
+                        <div class="mt-3">
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
                             >
                                 Land Status
                             </label>
-                            <select
-                                v-model="parcelForm.land_status"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            >
-                                <option
+                            <div class="flex flex-wrap gap-1.5">
+                                <button
                                     v-for="s in landStatusOptions"
                                     :key="s"
-                                    :value="s"
+                                    type="button"
+                                    class="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors"
+                                    :class="
+                                        parcelForm.land_status === s
+                                            ? 'border-[#2d6a2d] bg-[#e8f5e8] text-[#2d6a2d]'
+                                            : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
+                                    "
+                                    @click="parcelForm.land_status = s"
                                 >
+                                    <span
+                                        class="h-2 w-2 rounded-full"
+                                        :style="{
+                                            backgroundColor: STATUS_COLOR[s],
+                                        }"
+                                    />
                                     {{ s }}
-                                </option>
-                            </select>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     <div>
+                        <div
+                            class="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400"
+                        >
+                            <UIcon
+                                name="i-lucide-file-text"
+                                class="size-3.5 text-[#2d6a2d]"
+                            />
+                            Notes
+                        </div>
                         <label
                             class="mb-1 block text-xs font-medium text-gray-600"
                         >
@@ -435,7 +568,7 @@ function openAddParcel() {
                 <div class="mt-6 border-t border-gray-100 pt-4">
                     <button
                         type="button"
-                        class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#245524]"
+                        class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-[#245524]"
                     >
                         <UIcon
                             :name="
@@ -447,13 +580,21 @@ function openAddParcel() {
                         />
                         {{ isEditingParcel() ? 'Save Changes' : 'Plot Parcel' }}
                     </button>
-                    <p class="mt-2 text-center text-[10px] text-gray-400">
-                        {{
-                            isEditingParcel()
-                                ? 'Changes are saved to the parcel record.'
-                                : 'Click the map to drop points — click the first point again to close the parcel.'
-                        }}
-                    </p>
+                    <div
+                        class="mt-3 flex items-start gap-1.5 rounded-lg bg-gray-50 p-2.5"
+                    >
+                        <UIcon
+                            name="i-lucide-info"
+                            class="mt-0.5 size-3 flex-shrink-0 text-gray-400"
+                        />
+                        <p class="text-[10px] leading-relaxed text-gray-500">
+                            {{
+                                isEditingParcel()
+                                    ? 'Changes are saved to the parcel record.'
+                                    : 'Click the map to drop points — click the first point again to close the parcel.'
+                            }}
+                        </p>
+                    </div>
                 </div>
             </aside>
         </div>

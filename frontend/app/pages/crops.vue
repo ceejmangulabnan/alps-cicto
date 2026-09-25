@@ -173,6 +173,39 @@ const CROP_COLORS: Record<string, string> = {
     Tomato: '#dc2626',
 }
 
+const PLANT_STATUSES = ['Growing', 'Harvested'] as const
+const statusFilterOptions = ['All', ...PLANT_STATUSES] as string[]
+
+const AS_OF = new Date('November 25, 2024')
+const daysUntil = (dateStr: string) =>
+    Math.round((new Date(dateStr).getTime() - AS_OF.getTime()) / 86_400_000)
+
+const AVATAR_COLORS = [
+    '#2d6a2d',
+    '#3b82f6',
+    '#7c3aed',
+    '#d97706',
+    '#dc2626',
+    '#0891b2',
+    '#db2777',
+    '#65a30d',
+]
+
+function initials(name: string) {
+    return name
+        .split(' ')
+        .map((w) => w[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+}
+
+function avatarColor(name: string) {
+    let h = 0
+    for (const c of name) h = (h * 31 + c.charCodeAt(0)) % AVATAR_COLORS.length
+    return AVATAR_COLORS[h]
+}
+
 const cropAreaData = computed(() => {
     const areas = new Map<string, number>()
     for (const r of plantingRecords) {
@@ -194,12 +227,14 @@ const summaryCards = computed(() => [
         val: plantingRecords.filter((p) => p.harvest_count === 0).length,
         color: '#16a34a',
         bg: '#dcfce7',
+        icon: 'i-lucide-sprout',
     },
     {
         label: 'Crop Types',
         val: new Set(plantingRecords.map((p) => p.crop)).size,
         color: '#2d6a2d',
         bg: '#e8f5e8',
+        icon: 'i-lucide-wheat',
     },
     {
         label: 'Total Planted Area',
@@ -208,14 +243,37 @@ const summaryCards = computed(() => [
             .toFixed(1)} ha`,
         color: '#1d6fa4',
         bg: '#e0f0fb',
+        icon: 'i-lucide-ruler',
     },
     {
         label: 'Harvested Cycles',
         val: plantingRecords.filter((p) => p.harvest_count > 0).length,
         color: '#ca8a04',
         bg: '#fef3c7',
+        icon: 'i-lucide-calendar-check',
     },
 ])
+
+const cropAreaTotal = computed(() =>
+    Math.round(cropAreaData.value.reduce((s, d) => s + d.area, 0) * 10) / 10
+)
+
+const search = ref('')
+const filterStatus = ref<'All' | (typeof PLANT_STATUSES)[number]>('All')
+
+const filtered = computed(() =>
+    plantingRecords.filter((r) => {
+        const match =
+            !search.value ||
+            r.farmer.toLowerCase().includes(search.value.toLowerCase()) ||
+            r.barangay.toLowerCase().includes(search.value.toLowerCase()) ||
+            r.parcel.toLowerCase().includes(search.value.toLowerCase())
+        const status =
+            filterStatus.value === 'All' ||
+            cycleStatus(r) === filterStatus.value
+        return match && status
+    })
+)
 
 const cropAreaOption = computed(() => ({
     animation: false,
@@ -303,10 +361,26 @@ const barangayOptions = computed(() =>
             <div
                 v-for="card in summaryCards"
                 :key="card.label"
-                class="alps-card p-4"
+                class="alps-card relative overflow-hidden p-4"
             >
                 <div
-                    class="mb-1 text-2xl font-bold"
+                    class="absolute inset-x-0 top-0 h-0.5 opacity-70"
+                    :style="{
+                        backgroundImage: `linear-gradient(90deg, ${card.color}, transparent)`,
+                    }"
+                />
+                <div
+                    class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg"
+                    :style="{ background: card.bg }"
+                >
+                    <UIcon
+                        :name="card.icon"
+                        class="size-4.5"
+                        :style="{ color: card.color }"
+                    />
+                </div>
+                <div
+                    class="mb-1 text-xl font-bold font-sans"
                     :style="{
                         color: card.color,
                     }"
@@ -317,12 +391,76 @@ const barangayOptions = computed(() =>
             </div>
         </div>
 
+        <!-- Filters -->
+        <div class="space-y-3">
+            <div class="flex items-center gap-3">
+                <div class="relative max-w-xs flex-1">
+                    <UIcon
+                        name="i-lucide-search"
+                        class="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Search farmer, barangay or parcel..."
+                        class="w-full rounded-full border border-gray-200 bg-white py-2 pl-8 pr-8 text-xs shadow-sm focus:border-[#2d6a2d] focus:outline-none focus:ring-1 focus:ring-green-500"
+                    />
+                    <button
+                        v-if="search"
+                        type="button"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:text-gray-600"
+                        @click="search = ''"
+                    >
+                        <UIcon name="i-lucide-x" class="size-3" />
+                    </button>
+                </div>
+                <div
+                    class="ml-auto flex items-center gap-1.5 text-xs text-gray-400"
+                >
+                    <UIcon name="i-lucide-filter" class="size-3" />
+                    {{ filtered.length }} of {{ plantingRecords.length }} cycles
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+                <button
+                    v-for="s in statusFilterOptions"
+                    :key="s"
+                    type="button"
+                    class="rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors"
+                    :class="
+                        filterStatus === s
+                            ? 'border-[#2d6a2d] bg-[#2d6a2d] text-white shadow-sm'
+                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                    "
+                    @click="filterStatus = s"
+                >
+                    {{ s }}
+                </button>
+            </div>
+        </div>
+
         <div class="grid grid-cols-12 gap-4">
             <!-- Crop Area Chart -->
             <div class="alps-card col-span-5 p-5">
-                <h3 class="mb-4 text-sm font-semibold text-gray-700">
-                    Crop Area (ha)
-                </h3>
+                <div class="mb-3 flex items-center gap-3">
+                    <div
+                        class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f0faf0]"
+                    >
+                        <UIcon
+                            name="i-lucide-bar-chart-3"
+                            class="size-4 text-[#2d6a2d]"
+                        />
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-700">
+                            Crop Area
+                        </h3>
+                        <p class="text-[11px] text-gray-400">
+                            {{ cropAreaData.length }} crop types ·
+                            {{ cropAreaTotal }} ha planted
+                        </p>
+                    </div>
+                </div>
                 <ClientOnly>
                     <div class="w-full" :style="{ height: '200px' }">
                         <VChart
@@ -332,6 +470,31 @@ const barangayOptions = computed(() =>
                         />
                     </div>
                 </ClientOnly>
+                <div
+                    class="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-gray-100 pt-3"
+                >
+                    <span
+                        v-for="d in cropAreaData"
+                        :key="d.name"
+                        class="flex items-center gap-1.5 text-[11px] text-gray-600"
+                    >
+                        <span
+                            class="h-2 w-2 rounded-full"
+                            :style="{ background: d.color }"
+                        />
+                        {{ d.name }} · {{ d.area }} ha
+                    </span>
+                </div>
+                <div
+                    class="mt-3 flex items-center justify-between rounded-lg bg-[#f8faf8] px-3 py-2"
+                >
+                    <span class="text-[11px] text-gray-500"
+                        >Planted area total</span
+                    >
+                    <span class="text-xs font-bold text-[#2d6a2d]">
+                        {{ cropAreaTotal }} ha
+                    </span>
+                </div>
             </div>
 
             <!-- Planting Records -->
@@ -385,27 +548,61 @@ const barangayOptions = computed(() =>
                         </thead>
                         <tbody>
                             <tr
-                                v-for="p in plantingRecords"
+                                v-for="(p, i) in filtered"
                                 :key="p.id"
-                                class="border-b border-gray-50 last:border-0 hover:bg-gray-50/50"
+                                class="border-b border-gray-50 last:border-0 transition-colors hover:bg-green-50/30"
+                                :class="
+                                    i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'
+                                "
                             >
                                 <td class="px-4 py-3">
-                                    <div class="font-medium text-gray-800">
-                                        {{ p.farmer }}
-                                    </div>
-                                    <div class="text-gray-400">
-                                        {{ p.barangay }}
+                                    <div class="flex items-center gap-2.5">
+                                        <span
+                                            class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                                            :style="{
+                                                backgroundColor:
+                                                    avatarColor(p.farmer),
+                                            }"
+                                        >
+                                            {{ initials(p.farmer) }}
+                                        </span>
+                                        <div>
+                                            <div
+                                                class="font-medium text-gray-800"
+                                            >
+                                                {{ p.farmer }}
+                                            </div>
+                                            <div class="text-gray-400">
+                                                {{ p.barangay }}
+                                            </div>
+                                        </div>
                                     </div>
                                 </td>
                                 <td class="px-4 py-3">
-                                    <div class="font-medium text-gray-700">
-                                        {{ p.crop }}
+                                    <div class="flex items-center gap-1.5">
+                                        <span
+                                            class="h-2 w-2 flex-shrink-0 rounded-full"
+                                            :style="{
+                                                background:
+                                                    CROP_COLORS[p.crop] ??
+                                                    '#94a3b8',
+                                            }"
+                                        />
+                                        <span
+                                            class="font-medium text-gray-700"
+                                        >
+                                            {{ p.crop }}
+                                        </span>
                                     </div>
-                                    <div class="italic text-gray-400">
+                                    <div
+                                        class="pl-3.5 italic text-gray-400"
+                                    >
                                         {{ p.variety }}
                                     </div>
                                 </td>
-                                <td class="px-4 py-3 font-mono text-gray-500">
+                                <td
+                                    class="px-4 py-3 font-mono text-gray-500"
+                                >
                                     {{ p.parcel }}
                                 </td>
                                 <td
@@ -416,14 +613,52 @@ const barangayOptions = computed(() =>
                                 <td class="px-4 py-3 text-gray-500">
                                     {{ p.planting_date }}
                                 </td>
-                                <td class="px-4 py-3 text-gray-500">
-                                    {{ p.expected_harvest }}
+                                <td class="px-4 py-3">
+                                    <div>
+                                        <div class="text-gray-500">
+                                            {{ p.expected_harvest }}
+                                        </div>
+                                        <div
+                                            v-if="p.harvest_count === 0"
+                                            :class="
+                                                daysUntil(p.expected_harvest) <=
+                                                10
+                                                    ? 'text-amber-600'
+                                                    : 'text-[#2d6a2d]'
+                                            "
+                                            class="flex items-center gap-1 text-[10px] font-semibold"
+                                        >
+                                            <UIcon
+                                                name="i-lucide-hourglass"
+                                                class="size-2.5"
+                                            />
+                                            in
+                                            {{
+                                                daysUntil(p.expected_harvest)
+                                            }}
+                                            days
+                                        </div>
+                                        <div
+                                            v-else
+                                            class="text-[10px] text-gray-400"
+                                        >
+                                            completed
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="px-4 py-3">
                                     <span
                                         :class="statusClass(cycleStatus(p))"
-                                        class="rounded px-2 py-0.5 text-[10px] font-medium"
+                                        class="flex w-fit items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-medium"
                                     >
+                                        <span
+                                            class="h-1.5 w-1.5 rounded-full"
+                                            :class="
+                                                cycleStatus(p) === 'Harvested'
+                                                    ? 'bg-[#166534]'
+                                                    : 'bg-[#0369a1]'
+                                            "
+                                        />
                                         {{ cycleStatus(p) }}
                                     </span>
                                 </td>
@@ -473,13 +708,23 @@ const barangayOptions = computed(() =>
                 style="font-family: 'DM Sans', sans-serif"
             >
                 <div class="mb-5 flex items-start justify-between">
-                    <div>
-                        <h3 class="text-lg font-bold text-gray-900">
-                            Register Planting Cycle
-                        </h3>
-                        <p class="text-xs text-gray-500">
-                            Log a new planting cycle for a parcel.
-                        </p>
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8f5e8]"
+                        >
+                            <UIcon
+                                name="i-lucide-sprout"
+                                class="size-5 text-[#2d6a2d]"
+                            />
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">
+                                Register Planting Cycle
+                            </h3>
+                            <p class="text-xs text-gray-500">
+                                Log a new planting cycle for a parcel.
+                            </p>
+                        </div>
                     </div>
                     <button
                         type="button"
@@ -685,13 +930,23 @@ const barangayOptions = computed(() =>
                 style="font-family: 'DM Sans', sans-serif"
             >
                 <div class="mb-5 flex items-start justify-between">
-                    <div>
-                        <h3 class="text-lg font-bold text-gray-900">
-                            Edit Planting Cycle
-                        </h3>
-                        <p class="text-xs text-gray-500">
-                            Update the details for this planting cycle.
-                        </p>
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e0f0fb]"
+                        >
+                            <UIcon
+                                name="i-lucide-pencil"
+                                class="size-5 text-[#1d6fa4]"
+                            />
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">
+                                Edit Planting Cycle
+                            </h3>
+                            <p class="text-xs text-gray-500">
+                                Update the details for this planting cycle.
+                            </p>
+                        </div>
                     </div>
                     <button
                         type="button"

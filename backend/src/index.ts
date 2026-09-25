@@ -42,6 +42,7 @@ export default {
                     'api::farm-parcel.farm-parcel.count',
                     'api::farm-parcel.custom-farm-parcel.idleAtRisk',
                     'api::farm-parcel.custom-farm-parcel.recommendations',
+                    'api::farm-parcel.custom-farm-parcel.createFromMap',
                     // Farmer permissions (full CRUD + custom)
                     'api::farmer.farmer.find',
                     'api::farmer.farmer.findOne',
@@ -127,6 +128,7 @@ export default {
                     'api::farm-parcel.farm-parcel.count',
                     'api::farm-parcel.custom-farm-parcel.idleAtRisk',
                     'api::farm-parcel.custom-farm-parcel.recommendations',
+                    'api::farm-parcel.custom-farm-parcel.createFromMap',
                     // Farmer permissions (full CRUD + custom)
                     'api::farmer.farmer.find',
                     'api::farmer.farmer.findOne',

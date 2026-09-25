@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Map as MaplibreMap, StyleSpecification } from 'maplibre-gl'
+import { LngLatBounds } from 'maplibre-gl'
 import { Position } from '@indoorequal/vue-maplibre-gl'
 import {
     TerraDraw,
@@ -11,7 +12,12 @@ import type { GeoJSONStoreFeatures } from 'terra-draw'
 import { TerraDrawMapLibreGLAdapter } from 'terra-draw-maplibre-gl-adapter'
 import { area } from '@turf/area'
 import { feature } from '@turf/helpers'
-import { useFarmParcelApi, type FarmParcel } from '~/composables/useFarmParcelApi'
+import {
+    LAND_STATUS_OPTIONS,
+    useFarmParcelApi,
+    type FarmParcel,
+    type LandStatus,
+} from '~/composables/useFarmParcelApi'
 import { useFarmsApi, type Farm } from '~/composables/useFarmsApi'
 
 const config = useRuntimeConfig()
@@ -65,29 +71,17 @@ const coordinatesText = computed(() => {
 type DrawMode = 'view' | 'plot' | 'edit'
 
 const draw = shallowRef<TerraDraw>()
+const mapInstance = shallowRef<MaplibreMap>()
 const drawMode = ref<DrawMode>('view')
 const parcelCount = ref(0)
+const parcels = ref<FarmParcel[]>([])
+const draftFeatureId = ref<string | number | null>(null)
+const selectedParcelId = ref<string | null>(null)
+const selectedParcel = ref<FarmParcel | null>(null)
+const hasGeometry = ref(false)
+const hydratingSelection = ref(false)
 
-const landStatusOptions = [
-    'Cultivated',
-    'Preparation',
-    'Harvesting',
-    'Fallow',
-    'Idle',
-    'At Risk',
-    'Converted',
-] as const
-
-// Status color mapping for map display
-const statusColors: Record<string, string> = {
-    Cultivated: '#22c55e',
-    Preparation: '#f97316',
-    Harvesting: '#eab308',
-    Fallow: '#6b7280',
-    Idle: '#ef4444',
-    'At Risk': '#dc2626',
-    Converted: '#8b5cf6',
-}
+const landStatusOptions = LAND_STATUS_OPTIONS
 
 const STATUS_COLOR: Record<string, string> = {
     Cultivated: '#16a34a',
@@ -125,7 +119,12 @@ const modeMeta = computed(() => MODE_META[drawMode.value])
 // ---------------------------------------------------------------------------
 // API Composables
 // ---------------------------------------------------------------------------
-const { createFromMap, getAll: getAllParcels } = useFarmParcelApi()
+const {
+    createFromMap,
+    getAll: getAllParcels,
+    getById: getParcelById,
+    update: updateParcel,
+} = useFarmParcelApi()
 const { getAllForSelect: getFarms } = useFarmsApi()
 
 function toParcelFeature(parcel: FarmParcel): GeoJSONStoreFeatures {
@@ -137,14 +136,7 @@ function toParcelFeature(parcel: FarmParcel): GeoJSONStoreFeatures {
         type: 'Feature',
         id: parcel.documentId,
         geometry,
-        properties: {
-            mode: 'polygon',
-            parcelCode: parcel.parcel_code,
-            landStatus: parcel.land_status,
-            areaHectares: parcel.area_hectares,
-            farmCode: parcel.farm?.farm_code ?? null,
-            currentUse: parcel.current_use,
-        },
+        properties: featureProperties(parcel),
     }
 }
 
@@ -154,8 +146,17 @@ function toParcelFeature(parcel: FarmParcel): GeoJSONStoreFeatures {
 const route = useRoute()
 const router = useRouter()
 
-const isAddingParcel = () => route.query.addParcel !== undefined
-const isEditingParcel = () => route.query.editParcel !== undefined
+const editParcelId = computed(() => {
+    const value = route.query['edit-parcel']
+    return typeof value === 'string' ? value : undefined
+})
+const focusParcelId = computed(() => {
+    const value = route.query['focus-parcel']
+    return typeof value === 'string' ? value : undefined
+})
+const isAddingParcel = () => route.query['add-parcel'] !== undefined
+const isEditingParcel = () =>
+    Boolean(editParcelId.value || selectedParcelId.value)
 const showSidebar = ref(false)
 const sidebarTitle = computed(() =>
     isEditingParcel() ? 'Edit Parcel' : 'New Parcel'
@@ -175,7 +176,7 @@ const parcelForm = reactive({
     farm: '' as string,
     parcel_code: '' as string,
     area_hectares: '' as string,
-    land_status: 'Cultivated' as (typeof landStatusOptions)[number],
+    land_status: 'Cultivated' as LandStatus,
     current_use: '' as string,
 })
 
@@ -184,43 +185,30 @@ function clearMessages() {
     success.value = null
 }
 
-function closeSidebar() {
-    showSidebar.value = false
-    draw.value?.setMode('render')
-    drawMode.value = 'view'
-    router.replace({ path: '/map' })
-    // Reset form
+function getErrorMessage(value: unknown, fallback: string) {
+    if (value && typeof value === 'object') {
+        const apiError = value as {
+            data?: { message?: string; error?: { message?: string } }
+            message?: string
+        }
+        return (
+            apiError.data?.error?.message ||
+            apiError.data?.message ||
+            apiError.message ||
+            fallback
+        )
+    }
+
+    return fallback
+}
+
+function resetForm() {
     parcelForm.farm = ''
     parcelForm.parcel_code = ''
     parcelForm.area_hectares = ''
     parcelForm.land_status = 'Cultivated'
     parcelForm.current_use = ''
-    clearMessages()
-}
-
-async function loadFarms() {
-    try {
-        farms.value = await getFarms()
-    } catch (err) {
-        console.error('Failed to load farms:', err)
-    }
-}
-
-async function loadExistingParcels() {
-    try {
-        const response = await getAllParcels({
-            populate: ['farm', 'farm.barangay', 'farm.farmers'],
-            'pagination[pageSize]': 500,
-        })
-        const parcels = response.data
-        if (draw.value && parcels.length > 0) {
-            const features = parcels.map(toParcelFeature)
-            draw.value.addFeatures(features)
-            parcelCount.value = features.length
-        }
-    } catch (err) {
-        console.error('Failed to load existing parcels:', err)
-    }
+    hasGeometry.value = false
 }
 
 function isParcel(feature: GeoJSONStoreFeatures): boolean {
@@ -231,36 +219,294 @@ function countParcels(instance: TerraDraw): number {
     return instance.getSnapshot().filter(isParcel).length
 }
 
+function getParcelGeometry(parcel: FarmParcel): GeoJSON.Polygon {
+    const boundary = parcel.boundary_geojson
+    return boundary.type === 'Feature' ? boundary.geometry : boundary
+}
+
+function getFeatureGeometry(id: string | number): GeoJSON.Polygon | null {
+    const geometry = draw.value?.getSnapshotFeature(id)?.geometry
+    return geometry?.type === 'Polygon' ? geometry : null
+}
+
+function calculateAreaHectares(geojson: GeoJSON.Polygon): number {
+    try {
+        const turfFeature = feature(geojson)
+        const areaSqMeters = area(turfFeature)
+        return Math.round((areaSqMeters / 10000) * 10000) / 10000
+    } catch {
+        return 0
+    }
+}
+
+function updateAreaForFeature(id: string | number) {
+    const geometry = getFeatureGeometry(id)
+    if (!geometry) {
+        hasGeometry.value = false
+        return
+    }
+
+    hasGeometry.value = true
+    parcelForm.area_hectares = calculateAreaHectares(geometry).toFixed(4)
+}
+
+function featureProperties(parcel: FarmParcel) {
+    return {
+        mode: 'polygon',
+        parcelCode: parcel.parcel_code,
+        landStatus: parcel.land_status,
+        areaHectares: parcel.area_hectares,
+        farmCode: parcel.farm?.farm_code ?? '',
+        currentUse: parcel.current_use ?? '',
+    }
+}
+
+function replaceParcel(parcel: FarmParcel) {
+    const index = parcels.value.findIndex(
+        (item) => item.documentId === parcel.documentId
+    )
+    if (index === -1) {
+        parcels.value = [...parcels.value, parcel]
+    } else {
+        parcels.value[index] = parcel
+    }
+}
+
+function fitToParcel(parcel: FarmParcel) {
+    const instance = mapInstance.value
+    const coordinates = getParcelGeometry(parcel).coordinates[0]
+    const first = coordinates?.[0]
+    if (!instance || !first || first.length < 2) return
+
+    const firstLng = first[0]
+    const firstLat = first[1]
+    if (
+        typeof firstLng !== 'number' ||
+        typeof firstLat !== 'number'
+    ) {
+        return
+    }
+
+    const bounds = new LngLatBounds(
+        [firstLng, firstLat],
+        [firstLng, firstLat]
+    )
+    coordinates.forEach((coordinate) => {
+        const lng = coordinate[0]
+        const lat = coordinate[1]
+        if (typeof lng === 'number' && typeof lat === 'number') {
+            bounds.extend([lng, lat])
+        }
+    })
+    instance.fitBounds(bounds, { padding: 80, maxZoom: 17, duration: 500 })
+}
+
+function loadParcelIntoForm(parcel: FarmParcel) {
+    parcelForm.farm = parcel.farm?.documentId ?? ''
+    parcelForm.parcel_code = parcel.parcel_code
+    parcelForm.area_hectares = parcel.area_hectares.toFixed(4)
+    parcelForm.land_status = parcel.land_status
+    parcelForm.current_use = parcel.current_use ?? ''
+    hasGeometry.value = true
+}
+
+async function ensureParcel(documentId: string) {
+    const localParcel = parcels.value.find(
+        (parcel) => parcel.documentId === documentId
+    )
+    if (localParcel) return localParcel
+
+    const response = await getParcelById(documentId)
+    replaceParcel(response.data)
+    return response.data
+}
+
+function clearSelection() {
+    if (selectedParcelId.value && draw.value) {
+        draw.value.deselectFeature(selectedParcelId.value)
+    }
+    selectedParcelId.value = null
+    selectedParcel.value = null
+}
+
+function removeFeature(id: string | number) {
+    if (draw.value?.hasFeature(id)) {
+        draw.value.removeFeatures([id])
+    }
+}
+
+function discardDraft() {
+    if (draftFeatureId.value !== null) removeFeature(draftFeatureId.value)
+    draftFeatureId.value = null
+}
+
+function closeSidebar() {
+    discardDraft()
+    clearSelection()
+    showSidebar.value = false
+    draw.value?.setMode('render')
+    drawMode.value = 'view'
+    router.replace({ path: '/map' })
+    resetForm()
+    clearMessages()
+}
+
+async function loadFarms() {
+    try {
+        farms.value = await getFarms()
+    } catch (value: unknown) {
+        error.value = getErrorMessage(value, 'Unable to load farms.')
+    }
+}
+
+async function loadExistingParcels() {
+    try {
+        const response = await getAllParcels({
+            populate: ['farm', 'farm.barangay', 'farm.farmers'],
+        })
+        parcels.value = response.data
+        if (draw.value && response.data.length > 0) {
+            draw.value.addFeatures(response.data.map(toParcelFeature))
+            parcelCount.value = countParcels(draw.value)
+        }
+    } catch (value: unknown) {
+        error.value = getErrorMessage(
+            value,
+            'Unable to load existing parcels.'
+        )
+    }
+}
+
+async function onParcelSelect(id: string | number) {
+    if (hydratingSelection.value || draftFeatureId.value === id) return
+
+    const parcel = parcels.value.find(
+        (item) => item.documentId === String(id)
+    )
+    if (!parcel) return
+
+    selectedParcelId.value = parcel.documentId
+    selectedParcel.value = parcel
+    loadParcelIntoForm(parcel)
+    showSidebar.value = true
+    drawMode.value = 'edit'
+    clearMessages()
+}
+
+function onParcelDeselect(id: string | number) {
+    if (selectedParcelId.value !== String(id)) return
+    selectedParcelId.value = null
+    selectedParcel.value = null
+    if (!showSidebar.value) drawMode.value = 'view'
+}
+
+async function openParcelForEdit(documentId: string) {
+    try {
+        const parcel = await ensureParcel(documentId)
+        selectedParcelId.value = parcel.documentId
+        selectedParcel.value = parcel
+        loadParcelIntoForm(parcel)
+        showSidebar.value = true
+        drawMode.value = 'edit'
+        clearMessages()
+
+        const instance = draw.value
+        if (!instance) return
+
+        instance.setMode('select')
+        hydratingSelection.value = true
+        try {
+            instance.selectFeature(parcel.documentId)
+        } finally {
+            hydratingSelection.value = false
+        }
+        fitToParcel(parcel)
+    } catch (value: unknown) {
+        error.value = getErrorMessage(value, 'Unable to open parcel.')
+    }
+}
+
+async function focusParcel(documentId: string) {
+    try {
+        const parcel = await ensureParcel(documentId)
+        draw.value?.setMode('render')
+        drawMode.value = 'view'
+        fitToParcel(parcel)
+    } catch (value: unknown) {
+        error.value = getErrorMessage(value, 'Unable to focus parcel.')
+    }
+}
+
 function onMapLoad(payload: { map: MaplibreMap }) {
+    mapInstance.value = payload.map
+
     const instance = new TerraDraw({
         adapter: new TerraDrawMapLibreGLAdapter({ map: payload.map }),
         modes: [
             new TerraDrawPolygonMode({ modeName: 'polygon' }),
-            new TerraDrawSelectMode({ modeName: 'select' }),
+            new TerraDrawSelectMode({
+                modeName: 'select',
+                flags: {
+                    polygon: {
+                        feature: {
+                            draggable: true,
+                            rotateable: false,
+                            scaleable: false,
+                            coordinates: {
+                                draggable: true,
+                                midpoints: { draggable: true },
+                                deletable: true,
+                            },
+                        },
+                    },
+                },
+            }),
             new TerraDrawRenderMode({ modeName: 'render', styles: {} }),
         ],
     })
 
-    instance.on('change', () => {
-        // Update parcel count on any change
+    instance.on('change', (ids) => {
         parcelCount.value = countParcels(instance)
+        const activeId = draftFeatureId.value ?? selectedParcelId.value
+        if (activeId !== null && ids.includes(activeId)) {
+            updateAreaForFeature(activeId)
+        }
     })
+    instance.on('finish', (id) => {
+        if (drawMode.value !== 'plot') return
+        draftFeatureId.value = id
+        updateAreaForFeature(id)
+    })
+    instance.on('select', (id) => {
+        void onParcelSelect(id)
+    })
+    instance.on('deselect', (id) => onParcelDeselect(id))
     instance.start()
-
     draw.value = instance
 
-    // Load farms and existing parcels
-    loadFarms()
-    loadExistingParcels()
+    void (async () => {
+        await loadFarms()
+        await loadExistingParcels()
 
-    if (isAddingParcel()) {
-        showSidebar.value = true
-        instance.setMode('polygon')
-        drawMode.value = 'plot'
-    } else {
-        instance.setMode('render')
-        drawMode.value = 'view'
-    }
+        if (isAddingParcel()) {
+            showSidebar.value = true
+            instance.setMode('polygon')
+            drawMode.value = 'plot'
+            return
+        }
+
+        if (editParcelId.value) {
+            await openParcelForEdit(editParcelId.value)
+            return
+        }
+
+        if (focusParcelId.value) {
+            await focusParcel(focusParcelId.value)
+            return
+        }
+
+        setViewMode()
+    })()
 }
 
 function setViewMode() {
@@ -269,59 +515,37 @@ function setViewMode() {
 }
 
 function startPlotting() {
-    draw.value?.setMode('polygon')
-    drawMode.value = 'plot'
+    openAddParcel()
 }
 
 function startEditing() {
-    draw.value?.setMode('select')
+    if (!draw.value || parcelCount.value === 0) return
+    draw.value.setMode('select')
     drawMode.value = 'edit'
 }
 
-function clearParcels() {
-    const instance = draw.value
-    if (!instance || parcelCount.value === 0) return
-    const ids = instance
-        .getSnapshot()
-        .filter(isParcel)
-        .map((f) => f.id)
-        .filter((id): id is string | number => id !== undefined)
-    instance.removeFeatures(ids)
-    parcelCount.value = countParcels(instance)
-    drawMode.value = 'view'
-}
-
 function openAddParcel() {
+    discardDraft()
+    clearSelection()
+    resetForm()
     showSidebar.value = true
-    router.replace({ path: '/map', query: { addParcel: '1' } })
+    router.replace({ path: '/map', query: { 'add-parcel': '1' } })
     draw.value?.setMode('polygon')
     drawMode.value = 'plot'
     clearMessages()
 }
 
-function getDrawnPolygon(): GeoJSON.Polygon | null {
-    const geometry = draw.value
-        ?.getSnapshot()
-        .filter(isParcel)
-        .at(-1)?.geometry
-
-    return geometry?.type === 'Polygon' ? geometry : null
-}
-
-function calculateAreaHectares(geojson: GeoJSON.Polygon): number {
-    try {
-        const turfFeature = feature(geojson)
-        const areaSqMeters = area(turfFeature)
-        return Math.round((areaSqMeters / 10000) * 10000) / 10000 // Round to 4 decimal places
-    } catch {
-        return 0
-    }
-}
+const canSave = computed(
+    () =>
+        !loading.value &&
+        Boolean(parcelForm.farm) &&
+        Boolean(parcelForm.land_status) &&
+        hasGeometry.value
+)
 
 async function handleSaveParcel() {
     clearMessages()
 
-    // Validate required fields
     if (!parcelForm.farm) {
         error.value = 'Please select a farm'
         return
@@ -331,20 +555,49 @@ async function handleSaveParcel() {
         return
     }
 
-    // Get the drawn polygon
-    const polygon = getDrawnPolygon()
+    const activeId = isEditingParcel()
+        ? selectedParcelId.value
+        : draftFeatureId.value
+    const polygon = activeId === null ? null : getFeatureGeometry(activeId)
     if (!polygon) {
-        error.value = 'No parcel drawn on the map. Please draw a parcel first.'
+        error.value = isEditingParcel()
+            ? 'No parcel boundary is available.'
+            : 'No parcel drawn on the map. Please draw a parcel first.'
         return
     }
 
-    // Calculate area client-side for immediate feedback
     const calculatedArea = calculateAreaHectares(polygon)
     parcelForm.area_hectares = calculatedArea.toFixed(4)
-
     loading.value = true
 
     try {
+        if (isEditingParcel() && selectedParcelId.value) {
+            const response = await updateParcel(selectedParcelId.value, {
+                farm: parcelForm.farm,
+                boundary_geojson: polygon,
+                land_status: parcelForm.land_status,
+                current_use: parcelForm.current_use,
+                area_hectares: calculatedArea,
+            })
+            const updatedParcel = response.data
+            replaceParcel(updatedParcel)
+            selectedParcel.value = updatedParcel
+            loadParcelIntoForm(updatedParcel)
+            if (draw.value) {
+                draw.value.updateFeatureGeometry(
+                    selectedParcelId.value,
+                    getParcelGeometry(updatedParcel)
+                )
+                draw.value.updateFeatureProperties(
+                    selectedParcelId.value,
+                    featureProperties(updatedParcel)
+                )
+                parcelCount.value = countParcels(draw.value)
+            }
+            success.value = `Parcel ${updatedParcel.parcel_code} updated successfully!`
+            return
+        }
+
         const response = await createFromMap({
             farm: parcelForm.farm,
             boundary_geojson: polygon,
@@ -352,26 +605,23 @@ async function handleSaveParcel() {
             current_use: parcelForm.current_use,
             area_hectares: calculatedArea,
         })
-
         const newParcel = response.data
-
-        success.value = `Parcel ${newParcel.parcel_code} created successfully!`
-
-        // Add the new parcel to the map
+        replaceParcel(newParcel)
+        if (draftFeatureId.value !== null) removeFeature(draftFeatureId.value)
+        draftFeatureId.value = null
         if (draw.value) {
             draw.value.addFeatures([toParcelFeature(newParcel)])
             parcelCount.value = countParcels(draw.value)
         }
-
-        // Close sidebar after short delay to show success message
-        setTimeout(() => {
-            closeSidebar()
-        }, 1500)
-    } catch (err: any) {
-        error.value =
-            err.data?.message ||
-            err.message ||
-            'Failed to create parcel. Please try again.'
+        success.value = `Parcel ${newParcel.parcel_code} created successfully!`
+        setTimeout(closeSidebar, 1200)
+    } catch (value: unknown) {
+        error.value = getErrorMessage(
+            value,
+            isEditingParcel()
+                ? 'Failed to update parcel. Please try again.'
+                : 'Failed to create parcel. Please try again.'
+        )
     } finally {
         loading.value = false
     }
@@ -420,6 +670,15 @@ async function handleSaveParcel() {
                     </span>
                     parcel{{ parcelCount === 1 ? '' : 's' }} drawn
                 </span>
+                <button
+                    type="button"
+                    :disabled="parcelCount === 0"
+                    class="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    @click="startEditing"
+                >
+                    <UIcon name="i-lucide-pencil" class="size-3.5" />
+                    Edit
+                </button>
                 <button
                     type="button"
                     class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#245524]"
@@ -483,7 +742,11 @@ async function handleSaveParcel() {
                                 />
                             </span>
                             <span class="text-xs font-semibold text-gray-800">
-                                Plotting Guide
+                                {{
+                                    isEditingParcel()
+                                        ? 'Edit Parcel'
+                                        : 'Plotting Guide'
+                                }}
                             </span>
                         </div>
                         <div
@@ -552,7 +815,7 @@ async function handleSaveParcel() {
                     </button>
                 </div>
 
-                <form class="space-y-4">
+                <form class="space-y-4" @submit.prevent="handleSaveParcel">
                     <div class="border-b border-gray-100 pb-4">
                         <div
                             class="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400"
@@ -571,7 +834,8 @@ async function handleSaveParcel() {
                             </label>
                             <select
                                 v-model="parcelForm.farm"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                                :disabled="loading || farms.length === 0"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:cursor-not-allowed disabled:bg-gray-50"
                             >
                                 <option value="" disabled>
                                     Select a farm...
@@ -590,13 +854,14 @@ async function handleSaveParcel() {
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
                             >
-                                Parcel Code
+                                Parcel Code (generated)
                             </label>
                             <input
                                 v-model="parcelForm.parcel_code"
                                 type="text"
-                                placeholder="e.g. PLC-1201"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                                placeholder="Generated after saving"
+                                readonly
+                                class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
                             />
                         </div>
                     </div>
@@ -640,7 +905,8 @@ async function handleSaveParcel() {
                                     v-for="s in landStatusOptions"
                                     :key="s"
                                     type="button"
-                                    class="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors"
+                                    :disabled="loading"
+                                    class="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
                                     :class="
                                         parcelForm.land_status === s
                                             ? 'border-[#2d6a2d] bg-[#e8f5e8] text-[#2d6a2d]'
@@ -711,8 +977,9 @@ async function handleSaveParcel() {
 
                 <div class="mt-6 border-t border-gray-100 pt-4">
                     <button
-                        type="button"
-                        class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-[#245524]"
+                        type="submit"
+                        :disabled="!canSave"
+                        class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-[#245524] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         <UIcon
                             v-if="loading"
@@ -724,7 +991,13 @@ async function handleSaveParcel() {
                             name="i-lucide-vector-polygon"
                             class="size-4"
                         />
-                        {{ loading ? 'Saving...' : 'Plot Parcel' }}
+                        {{
+                            loading
+                                ? 'Saving...'
+                                : isEditingParcel()
+                                  ? 'Save Changes'
+                                  : 'Save Parcel'
+                        }}
                     </button>
                     <div
                         class="mt-3 flex items-start gap-1.5 rounded-lg bg-gray-50 p-2.5"

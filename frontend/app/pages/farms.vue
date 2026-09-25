@@ -1,17 +1,17 @@
 <script setup lang="ts">
 definePageMeta({ middleware: 'auth' })
-type LandStatus =
-    | 'Cultivated'
-    | 'Preparation'
-    | 'Harvesting'
-    | 'Fallow'
-    | 'Idle'
-    | 'At Risk'
-    | 'Converted'
+import {
+    LAND_STATUS_OPTIONS,
+    type FarmParcel,
+    type LandStatus,
+} from '~/composables/useFarmParcelApi'
 
 type Parcel = {
+    documentId: string
     parcel_code: string
+    farmDocumentId: string
     farm_code: string
+    farmerDocumentId?: string
     farmerName: string
     barangay: string
     area_hectares: number
@@ -19,224 +19,51 @@ type Parcel = {
     current_use: string | null
 }
 
-const parcels: Parcel[] = [
-    {
-        parcel_code: 'PLC-0101',
-        farmerName: 'Jose Mendoza',
-        farm_code: 'F-0001',
-        barangay: 'Sto. Niño',
-        area_hectares: 2.0,
-        land_status: 'Cultivated',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0102',
-        farmerName: 'Jose Mendoza',
-        farm_code: 'F-0001',
-        barangay: 'Sto. Niño',
-        area_hectares: 2.0,
-        land_status: 'Harvesting',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0103',
-        farmerName: 'Jose Mendoza',
-        farm_code: 'F-0001',
-        barangay: 'Sto. Niño',
-        area_hectares: 1.8,
-        land_status: 'Preparation',
-        current_use: 'Corn',
-    },
-    {
-        parcel_code: 'PLC-0201',
-        farmerName: 'Rosa Dizon',
-        farm_code: 'F-0002',
-        barangay: 'Sindalan',
-        area_hectares: 2.2,
-        land_status: 'Cultivated',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0202',
-        farmerName: 'Rosa Dizon',
-        farm_code: 'F-0002',
-        barangay: 'Sindalan',
-        area_hectares: 2.0,
-        land_status: 'At Risk',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0301',
-        farmerName: 'Pedro Santos',
-        farm_code: 'F-0003',
-        barangay: 'Sto. Niño',
-        area_hectares: 3.4,
-        land_status: 'Cultivated',
-        current_use: 'Sugarcane',
-    },
-    {
-        parcel_code: 'PLC-0302',
-        farmerName: 'Pedro Santos',
-        farm_code: 'F-0003',
-        barangay: 'Sto. Niño',
-        area_hectares: 2.7,
-        land_status: 'Fallow',
-        current_use: 'Sugarcane',
-    },
-    {
-        parcel_code: 'PLC-0401',
-        farmerName: 'Ana Reyes',
-        farm_code: 'F-0004',
-        barangay: 'Calulut',
-        area_hectares: 1.8,
-        land_status: 'Cultivated',
-        current_use: 'Ampalaya',
-    },
-    {
-        parcel_code: 'PLC-0501',
-        farmerName: 'Carlos Garcia',
-        farm_code: 'F-0005',
-        barangay: 'Pulung Bulu',
-        area_hectares: 2.1,
-        land_status: 'Cultivated',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0502',
-        farmerName: 'Carlos Garcia',
-        farm_code: 'F-0005',
-        barangay: 'Pulung Bulu',
-        area_hectares: 1.8,
-        land_status: 'At Risk',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0503',
-        farmerName: 'Carlos Garcia',
-        farm_code: 'F-0005',
-        barangay: 'Pulung Bulu',
-        area_hectares: 1.5,
-        land_status: 'Idle',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0601',
-        farmerName: 'Liza Ramos',
-        farm_code: 'F-0006',
-        barangay: 'Dolores',
-        area_hectares: 1.9,
-        land_status: 'Cultivated',
-        current_use: 'Corn',
-    },
-    {
-        parcel_code: 'PLC-0602',
-        farmerName: 'Liza Ramos',
-        farm_code: 'F-0006',
-        barangay: 'Dolores',
-        area_hectares: 1.7,
-        land_status: 'Harvesting',
-        current_use: 'Corn',
-    },
-    {
-        parcel_code: 'PLC-0701',
-        farmerName: 'Mario Cruz',
-        farm_code: 'F-0007',
-        barangay: 'Telabastagan',
-        area_hectares: 2.4,
-        land_status: 'Fallow',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0702',
-        farmerName: 'Mario Cruz',
-        farm_code: 'F-0007',
-        barangay: 'Telabastagan',
-        area_hectares: 1.5,
-        land_status: 'Idle',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0801',
-        farmerName: 'Elena Bautista',
-        farm_code: 'F-0008',
-        barangay: 'San Pedro',
-        area_hectares: 2.7,
-        land_status: 'Cultivated',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0901',
-        farmerName: 'Ramon Villanueva',
-        farm_code: 'F-0009',
-        barangay: 'Maimpis',
-        area_hectares: 1.5,
-        land_status: 'Idle',
-        current_use: 'Vegetables',
-    },
-    {
-        parcel_code: 'PLC-1001',
-        farmerName: 'Fe Domingo',
-        farm_code: 'F-0010',
-        barangay: 'Del Pilar',
-        area_hectares: 2.6,
-        land_status: 'Cultivated',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-1002',
-        farmerName: 'Fe Domingo',
-        farm_code: 'F-0010',
-        barangay: 'Del Pilar',
-        area_hectares: 2.2,
-        land_status: 'At Risk',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-1101',
-        farmerName: 'Arturo Salazar',
-        farm_code: 'F-0011',
-        barangay: 'Pulung Bulu',
-        area_hectares: 1.8,
-        land_status: 'Cultivated',
-        current_use: 'Corn',
-    },
-    {
-        parcel_code: 'PLC-1102',
-        farmerName: 'Arturo Salazar',
-        farm_code: 'F-0011',
-        barangay: 'Pulung Bulu',
-        area_hectares: 1.4,
-        land_status: 'Preparation',
-        current_use: 'Corn',
-    },
-    {
-        parcel_code: 'PLC-1201',
-        farmerName: 'Corazon Lim',
-        farm_code: 'F-0012',
-        barangay: 'Sindalan',
-        area_hectares: 2.4,
-        land_status: 'Fallow',
-        current_use: 'Sugarcane',
-    },
-    {
-        parcel_code: 'PLC-1301',
-        farmerName: 'Mario Cruz',
-        farm_code: 'F-0007',
-        barangay: 'Telabastagan',
-        area_hectares: 1.2,
-        land_status: 'Converted',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-1302',
-        farmerName: 'Pedro Santos',
-        farm_code: 'F-0003',
-        barangay: 'Sto. Niño',
-        area_hectares: 0.9,
-        land_status: 'Converted',
-        current_use: 'Sugarcane',
-    },
-]
+const { getAll: getAllParcels } = useFarmParcelApi()
+const parcels = ref<Parcel[]>([])
+const selected = ref<Parcel | null>(null)
+const loading = ref(false)
+const loadError = ref<string | null>(null)
+
+function toParcel(parcel: FarmParcel): Parcel {
+    const farm = parcel.farm
+    const farmer = farm?.farmers?.[0]
+
+    return {
+        documentId: parcel.documentId,
+        parcel_code: parcel.parcel_code,
+        farmDocumentId: farm?.documentId ?? '',
+        farm_code: farm?.farm_code ?? 'Unassigned',
+        farmerDocumentId: farmer?.documentId,
+        farmerName: farmer?.name ?? 'Unknown farmer',
+        barangay: farm?.barangay?.name ?? 'Unknown barangay',
+        area_hectares: parcel.area_hectares,
+        land_status: parcel.land_status,
+        current_use: parcel.current_use ?? null,
+    }
+}
+
+async function loadParcels() {
+    loading.value = true
+    loadError.value = null
+
+    try {
+        const response = await getAllParcels({
+            populate: ['farm', 'farm.barangay', 'farm.farmers'],
+        })
+        parcels.value = response.data.map(toParcel)
+        selected.value = null
+    } catch (error: unknown) {
+        loadError.value =
+            error instanceof Error
+                ? error.message
+                : 'Unable to load parcels.'
+    } finally {
+        loading.value = false
+    }
+}
+
+onMounted(loadParcels)
 
 const STATUS_CLASS: Record<LandStatus, string> = {
     Cultivated: 'status-cultivated',
@@ -248,15 +75,7 @@ const STATUS_CLASS: Record<LandStatus, string> = {
     Converted: 'status-converted',
 }
 
-const STATUS_OPTIONS: LandStatus[] = [
-    'Cultivated',
-    'Preparation',
-    'Harvesting',
-    'Fallow',
-    'Idle',
-    'At Risk',
-    'Converted',
-]
+const STATUS_OPTIONS = LAND_STATUS_OPTIONS
 
 const STATUS_DOT: Record<LandStatus, string> = {
     Cultivated: '#166534',
@@ -266,6 +85,14 @@ const STATUS_DOT: Record<LandStatus, string> = {
     Idle: '#4b5563',
     'At Risk': '#b91c1c',
     Converted: '#0f766e',
+}
+
+function statusClass(status: string) {
+    return STATUS_CLASS[status as LandStatus] || 'status-idle'
+}
+
+function statusDot(status: string) {
+    return STATUS_DOT[status as LandStatus] || '#4b5563'
 }
 
 const AVATAR_COLORS = [
@@ -281,8 +108,10 @@ const AVATAR_COLORS = [
 
 function initials(name: string) {
     return name
-        .split(' ')
-        .map((w) => w[0])
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((word) => word[0])
         .slice(0, 2)
         .join('')
         .toUpperCase()
@@ -296,29 +125,29 @@ function avatarColor(name: string) {
 
 const search = ref('')
 const filterStatus = ref('All')
-const selected = ref<Parcel | null>(null)
 
 function goEditParcel(p: Parcel) {
     navigateTo({
         path: '/map',
-        query: {
-            editParcel: '1',
-            parcel_code: p.parcel_code,
-            farm_code: p.farm_code,
-            farmer_name: p.farmerName,
-            area: String(p.area_hectares),
-            land_status: p.land_status,
-            current_use: p.current_use ?? '',
-        },
+        query: { 'edit-parcel': p.documentId },
+    })
+}
+
+function goViewParcel(p: Parcel) {
+    navigateTo({
+        path: '/map',
+        query: { 'focus-parcel': p.documentId },
     })
 }
 
 const filtered = computed(() =>
-    parcels.filter((p) => {
+    parcels.value.filter((p) => {
+        const query = search.value.trim().toLowerCase()
         const match =
-            !search.value ||
-            p.farmerName.toLowerCase().includes(search.value.toLowerCase()) ||
-            p.parcel_code.toLowerCase().includes(search.value.toLowerCase())
+            !query ||
+            p.farmerName.toLowerCase().includes(query) ||
+            p.parcel_code.toLowerCase().includes(query) ||
+            p.farm_code.toLowerCase().includes(query)
         const status =
             filterStatus.value === 'All' || p.land_status === filterStatus.value
         return match && status
@@ -326,31 +155,35 @@ const filtered = computed(() =>
 )
 
 const farmerCount = computed(
-    () => new Set(parcels.map((p) => p.farmerName)).size
+    () =>
+        new Set(
+            parcels.value.map((p) => p.farmerDocumentId ?? p.farmerName)
+        ).size
 )
 
 const barangayCount = computed(
-    () => new Set(parcels.map((p) => p.barangay)).size
+    () => new Set(parcels.value.map((p) => p.barangay)).size
 )
 
 const summaryCards = computed(() => [
     {
         label: 'Total Parcels',
-        val: parcels.length,
+        val: parcels.value.length,
         color: '#2d6a2d',
         bg: '#e8f5e8',
         icon: 'i-lucide-layers',
     },
     {
         label: 'Cultivated',
-        val: parcels.filter((p) => p.land_status === 'Cultivated').length,
+        val: parcels.value.filter((p) => p.land_status === 'Cultivated')
+            .length,
         color: '#16a34a',
         bg: '#dcfce7',
         icon: 'i-lucide-sprout',
     },
     {
         label: 'Idle / Fallow',
-        val: parcels.filter(
+        val: parcels.value.filter(
             (p) => p.land_status === 'Idle' || p.land_status === 'Fallow'
         ).length,
         color: '#9ca3af',
@@ -359,7 +192,7 @@ const summaryCards = computed(() => [
     },
     {
         label: 'At Risk',
-        val: parcels.filter((p) => p.land_status === 'At Risk').length,
+        val: parcels.value.filter((p) => p.land_status === 'At Risk').length,
         color: '#dc2626',
         bg: '#fee2e2',
         icon: 'i-lucide-triangle-alert',
@@ -408,7 +241,7 @@ const detailFields = computed(() => {
             <button
                 type="button"
                 class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
-                @click="navigateTo('/map?addParcel=1')"
+                @click="navigateTo('/map?add-parcel=1')"
             >
                 <UIcon name="i-lucide-layers" class="size-3.5" />
                 Add Parcel
@@ -448,6 +281,26 @@ const detailFields = computed(() => {
                 </div>
                 <div class="text-xs text-gray-500">{{ card.label }}</div>
             </div>
+        </div>
+
+        <div
+            v-if="loading"
+            class="mb-5 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500"
+        >
+            Loading parcels...
+        </div>
+        <div
+            v-else-if="loadError"
+            class="mb-5 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        >
+            <span>{{ loadError }}</span>
+            <button
+                type="button"
+                class="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-red-700 ring-1 ring-red-200 hover:bg-red-100"
+                @click="loadParcels"
+            >
+                Retry
+            </button>
         </div>
 
         <!-- Filters -->
@@ -496,7 +349,7 @@ const detailFields = computed(() => {
                     <span
                         v-if="s !== 'All'"
                         class="h-1.5 w-1.5 rounded-full"
-                        :style="{ background: STATUS_DOT[s as LandStatus] }"
+                        :style="{ background: statusDot(s) }"
                     />
                     {{ s }}
                 </button>
@@ -545,11 +398,11 @@ const detailFields = computed(() => {
                     <tbody>
                         <tr
                             v-for="(p, i) in filtered"
-                            :key="p.parcel_code"
+                            :key="p.documentId"
                             class="group cursor-pointer border-b border-gray-50 last:border-0 transition-colors hover:bg-green-50/30"
                             :class="[
                                 i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white',
-                                selected?.parcel_code === p.parcel_code
+                                selected?.documentId === p.documentId
                                     ? '!bg-green-50/60'
                                     : '',
                             ]"
@@ -589,7 +442,7 @@ const detailFields = computed(() => {
                             <td class="px-4 py-2.5">
                                 <span
                                     :class="
-                                        STATUS_CLASS[p.land_status] ||
+                                        statusClass(p.land_status) ||
                                         'status-idle'
                                     "
                                     class="flex w-fit items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-medium"
@@ -598,7 +451,7 @@ const detailFields = computed(() => {
                                         class="h-1.5 w-1.5 rounded-full"
                                         :style="{
                                             background:
-                                                STATUS_DOT[p.land_status],
+                                                statusDot(p.land_status),
                                         }"
                                     />
                                     {{ p.land_status }}
@@ -626,7 +479,7 @@ const detailFields = computed(() => {
                     </tbody>
                 </table>
                 <div
-                    v-if="filtered.length === 0"
+                    v-if="!loading && !loadError && filtered.length === 0"
                     class="py-12 text-center text-gray-400"
                 >
                     <UIcon
@@ -645,7 +498,7 @@ const detailFields = computed(() => {
                     <div
                         class="absolute inset-x-0 top-0 h-1 opacity-80"
                         :style="{
-                            backgroundImage: `linear-gradient(90deg, ${STATUS_DOT[selected.land_status]}, transparent)`,
+                            backgroundImage: `linear-gradient(90deg, ${statusDot(selected.land_status)}, transparent)`,
                         }"
                     />
                     <div class="p-5">
@@ -664,7 +517,7 @@ const detailFields = computed(() => {
                             </div>
                             <span
                                 :class="
-                                    STATUS_CLASS[selected.land_status] ||
+                                    statusClass(selected.land_status) ||
                                     'status-idle'
                                 "
                                 class="flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-medium"
@@ -673,7 +526,7 @@ const detailFields = computed(() => {
                                     class="h-1.5 w-1.5 rounded-full"
                                     :style="{
                                         background:
-                                            STATUS_DOT[selected.land_status],
+                                            statusDot(selected.land_status),
                                     }"
                                 />
                                 {{ selected.land_status }}
@@ -748,10 +601,12 @@ const detailFields = computed(() => {
                                 />
                                 Edit Parcel
                             </button>
-                            <button
-                                type="button"
-                                class="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                            >
+                                <button
+                                    type="button"
+                                    class="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                                    @click="goViewParcel(selected)"
+                                >
+
                                 <UIcon
                                     name="i-lucide-map-pin"
                                     class="size-3.5"

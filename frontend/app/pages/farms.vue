@@ -55,9 +55,7 @@ async function loadParcels() {
         selected.value = null
     } catch (error: unknown) {
         loadError.value =
-            error instanceof Error
-                ? error.message
-                : 'Unable to load parcels.'
+            error instanceof Error ? error.message : 'Unable to load parcels.'
     } finally {
         loading.value = false
     }
@@ -156,9 +154,8 @@ const filtered = computed(() =>
 
 const farmerCount = computed(
     () =>
-        new Set(
-            parcels.value.map((p) => p.farmerDocumentId ?? p.farmerName)
-        ).size
+        new Set(parcels.value.map((p) => p.farmerDocumentId ?? p.farmerName))
+            .size
 )
 
 const barangayCount = computed(
@@ -175,8 +172,7 @@ const summaryCards = computed(() => [
     },
     {
         label: 'Cultivated',
-        val: parcels.value.filter((p) => p.land_status === 'Cultivated')
-            .length,
+        val: parcels.value.filter((p) => p.land_status === 'Cultivated').length,
         color: '#16a34a',
         bg: '#dcfce7',
         icon: 'i-lucide-sprout',
@@ -206,6 +202,27 @@ const detailFields = computed(() => {
         { label: 'Farm Code', val: s.farm_code },
         { label: 'Current Use', val: s.current_use ?? '—' },
     ]
+})
+
+const showCreateFarmModal = ref<boolean>(false)
+const toggleShowCreateFarmModal = () => {
+    showCreateFarmModal.value = !showCreateFarmModal.value
+}
+
+const createdFarmCode = ref<string | null>(null)
+let createdFarmTimer: ReturnType<typeof setTimeout> | undefined
+
+function handleFarmCreated(farmCode: string) {
+    createdFarmCode.value = farmCode
+
+    if (createdFarmTimer) clearTimeout(createdFarmTimer)
+    createdFarmTimer = setTimeout(() => {
+        createdFarmCode.value = null
+    }, 6000)
+}
+
+onBeforeUnmount(() => {
+    if (createdFarmTimer) clearTimeout(createdFarmTimer)
 })
 </script>
 
@@ -238,13 +255,40 @@ const detailFields = computed(() => {
                     parcels
                 </p>
             </div>
+            <div class="flex gap-2">
+                <UButton
+                    class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
+                    @click="toggleShowCreateFarmModal"
+                >
+                    <UIcon name="i-lucide-plus" />
+                    Create Farm
+                </UButton>
+                <UButton
+                    class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
+                    @click="navigateTo('/map?add-parcel=1')"
+                >
+                    <UIcon name="i-lucide-layers" class="size-3.5" />
+                    Add Parcel
+                </UButton>
+            </div>
+        </div>
+
+        <div
+            v-if="createdFarmCode"
+            class="mb-5 flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
+        >
+            <span class="flex items-center gap-2">
+                <UIcon name="i-lucide-circle-check" class="size-4 shrink-0" />
+                Farm
+                <span class="font-mono font-semibold">{{ createdFarmCode }}</span>
+                created. Draw a parcel for it from the Add Parcel button.
+            </span>
             <button
                 type="button"
-                class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
-                @click="navigateTo('/map?add-parcel=1')"
+                class="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-green-800 ring-1 ring-green-200 hover:bg-green-100"
+                @click="createdFarmCode = null"
             >
-                <UIcon name="i-lucide-layers" class="size-3.5" />
-                Add Parcel
+                Dismiss
             </button>
         </div>
 
@@ -403,30 +447,27 @@ const detailFields = computed(() => {
                             :class="[
                                 i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white',
                                 selected?.documentId === p.documentId
-                                    ? '!bg-green-50/60'
+                                    ? 'bg-green-50/60!'
                                     : '',
                             ]"
                             @click="selected = p"
                         >
-                            <td
-                                class="px-4 py-2.5 font-mono text-gray-700"
-                            >
+                            <td class="px-4 py-2.5 font-mono text-gray-700">
                                 {{ p.parcel_code }}
                             </td>
                             <td class="px-4 py-2.5">
                                 <div class="flex items-center gap-2.5">
                                     <span
-                                        class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                                        class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
                                         :style="{
-                                            backgroundColor:
-                                                avatarColor(p.farmerName),
+                                            backgroundColor: avatarColor(
+                                                p.farmerName
+                                            ),
                                         }"
                                     >
                                         {{ initials(p.farmerName) }}
                                     </span>
-                                    <span
-                                        class="font-medium text-gray-800"
-                                    >
+                                    <span class="font-medium text-gray-800">
                                         {{ p.farmerName }}
                                     </span>
                                 </div>
@@ -450,8 +491,9 @@ const detailFields = computed(() => {
                                     <span
                                         class="h-1.5 w-1.5 rounded-full"
                                         :style="{
-                                            background:
-                                                statusDot(p.land_status),
+                                            background: statusDot(
+                                                p.land_status
+                                            ),
                                         }"
                                     />
                                     {{ p.land_status }}
@@ -493,7 +535,7 @@ const detailFields = computed(() => {
             </div>
 
             <!-- Detail Side Panel -->
-            <div v-if="selected" class="w-72 flex-shrink-0">
+            <div v-if="selected" class="w-72 shrink-0">
                 <div class="alps-card sticky top-4 overflow-hidden">
                     <div
                         class="absolute inset-x-0 top-0 h-1 opacity-80"
@@ -504,9 +546,7 @@ const detailFields = computed(() => {
                     <div class="p-5">
                         <div class="flex items-start justify-between">
                             <div>
-                                <div
-                                    class="font-mono text-xs text-gray-600"
-                                >
+                                <div class="font-mono text-xs text-gray-600">
                                     {{ selected.parcel_code }}
                                 </div>
                                 <h3
@@ -525,8 +565,9 @@ const detailFields = computed(() => {
                                 <span
                                     class="h-1.5 w-1.5 rounded-full"
                                     :style="{
-                                        background:
-                                            statusDot(selected.land_status),
+                                        background: statusDot(
+                                            selected.land_status
+                                        ),
                                     }"
                                 />
                                 {{ selected.land_status }}
@@ -534,11 +575,9 @@ const detailFields = computed(() => {
                         </div>
 
                         <div
-                            class="mt-4 rounded-xl bg-gradient-to-br from-[#f0faf0] to-[#e8f5e8] p-4"
+                            class="mt-4 rounded-xl bg-linear-to-br from-[#f0faf0] to-[#e8f5e8] p-4"
                         >
-                            <div
-                                class="text-2xl font-bold text-[#2d6a2d]"
-                            >
+                            <div class="text-2xl font-bold text-[#2d6a2d]">
                                 {{ selected.area_hectares }}
                                 ha
                             </div>
@@ -549,7 +588,7 @@ const detailFields = computed(() => {
 
                         <div class="mt-4 flex items-center gap-2.5">
                             <span
-                                class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+                                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
                                 :style="{
                                     backgroundColor: avatarColor(
                                         selected.farmerName
@@ -601,12 +640,11 @@ const detailFields = computed(() => {
                                 />
                                 Edit Parcel
                             </button>
-                                <button
-                                    type="button"
-                                    class="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                                    @click="goViewParcel(selected)"
-                                >
-
+                            <button
+                                type="button"
+                                class="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                                @click="goViewParcel(selected)"
+                            >
                                 <UIcon
                                     name="i-lucide-map-pin"
                                     class="size-3.5"
@@ -618,5 +656,10 @@ const detailFields = computed(() => {
                 </div>
             </div>
         </div>
+
+        <CreateFarm
+            v-model="showCreateFarmModal"
+            @created="handleFarmCreated"
+        />
     </div>
 </template>

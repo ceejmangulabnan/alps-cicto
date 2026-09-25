@@ -596,7 +596,8 @@ export interface ApiFarmFarm extends Struct.CollectionTypeSchema {
         barangay: Schema.Attribute.Relation<
             'manyToOne',
             'api::barangay.barangay'
-        >
+        > &
+            Schema.Attribute.Required
         createdAt: Schema.Attribute.DateTime
         createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
             Schema.Attribute.Private

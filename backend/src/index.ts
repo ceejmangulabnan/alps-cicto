@@ -1,5 +1,69 @@
 import type { Core } from '@strapi/strapi'
 
+import { generateFarmCode } from './api/farm/services/farm-code'
+import { generateFarmerCode } from './api/farmer/services/farmer-code'
+import { generateParcelCode } from './api/farm-parcel/services/parcel-code'
+import { validateGeoJSONPolygon } from './api/farm-parcel/utils/geo'
+
+const FARM_UID = 'api::farm.farm'
+const FARMER_UID = 'api::farmer.farmer'
+const FARM_PARCEL_UID = 'api::farm-parcel.farm-parcel'
+
+/**
+ * Fills in server-generated fields before the Document Service validates them.
+ *
+ * Required-field validation (entityValidator.validateEntityCreation) runs above
+ * the database layer, while `beforeCreate` content-type lifecycles run inside it.
+ * Anything a lifecycle generates for a *required* attribute therefore arrives too
+ * late, so it has to be set here instead.
+ */
+function registerGeneratedFields(strapi: Core.Strapi) {
+    strapi.documents.use(async (ctx, next) => {
+        const { uid, action, params } = ctx
+
+        if (action !== 'create') {
+            return next()
+        }
+
+        const data = params?.data as Record<string, unknown> | undefined
+        if (!data || typeof data !== 'object') {
+            return next()
+        }
+
+        if (uid === FARMER_UID && !data.farmer_code) {
+            data.farmer_code = await generateFarmerCode()
+        }
+
+        if (uid === FARM_UID && !data.farm_code) {
+            const farmCode = await generateFarmCode(data.barangay)
+            if (farmCode) {
+                data.farm_code = farmCode
+            }
+        }
+
+        if (uid === FARM_PARCEL_UID) {
+            if (!data.parcel_code) {
+                data.parcel_code = await generateParcelCode()
+            }
+
+            if (
+                (data.area_hectares === undefined ||
+                    data.area_hectares === null) &&
+                data.boundary_geojson !== undefined
+            ) {
+                const geo = validateGeoJSONPolygon(data.boundary_geojson)
+                if (geo.valid && geo.calculatedAreaHectares !== undefined) {
+                    data.area_hectares = Number(
+                        geo.calculatedAreaHectares.toFixed(4)
+                    )
+                }
+            }
+        }
+
+        return next()
+    })
+}
+
 export default {
     /**
      * An asynchronous register function that runs before
@@ -7,7 +71,9 @@ export default {
      *
      * This gives you an opportunity to extend code.
      */
-    register(/* { strapi }: { strapi: Core.Strapi } */) {},
+    register({ strapi }: { strapi: Core.Strapi }) {
+        registerGeneratedFields(strapi)
+    },
 
     /**
      * An asynchronous bootstrap function that runs before

@@ -200,20 +200,15 @@ const filterType = ref('All')
 
 const filteredInsights = computed(() =>
     alpsInsights.filter(
-        (i) =>
-            filterType.value === 'All' || i.type === filterType.value
+        (i) => filterType.value === 'All' || i.type === filterType.value
     )
 )
 
 const insightTotals = computed(() => ({
-    parcels: filteredInsights.value.reduce(
-        (s, i) => s + i.affectedParcels,
-        0
-    ),
+    parcels: filteredInsights.value.reduce((s, i) => s + i.affectedParcels, 0),
     area:
         Math.round(
-            filteredInsights.value.reduce((s, i) => s + i.affectedArea, 0) *
-                10
+            filteredInsights.value.reduce((s, i) => s + i.affectedArea, 0) * 10
         ) / 10,
 }))
 
@@ -224,8 +219,7 @@ const riskBarTotals = computed(() => ({
 }))
 
 const atRiskTotals = computed(() => ({
-    area:
-        Math.round(atRiskParcels.reduce((s, p) => s + p.area, 0) * 10) / 10,
+    area: Math.round(atRiskParcels.reduce((s, p) => s + p.area, 0) * 10) / 10,
     count: atRiskParcels.length,
 }))
 
@@ -404,21 +398,21 @@ function openEditModal(insight: AlpsInsight) {
 }
 
 function saveEdit() {
-    const idx = alpsInsights.findIndex(
-        (r) => r.id === editForm.id
-    )
+    const idx = alpsInsights.findIndex((r) => r.id === editForm.id)
     if (idx === -1) return
     const i = alpsInsights[idx]
-    i.type = editForm.type as InsightType
-    i.priority = editForm.priority as InsightPriority
-    i.title = editForm.title
-    i.description = editForm.description
-    i.rule = editForm.rule
-    i.affectedParcels = Number(editForm.affectedParcels)
-    i.affectedArea = Number(editForm.affectedArea)
-    i.potentialScore = editForm.potentialScore
-    i.recommendation = editForm.recommendation
-    showEditModal.value = false
+    if (i) {
+        i.type = editForm.type as InsightType
+        i.priority = editForm.priority as InsightPriority
+        i.title = editForm.title
+        i.description = editForm.description
+        i.rule = editForm.rule
+        i.affectedParcels = Number(editForm.affectedParcels)
+        i.affectedArea = Number(editForm.affectedArea)
+        i.potentialScore = editForm.potentialScore
+        i.recommendation = editForm.recommendation
+        showEditModal.value = false
+    }
 }
 
 const showDeleteModal = ref(false)
@@ -451,17 +445,17 @@ function confirmDelete() {
                     <span
                         class="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700"
                     >
-                        {{ kpis[0].val }} high risk
+                        {{ kpis[0]?.val }} high risk
                     </span>
                     <span
                         class="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-semibold text-orange-700"
                     >
-                        {{ kpis[2].val }} area at risk
+                        {{ kpis[2]?.val }} area at risk
                     </span>
                     <span
                         class="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700"
                     >
-                        {{ kpis[3].val }} interventions
+                        {{ kpis[3]?.val }} interventions
                     </span>
                 </div>
                 <p class="mt-0.5 text-sm text-gray-500">
@@ -481,7 +475,11 @@ function confirmDelete() {
 
         <!-- Risk KPIs -->
         <div class="grid grid-cols-4 gap-4">
-            <div v-for="kpi in kpis" :key="kpi.label" class="alps-card relative overflow-hidden p-5">
+            <div
+                v-for="kpi in kpis"
+                :key="kpi.label"
+                class="alps-card relative overflow-hidden p-5"
+            >
                 <div
                     class="absolute inset-x-0 top-0 h-0.5 opacity-70"
                     :style="{
@@ -743,7 +741,12 @@ function confirmDelete() {
                     <span
                         class="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700"
                     >
-                        {{ riskBarTotals.high + riskBarTotals.medium + riskBarTotals.low }} flagged
+                        {{
+                            riskBarTotals.high +
+                            riskBarTotals.medium +
+                            riskBarTotals.low
+                        }}
+                        flagged
                     </span>
                 </div>
                 <ClientOnly>
@@ -1255,9 +1258,7 @@ function confirmDelete() {
                         class="size-5 text-red-600"
                     />
                 </div>
-                <h3 class="text-lg font-bold text-gray-900">
-                    Delete Insight
-                </h3>
+                <h3 class="text-lg font-bold text-gray-900">Delete Insight</h3>
                 <p class="mt-1 text-xs text-gray-500">
                     Remove insight
                     <span class="font-mono text-gray-700">

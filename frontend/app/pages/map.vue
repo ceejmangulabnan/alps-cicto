@@ -11,8 +11,8 @@ import type { GeoJSONStoreFeatures } from 'terra-draw'
 import { TerraDrawMapLibreGLAdapter } from 'terra-draw-maplibre-gl-adapter'
 import { area } from '@turf/area'
 import { feature } from '@turf/helpers'
-import { useFarmParcelApi } from '~/composables/useFarmParcelApi'
-import { useFarmsApi } from '~/composables/useFarmsApi'
+import { useFarmParcelApi, type FarmParcel } from '~/composables/useFarmParcelApi'
+import { useFarmsApi, type Farm } from '~/composables/useFarmsApi'
 
 const config = useRuntimeConfig()
 const maptilerKey = config.public.maptilerKey as string | undefined
@@ -44,7 +44,7 @@ const mapStyle = computed<StyleSpecification | string>(() =>
 )
 
 // San Fernando, Pampanga
-const mapCenter = ref<[number, number]>([120.6896, 15.0282])
+const mapCenter = ref({ lng: 120.6896, lat: 15.0282 })
 const mapZoom = ref(14)
 
 const attributionControl = {
@@ -53,9 +53,7 @@ const attributionControl = {
 }
 
 const coordinatesText = computed(() => {
-    const c = mapCenter.value
-    const lng = Array.isArray(c) ? c[0] : (c?.lng ?? 0)
-    const lat = Array.isArray(c) ? c[1] : (c?.lat ?? 0)
+    const { lng, lat } = mapCenter.value
     const ns = lat >= 0 ? 'N' : 'S'
     const ew = lng >= 0 ? 'E' : 'W'
     return `${Math.abs(lat).toFixed(4)}°${ns}, ${Math.abs(lng).toFixed(4)}°${ew} · Zoom ${Math.round(mapZoom.value)}`
@@ -130,6 +128,26 @@ const modeMeta = computed(() => MODE_META[drawMode.value])
 const { createFromMap, getAll: getAllParcels } = useFarmParcelApi()
 const { getAllForSelect: getFarms } = useFarmsApi()
 
+function toParcelFeature(parcel: FarmParcel): GeoJSONStoreFeatures {
+    const boundary = parcel.boundary_geojson
+    const geometry =
+        boundary.type === 'Feature' ? boundary.geometry : boundary
+
+    return {
+        type: 'Feature',
+        id: parcel.documentId,
+        geometry,
+        properties: {
+            mode: 'polygon',
+            parcelCode: parcel.parcel_code,
+            landStatus: parcel.land_status,
+            areaHectares: parcel.area_hectares,
+            farmCode: parcel.farm?.farm_code ?? null,
+            currentUse: parcel.current_use,
+        },
+    }
+}
+
 // ---------------------------------------------------------------------------
 // New Parcel sidebar (connected to backend)
 // ---------------------------------------------------------------------------
@@ -151,14 +169,7 @@ const sidebarSubtitle = computed(() =>
 const loading = ref(false)
 const error = ref<string | null>(null)
 const success = ref<string | null>(null)
-const farms = ref<
-    Array<{
-        documentId: string
-        farm_code: string
-        barangay?: { name: string; code: string }
-        farmers?: Array<{ name: string; farmer_code: string }>
-    }>
->([])
+const farms = ref<Farm[]>([])
 
 const parcelForm = reactive({
     farm: '' as string,
@@ -189,13 +200,7 @@ function closeSidebar() {
 
 async function loadFarms() {
     try {
-        const data = await getFarms()
-        farms.value = data.map((f: any) => ({
-            documentId: f.documentId,
-            farm_code: f.farm_code,
-            barangay: f.barangay,
-            farmers: f.farmers,
-        }))
+        farms.value = await getFarms()
     } catch (err) {
         console.error('Failed to load farms:', err)
     }
@@ -209,19 +214,7 @@ async function loadExistingParcels() {
         })
         const parcels = response.data
         if (draw.value && parcels.length > 0) {
-            const features = parcels.map((p: any) => ({
-                type: 'Feature' as const,
-                id: p.documentId,
-                geometry: p.boundary_geojson,
-                properties: {
-                    mode: 'polygon' as const,
-                    parcelCode: p.parcel_code,
-                    landStatus: p.land_status,
-                    areaHectares: p.area_hectares,
-                    farmCode: p.farm?.farm_code,
-                    currentUse: p.current_use,
-                },
-            }))
+            const features = parcels.map(toParcelFeature)
             draw.value.addFeatures(features)
             parcelCount.value = features.length
         }
@@ -244,7 +237,7 @@ function onMapLoad(payload: { map: MaplibreMap }) {
         modes: [
             new TerraDrawPolygonMode({ modeName: 'polygon' }),
             new TerraDrawSelectMode({ modeName: 'select' }),
-            new TerraDrawRenderMode({ modeName: 'render' }),
+            new TerraDrawRenderMode({ modeName: 'render', styles: {} }),
         ],
     })
 
@@ -292,6 +285,7 @@ function clearParcels() {
         .getSnapshot()
         .filter(isParcel)
         .map((f) => f.id)
+        .filter((id): id is string | number => id !== undefined)
     instance.removeFeatures(ids)
     parcelCount.value = countParcels(instance)
     drawMode.value = 'view'
@@ -305,34 +299,18 @@ function openAddParcel() {
     clearMessages()
 }
 
-function getDrawnPolygon():
-    | GeoJSON.Polygon
-    | GeoJSON.Feature<GeoJSON.Polygon>
-    | null {
-    const instance = draw.value
-    if (!instance) return null
+function getDrawnPolygon(): GeoJSON.Polygon | null {
+    const geometry = draw.value
+        ?.getSnapshot()
+        .filter(isParcel)
+        .at(-1)?.geometry
 
-    const snapshot = instance.getSnapshot()
-    const polygons = snapshot.filter(isParcel)
-
-    if (polygons.length === 0) return null
-
-    // Return the most recently created polygon (last one)
-    const latest = polygons[polygons.length - 1]
-    const geometry = latest.geometry
-
-    // If it's a Feature, extract geometry; if it's already a Polygon, use as-is
-    if (geometry.type === 'Feature') {
-        return geometry.geometry as GeoJSON.Polygon
-    }
-    return geometry as GeoJSON.Polygon
+    return geometry?.type === 'Polygon' ? geometry : null
 }
 
-function calculateAreaHectares(
-    geojson: GeoJSON.Polygon | GeoJSON.Feature<GeoJSON.Polygon>
-): number {
+function calculateAreaHectares(geojson: GeoJSON.Polygon): number {
     try {
-        const turfFeature = feature(geojson as any)
+        const turfFeature = feature(geojson)
         const areaSqMeters = area(turfFeature)
         return Math.round((areaSqMeters / 10000) * 10000) / 10000 // Round to 4 decimal places
     } catch {
@@ -381,20 +359,7 @@ async function handleSaveParcel() {
 
         // Add the new parcel to the map
         if (draw.value) {
-            const newFeature = {
-                type: 'Feature' as const,
-                id: newParcel.documentId,
-                geometry: newParcel.boundary_geojson,
-                properties: {
-                    mode: 'polygon' as const,
-                    parcelCode: newParcel.parcel_code,
-                    landStatus: newParcel.land_status,
-                    areaHectares: newParcel.area_hectares,
-                    farmCode: newParcel.farm?.farm_code,
-                    currentUse: newParcel.current_use,
-                },
-            }
-            draw.value.addFeatures([newFeature])
+            draw.value.addFeatures([toParcelFeature(newParcel)])
             parcelCount.value = countParcels(draw.value)
         }
 
@@ -612,11 +577,12 @@ async function handleSaveParcel() {
                                     Select a farm...
                                 </option>
                                 <option
-                                    v-for="f in farmSelectOptions"
-                                    :key="f.code"
-                                    :value="f.code"
+                                    v-for="farm in farms"
+                                    :key="farm.documentId"
+                                    :value="farm.documentId"
                                 >
-                                    {{ f.code }} · {{ f.label }}
+                                    {{ farm.farm_code }} ·
+                                    {{ farm.barangay?.name ?? 'Unknown' }}
                                 </option>
                             </select>
                         </div>

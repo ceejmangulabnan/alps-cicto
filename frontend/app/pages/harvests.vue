@@ -122,6 +122,78 @@ const monthlyHarvestData = computed(() => {
 const statusClass = (s: HarvestStatus) =>
     s === 'Completed' ? 'status-cultivated' : 'status-harvesting'
 
+const CROP_COLORS: Record<string, string> = {
+    Rice: '#16a34a',
+    Corn: '#ca8a04',
+    Sugarcane: '#d97706',
+    Vegetables: '#059669',
+    'Root Crops': '#7c3aed',
+}
+
+const AS_OF = new Date('November 25, 2024')
+const daysUntil = (dateStr: string) =>
+    Math.round((new Date(dateStr).getTime() - AS_OF.getTime()) / 86_400_000)
+
+const AVATAR_COLORS = [
+    '#2d6a2d',
+    '#3b82f6',
+    '#7c3aed',
+    '#d97706',
+    '#dc2626',
+    '#0891b2',
+    '#db2777',
+    '#65a30d',
+]
+
+function initials(name: string) {
+    return name
+        .split(' ')
+        .map((w) => w[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+}
+
+function avatarColor(name: string) {
+    let h = 0
+    for (const c of name) h = (h * 31 + c.charCodeAt(0)) % AVATAR_COLORS.length
+    return AVATAR_COLORS[h]
+}
+
+const STATUS_OPTIONS = ['Completed', 'Upcoming']
+const statusFilterOptions = ['All', ...STATUS_OPTIONS] as string[]
+
+const search = ref('')
+const filterStatus = ref('All')
+
+const filtered = computed(() =>
+    harvestRecords.filter((h) => {
+        const match =
+            !search.value ||
+            h.farmer.toLowerCase().includes(search.value.toLowerCase()) ||
+            h.crop.toLowerCase().includes(search.value.toLowerCase()) ||
+            h.barangay.toLowerCase().includes(search.value.toLowerCase())
+        const status =
+            filterStatus.value === 'All' ||
+            harvestStatus(h) === filterStatus.value
+        return match && status
+    })
+)
+
+const chartTotals = computed(() => {
+    const rec2024 = harvestRecords.filter((h) =>
+        h.harvest_date.startsWith('2024-')
+    )
+    return {
+        area: Math.round(
+            rec2024.reduce((a, h) => a + h.area_hectares, 0) * 10
+        ) / 10,
+        completed:
+            rec2024.filter((h) => h.production_kg != null).length,
+        total: rec2024.length,
+    }
+})
+
 const kpis = computed(() => [
     {
         label: 'Total Harvests (2024)',
@@ -305,7 +377,24 @@ function confirmDelete() {
     <div class="space-y-6 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">Harvests</h1>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-2xl font-bold text-gray-900">Harvests</h1>
+                    <span
+                        class="rounded-full bg-[#e8f5e8] px-2 py-0.5 text-[11px] font-semibold text-[#2d6a2d]"
+                    >
+                        {{ harvestRecords.length }} records
+                    </span>
+                    <span
+                        class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500"
+                    >
+                        {{ kpis[1].val }} t · 2024
+                    </span>
+                    <span
+                        class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700"
+                    >
+                        {{ kpis[3].val }} upcoming
+                    </span>
+                </div>
                 <p class="mt-0.5 text-sm text-gray-500">
                     Yield records · Season tracking · Production data
                 </p>
@@ -322,7 +411,13 @@ function confirmDelete() {
 
         <!-- KPIs -->
         <div class="grid grid-cols-4 gap-4">
-            <div v-for="kpi in kpis" :key="kpi.label" class="alps-card p-5">
+            <div v-for="kpi in kpis" :key="kpi.label" class="alps-card relative overflow-hidden p-5">
+                <div
+                    class="absolute inset-x-0 top-0 h-0.5 opacity-70"
+                    :style="{
+                        backgroundImage: `linear-gradient(90deg, ${kpi.color}, transparent)`,
+                    }"
+                />
                 <div
                     class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg"
                     :style="{ background: kpi.bg }"
@@ -347,9 +442,24 @@ function confirmDelete() {
 
         <!-- Chart -->
         <div class="alps-card p-5">
-            <h3 class="mb-4 text-sm font-semibold text-gray-700">
-                Monthly Harvest Volume (ha) — 2024
-            </h3>
+            <div class="mb-1 flex items-center gap-3">
+                <div
+                    class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f0faf0]"
+                >
+                    <UIcon
+                        name="i-lucide-bar-chart-3"
+                        class="size-4 text-[#2d6a2d]"
+                    />
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700">
+                        Monthly Harvest Volume
+                    </h3>
+                    <p class="text-[11px] text-gray-400">
+                        Harvested area (ha) by crop · Jan–Dec 2024
+                    </p>
+                </div>
+            </div>
             <ClientOnly>
                 <div class="w-full" :style="{ height: '220px' }">
                     <VChart
@@ -359,14 +469,89 @@ function confirmDelete() {
                     />
                 </div>
             </ClientOnly>
+            <div
+                class="mt-3 flex items-center justify-between rounded-lg bg-[#f8faf8] px-4 py-2.5"
+            >
+                <div class="flex items-center gap-4 text-[11px] text-gray-500">
+                    <span>
+                        <span class="font-bold text-gray-900">
+                            {{ chartTotals.area }}
+                        </span>
+                        ha harvested
+                    </span>
+                    <span>
+                        <span class="font-bold text-gray-900">
+                            {{ chartTotals.completed }}
+                        </span>
+                        of
+                        <span class="font-bold text-gray-900">
+                            {{ chartTotals.total }}
+                        </span>
+                        completed
+                    </span>
+                </div>
+                <span class="text-[10px] font-medium text-gray-400"
+                    >Tons shown from recorded production</span
+                >
+            </div>
         </div>
 
         <!-- Harvest Records Table -->
         <div class="alps-card overflow-hidden">
-            <div class="border-b border-gray-100 px-5 py-4">
+            <div
+                class="flex flex-wrap items-center gap-3 border-b border-gray-100 px-5 py-4"
+            >
                 <h3 class="text-sm font-semibold text-gray-700">
                     Harvest Records
                 </h3>
+                <div class="relative ml-auto w-64">
+                    <UIcon
+                        name="i-lucide-search"
+                        class="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Search farmer, crop or barangay..."
+                        class="w-full rounded-full border border-gray-200 bg-white py-1.5 pl-8 pr-8 text-xs shadow-sm focus:border-[#2d6a2d] focus:outline-none focus:ring-1 focus:ring-green-500"
+                    />
+                    <button
+                        v-if="search"
+                        type="button"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:text-gray-600"
+                        @click="search = ''"
+                    >
+                        <UIcon name="i-lucide-x" class="size-3" />
+                    </button>
+                </div>
+            </div>
+            <div
+                class="flex flex-wrap items-center gap-1.5 border-b border-gray-100 bg-gray-50/60 px-5 py-2.5"
+            >
+                <span
+                    class="mr-1 text-[10px] font-semibold tracking-wide text-gray-400 uppercase"
+                >
+                    Status
+                </span>
+                <button
+                    v-for="s in statusFilterOptions"
+                    :key="s"
+                    type="button"
+                    class="rounded-full border px-2.5 py-1 text-[10px] font-medium transition-colors"
+                    :class="
+                        filterStatus === s
+                            ? 'border-[#2d6a2d] bg-[#2d6a2d] text-white shadow-sm'
+                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                    "
+                    @click="filterStatus = s"
+                >
+                    {{ s }}
+                </button>
+                <span
+                    class="ml-auto text-[11px] text-gray-400"
+                >
+                    {{ filtered.length }} of {{ harvestRecords.length }} shown
+                </span>
             </div>
             <table class="w-full text-xs">
                 <thead class="border-b border-gray-100 bg-gray-50">
@@ -421,17 +606,45 @@ function confirmDelete() {
                 </thead>
                 <tbody>
                     <tr
-                        v-for="h in harvestRecords"
+                        v-for="(h, i) in filtered"
                         :key="h.id"
-                        class="border-b border-gray-50 last:border-0 hover:bg-gray-50/50"
+                        class="border-b border-gray-50 last:border-0 transition-colors hover:bg-green-50/30"
+                        :class="
+                            i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'
+                        "
                     >
                         <td class="px-5 py-3 font-mono text-gray-400">
                             {{ h.id }}
                         </td>
-                        <td class="px-4 py-3 font-medium text-gray-800">
-                            {{ h.farmer }}
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-2.5">
+                                <span
+                                    class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                                    :style="{
+                                        backgroundColor: avatarColor(h.farmer),
+                                    }"
+                                >
+                                    {{ initials(h.farmer) }}
+                                </span>
+                                <span class="font-medium text-gray-800">
+                                    {{ h.farmer }}
+                                </span>
+                            </div>
                         </td>
-                        <td class="px-4 py-3 text-gray-600">{{ h.crop }}</td>
+                        <td class="px-4 py-3">
+                            <span class="flex items-center gap-1.5">
+                                <span
+                                    class="h-2 w-2 flex-shrink-0 rounded-full"
+                                    :style="{
+                                        background:
+                                            CROP_COLORS[h.crop] ?? '#94a3b8',
+                                    }"
+                                />
+                                <span class="text-gray-600">{{
+                                    h.crop
+                                }}</span>
+                            </span>
+                        </td>
                         <td class="px-4 py-3 text-gray-500">
                             <span class="flex items-center gap-1">
                                 <UIcon
@@ -454,44 +667,72 @@ function confirmDelete() {
                         >
                             {{ h.yield_per_hectare ?? '—' }}
                         </td>
-                        <td class="px-4 py-3 text-gray-500">
-                            {{ h.harvest_date }}
-                        </td>
-<td class="px-4 py-3">
-                                <span
-                                    :class="statusClass(harvestStatus(h))"
-                                    class="rounded px-2 py-0.5 text-[10px] font-medium"
-                                >
-                                    {{ harvestStatus(h) }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3">
-                                <div
-                                    class="flex items-center justify-end gap-1"
-                                >
-                                    <button
-                                        type="button"
-                                        class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-                                        @click="openEditModal(h)"
-                                    >
-                                        <UIcon
-                                            name="i-lucide-pencil"
-                                            class="size-3.5"
-                                        />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                                        @click="askDelete(h)"
-                                    >
-                                        <UIcon
-                                            name="i-lucide-trash-2"
-                                            class="size-3.5"
-                                        />
-                                    </button>
+                        <td class="px-4 py-3">
+                            <div>
+                                <div class="text-gray-500">
+                                    {{ h.harvest_date }}
                                 </div>
-                            </td>
-                        </tr>
+                                <div
+                                    v-if="h.production_kg == null"
+                                    class="flex items-center gap-1 text-[10px] font-semibold text-[#2d6a2d]"
+                                >
+                                    <UIcon
+                                        name="i-lucide-hourglass"
+                                        class="size-2.5"
+                                    />
+                                    in {{ daysUntil(h.harvest_date) }} days
+                                </div>
+                                <div
+                                    v-else
+                                    class="text-[10px] text-gray-400"
+                                >
+                                    completed
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span
+                                :class="statusClass(harvestStatus(h))"
+                                class="flex w-fit items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-medium"
+                            >
+                                <span
+                                    class="h-1.5 w-1.5 rounded-full"
+                                    :class="
+                                        harvestStatus(h) === 'Completed'
+                                            ? 'bg-[#166534]'
+                                            : 'bg-[#a16207]'
+                                    "
+                                />
+                                {{ harvestStatus(h) }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div
+                                class="flex items-center justify-end gap-1"
+                            >
+                                <button
+                                    type="button"
+                                    class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                                    @click="openEditModal(h)"
+                                >
+                                    <UIcon
+                                        name="i-lucide-pencil"
+                                        class="size-3.5"
+                                    />
+                                </button>
+                                <button
+                                    type="button"
+                                    class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                    @click="askDelete(h)"
+                                >
+                                    <UIcon
+                                        name="i-lucide-trash-2"
+                                        class="size-3.5"
+                                    />
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -509,13 +750,23 @@ function confirmDelete() {
                 style="font-family: 'DM Sans', sans-serif"
             >
                 <div class="mb-5 flex items-start justify-between">
-                    <div>
-                        <h3 class="text-lg font-bold text-gray-900">
-                            Record Harvest
-                        </h3>
-                        <p class="text-xs text-gray-500">
-                            Record a harvest or schedule an upcoming one.
-                        </p>
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8f5e8]"
+                        >
+                            <UIcon
+                                name="i-lucide-wheat"
+                                class="size-5 text-[#2d6a2d]"
+                            />
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">
+                                Record Harvest
+                            </h3>
+                            <p class="text-xs text-gray-500">
+                                Record a harvest or schedule an upcoming one.
+                            </p>
+                        </div>
                     </div>
                     <button
                         type="button"
@@ -692,13 +943,23 @@ function confirmDelete() {
                 style="font-family: 'DM Sans', sans-serif"
             >
                 <div class="mb-5 flex items-start justify-between">
-                    <div>
-                        <h3 class="text-lg font-bold text-gray-900">
-                            Edit Harvest Record
-                        </h3>
-                        <p class="text-xs text-gray-500">
-                            Update the yield and production details.
-                        </p>
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e0f0fb]"
+                        >
+                            <UIcon
+                                name="i-lucide-pencil"
+                                class="size-5 text-[#1d6fa4]"
+                            />
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">
+                                Edit Harvest Record
+                            </h3>
+                            <p class="text-xs text-gray-500">
+                                Update the yield and production details.
+                            </p>
+                        </div>
                     </div>
                     <button
                         type="button"

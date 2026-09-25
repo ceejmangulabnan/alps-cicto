@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { StyleSpecification } from 'maplibre-gl'
+
 type RiskItem = {
     type: string
     parcels: number
@@ -148,6 +150,7 @@ const kpis = [
         bg: '#e8f5e8',
         trend: '+2.4%',
         up: true,
+        to: '/farms',
     },
     {
         label: 'Active Farmers',
@@ -158,6 +161,7 @@ const kpis = [
         bg: '#e0f0fb',
         trend: '+3.1%',
         up: true,
+        to: '/farmers',
     },
     {
         label: 'Cultivated Land',
@@ -168,6 +172,7 @@ const kpis = [
         bg: '#dcfce7',
         trend: '+1.8%',
         up: true,
+        to: '/farms',
     },
     {
         label: 'Idle / Fallow Land',
@@ -178,6 +183,7 @@ const kpis = [
         bg: '#f3f4f6',
         trend: '-5.2%',
         up: false,
+        to: '/farms',
     },
     {
         label: 'At-Risk Land',
@@ -189,6 +195,7 @@ const kpis = [
         trend: '+12.1%',
         up: false,
         alert: true,
+        to: '/risks',
     },
     {
         label: 'Upcoming Harvests',
@@ -199,13 +206,29 @@ const kpis = [
         bg: '#fef3c7',
         trend: 'Dec 2024',
         up: null,
+        to: '/harvests',
     },
 ]
 
-const RISK_COLOR: Record<RiskItem['trend'], string> = {
-    up: '#dc2626',
-    down: '#16a34a',
-    stable: '#ca8a04',
+const RISK_BADGE: Record<
+    RiskItem['trend'],
+    { label: string; icon: string; cls: string }
+> = {
+    up: {
+        label: 'Rising',
+        icon: 'i-lucide-trending-up',
+        cls: 'bg-red-50 text-red-600',
+    },
+    stable: {
+        label: 'Stable',
+        icon: 'i-lucide-minus',
+        cls: 'bg-amber-50 text-amber-700',
+    },
+    down: {
+        label: 'Improving',
+        icon: 'i-lucide-trending-down',
+        cls: 'bg-green-50 text-green-700',
+    },
 }
 
 const landStatusOption = computed(() => ({
@@ -341,27 +364,28 @@ const barangayOption = computed(() => ({
     xAxis: {
         type: 'value',
         splitLine: { show: false },
-        axisLabel: { fontSize: 10, color: '#9ca3af' },
+        axisLabel: { fontSize: 12, color: '#9ca3af' },
     },
     yAxis: {
         type: 'category',
         data: [...barangayAreaData].reverse().map((d) => d.barangay),
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { fontSize: 10, color: '#374151' },
+        axisLabel: { fontSize: 12, color: '#374151' },
     },
     series: [
         {
             name: 'Total Area',
             type: 'bar',
-            barWidth: 12,
+            barWidth: 18,
             itemStyle: { color: '#dde5dd', borderRadius: [0, 3, 3, 0] },
             data: [...barangayAreaData].reverse().map((d) => d.area),
         },
         {
             name: 'Cultivated',
             type: 'bar',
-            barWidth: 12,
+            barWidth: 18,
+            barGap: '-100%',
             itemStyle: { color: '#2d6a2d', borderRadius: [0, 3, 3, 0] },
             data: [...barangayAreaData].reverse().map((d) => d.cultivated),
         },
@@ -394,20 +418,129 @@ const cropDistributionOption = computed(() => ({
 const highPriorityCount = computed(
     () => alpsInsights.filter((i) => i.priority === 'high').length
 )
+const mediumPriorityCount = computed(
+    () => alpsInsights.filter((i) => i.priority === 'medium').length
+)
+const lowPriorityCount = computed(
+    () => alpsInsights.filter((i) => i.priority === 'low').length
+)
+
+const landClassifiedTotal = landStatusData.reduce((s, d) => s + d.value, 0)
+const harvestYearTotal = monthlyHarvestData.reduce(
+    (s, d) => s + d.rice + d.corn + d.sugarcane + d.vegetables,
+    0
+)
+const barangayTotal =
+    Math.round(barangayAreaData.reduce((s, d) => s + d.area, 0) * 10) / 10
+const riskTotals = {
+    parcels: riskData.reduce((s, r) => s + r.parcels, 0),
+    area: Math.round(riskData.reduce((s, r) => s + r.area, 0) * 10) / 10,
+}
+
+const AS_OF = new Date('November 25, 2024')
+const daysUntil = (dateStr: string) =>
+    Math.round((new Date(dateStr).getTime() - AS_OF.getTime()) / 86_400_000)
+
+const initials = (name: string) =>
+    name
+        .split(' ')
+        .map((p) => p[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+
+const AVATAR_COLORS = [
+    '#2d6a2d',
+    '#1d6fa4',
+    '#7c3aed',
+    '#b45309',
+    '#0f766e',
+    '#be123c',
+]
+const avatarColor = (name: string) =>
+    AVATAR_COLORS[
+        name.split('').reduce((s, c) => s + c.charCodeAt(0), 0) %
+            AVATAR_COLORS.length
+    ]
+
+const clock = ref('')
+let clockTimer: ReturnType<typeof setInterval> | undefined
+const tick = () => {
+    clock.value = new Date().toLocaleTimeString('en-PH', {
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+    })
+}
+onMounted(() => {
+    tick()
+    clockTimer = setInterval(tick, 1000)
+})
+onUnmounted(() => {
+    if (clockTimer) clearInterval(clockTimer)
+})
+
+const config = useRuntimeConfig()
+const maptilerKey = config.public.maptilerKey as string | undefined
+
+const MINI_OSM_STYLE: StyleSpecification = {
+    version: 8,
+    sources: {
+        openstreetmap: {
+            type: 'raster',
+            attribution: '© OpenStreetMap contributors',
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            maxzoom: 19,
+        },
+    },
+    layers: [
+        {
+            id: 'osm-tiles',
+            type: 'raster',
+            source: 'openstreetmap',
+        },
+    ],
+}
+const miniMapStyle = computed<StyleSpecification | string>(() =>
+    maptilerKey
+        ? `https://api.maptiler.com/maps/streets/style.json?key=${maptilerKey}`
+        : MINI_OSM_STYLE
+)
+const miniMapCenter = ref<[number, number]>([120.6896, 15.0282])
+const miniMapZoom = ref(13)
 </script>
 
 <template>
     <div class="space-y-6 p-6">
         <!-- Header -->
-        <div class="flex items-center justify-between">
+        <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">
                     Agricultural Command Center
                 </h1>
-                <p class="mt-0.5 text-sm text-gray-500">
-                    City Agriculture Office · San Fernando, Pampanga · as of
-                    November 25, 2024
-                </p>
+                <div class="mt-1 flex flex-wrap items-center gap-2">
+                    <span class="text-sm text-gray-500">
+                        City Agriculture Office · San Fernando, Pampanga
+                    </span>
+                    <span
+                        class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-700 shadow-sm"
+                    >
+                        <UIcon
+                            name="i-lucide-calendar-days"
+                            class="size-3 text-[#2d6a2d]"
+                        />
+                        Nov 1 – Nov 25, 2024
+                    </span>
+                    <span
+                        class="inline-flex items-center gap-1 text-[11px] text-gray-400"
+                    >
+                        <span
+                            class="h-1.5 w-1.5 rounded-full bg-green-500"
+                        ></span>
+                        Live · {{ clock }}
+                    </span>
+                </div>
             </div>
             <div class="flex gap-2">
                 <button
@@ -429,15 +562,22 @@ const highPriorityCount = computed(
 
         <!-- KPI Grid -->
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
-            <div
+            <NuxtLink
                 v-for="kpi in kpis"
                 :key="kpi.label"
-                class="alps-card relative overflow-hidden p-5"
+                :to="kpi.to"
+                class="alps-card group relative block overflow-hidden p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
                 :class="kpi.alert ? 'ring-1 ring-red-200' : ''"
             >
+                <div
+                    class="absolute inset-x-0 top-0 h-0.5 opacity-70"
+                    :style="{
+                        backgroundImage: `linear-gradient(90deg, ${kpi.color}, transparent)`,
+                    }"
+                />
                 <div class="mb-3 flex items-start justify-between">
                     <div
-                        class="flex h-10 w-10 items-center justify-center rounded-lg"
+                        class="flex h-10 w-10 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105"
                         :style="{ backgroundColor: kpi.bg }"
                     >
                         <UIcon
@@ -448,8 +588,12 @@ const highPriorityCount = computed(
                     </div>
                     <span
                         v-if="kpi.up !== null"
-                        class="flex items-center gap-1 text-xs font-medium"
-                        :class="kpi.up ? 'text-green-600' : 'text-red-500'"
+                        class="flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                        :class="
+                            kpi.up
+                                ? 'bg-green-50 text-green-700'
+                                : 'bg-red-50 text-red-600'
+                        "
                     >
                         <UIcon
                             :name="
@@ -461,7 +605,10 @@ const highPriorityCount = computed(
                         />
                         {{ kpi.trend }}
                     </span>
-                    <span v-else class="text-xs font-medium text-amber-600">
+                    <span
+                        v-else
+                        class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700"
+                    >
                         {{ kpi.trend }}
                     </span>
                 </div>
@@ -476,14 +623,18 @@ const highPriorityCount = computed(
                     v-if="kpi.alert"
                     class="absolute right-0 top-0 h-full w-1 rounded-r bg-red-400"
                 />
-            </div>
+            </NuxtLink>
         </div>
 
         <!-- ALPS Insights Banner -->
         <div
-            class="alps-card border-l-4 border-[#2d6a2d] bg-gradient-to-r from-[#f0f7f0] to-white p-4"
+            class="alps-card relative overflow-hidden border-l-4 border-[#2d6a2d] bg-gradient-to-r from-[#e6f2e6] via-[#f0f7f0] to-white p-4"
         >
-            <div class="flex items-center justify-between">
+            <div
+                class="pointer-events-none absolute inset-y-0 right-0 w-44 opacity-40"
+                style="background-image: radial-gradient(#2d6a2d55 1.2px, transparent 1.2px); background-size: 12px 12px;"
+            />
+            <div class="relative flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-3">
                     <div
                         class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#2d6a2d]"
@@ -498,11 +649,25 @@ const highPriorityCount = computed(
                             ALPS Insights — {{ alpsInsights.length }} active
                             recommendations
                         </div>
-                        <div class="text-xs text-gray-500">
-                            <span class="font-medium text-red-600"
-                                >{{ highPriorityCount }} high priority</span
+                        <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                            <span
+                                class="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-600 ring-1 ring-red-100"
                             >
-                            · 1 medium · 1 low · Rule-based decision support
+                                {{ highPriorityCount }} high
+                            </span>
+                            <span
+                                class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-100"
+                            >
+                                {{ mediumPriorityCount }} medium
+                            </span>
+                            <span
+                                class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600 ring-1 ring-gray-200"
+                            >
+                                {{ lowPriorityCount }} low
+                            </span>
+                            <span class="text-[11px] text-gray-400">
+                                · Rule-based decision support
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -521,17 +686,47 @@ const highPriorityCount = computed(
         <div class="grid grid-cols-12 gap-4">
             <!-- Land Status Pie -->
             <div class="alps-card col-span-12 p-5 md:col-span-4">
-                <h3 class="mb-4 text-sm font-semibold text-gray-700">
-                    Land Status Distribution
-                </h3>
+                <div
+                    class="mb-3 flex items-center justify-between border-b border-gray-100 pb-3"
+                >
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="flex h-7 w-7 items-center justify-center rounded-md bg-[#e8f5e8] text-[#2d6a2d]"
+                        >
+                            <UIcon name="i-lucide-pie-chart" class="size-4" />
+                        </span>
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-700">
+                                Land Status Distribution
+                            </h3>
+                            <p class="text-[11px] text-gray-400">
+                                {{ landClassifiedTotal.toLocaleString() }} ha
+                                classified
+                            </p>
+                        </div>
+                    </div>
+                </div>
                 <ClientOnly>
-                    <div class="w-full" :style="{ height: '200px' }">
+                    <div class="relative">
                         <VChart
                             :option="landStatusOption"
                             :style="{ height: '200px', width: '100%' }"
                             autoresize
                         />
+                        <div
+                            class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
+                        >
+                            <div class="text-xl font-bold text-gray-900">
+                                {{ landClassifiedTotal.toLocaleString() }}
+                            </div>
+                            <div class="text-[10px] text-gray-400">
+                                hectares
+                            </div>
+                        </div>
                     </div>
+                    <template #fallback>
+                        <div class="w-full" :style="{ height: '200px' }"></div>
+                    </template>
                 </ClientOnly>
                 <div class="mt-2 grid grid-cols-2 gap-1">
                     <div
@@ -553,17 +748,35 @@ const highPriorityCount = computed(
 
             <!-- Harvest Trend -->
             <div class="alps-card col-span-12 p-5 md:col-span-8">
-                <h3 class="mb-4 text-sm font-semibold text-gray-700">
-                    Monthly Harvest Volume (ha)
-                </h3>
-                <ClientOnly>
-                    <div class="w-full" :style="{ height: '220px' }">
-                        <VChart
-                            :option="harvestOption"
-                            :style="{ height: '220px', width: '100%' }"
-                            autoresize
-                        />
+                <div
+                    class="mb-3 flex items-center justify-between border-b border-gray-100 pb-3"
+                >
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="flex h-7 w-7 items-center justify-center rounded-md bg-[#fef3c7] text-amber-600"
+                        >
+                            <UIcon name="i-lucide-line-chart" class="size-4" />
+                        </span>
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-700">
+                                Monthly Harvest Volume (ha)
+                            </h3>
+                            <p class="text-[11px] text-gray-400">
+                                FY 2024 · {{ harvestYearTotal.toLocaleString() }}
+                                ha total
+                            </p>
+                        </div>
                     </div>
+                </div>
+                <ClientOnly>
+                    <VChart
+                        :option="harvestOption"
+                        :style="{ height: '220px', width: '100%' }"
+                        autoresize
+                    />
+                    <template #fallback>
+                        <div class="w-full" :style="{ height: '220px' }"></div>
+                    </template>
                 </ClientOnly>
             </div>
         </div>
@@ -572,17 +785,50 @@ const highPriorityCount = computed(
         <div class="grid grid-cols-12 gap-4">
             <!-- Barangay Area Bar -->
             <div class="alps-card col-span-12 p-5 md:col-span-7">
-                <h3 class="mb-4 text-sm font-semibold text-gray-700">
-                    Barangay Agricultural Area (ha)
-                </h3>
-                <ClientOnly>
-                    <div class="w-full" :style="{ height: '220px' }">
-                        <VChart
-                            :option="barangayOption"
-                            :style="{ height: '220px', width: '100%' }"
-                            autoresize
-                        />
+                <div
+                    class="mb-3 flex items-center justify-between border-b border-gray-100 pb-3"
+                >
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="flex h-8 w-8 items-center justify-center rounded-md bg-[#e8f5e8] text-[#2d6a2d]"
+                        >
+                            <UIcon name="i-lucide-map" class="size-4.5" />
+                        </span>
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-800">
+                                Barangay Agricultural Area (ha)
+                            </h3>
+                            <p class="text-xs text-gray-400">
+                                Top 9 barangays · {{ barangayTotal }} ha total
+                            </p>
+                        </div>
                     </div>
+                    <div
+                        class="flex items-center gap-3 text-xs text-gray-500"
+                    >
+                        <span class="flex items-center gap-1.5">
+                            <span
+                                class="h-2.5 w-2.5 rounded-sm bg-[#dde5dd]"
+                            ></span>
+                            Total
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <span
+                                class="h-2.5 w-2.5 rounded-sm bg-[#2d6a2d]"
+                            ></span>
+                            Cultivated
+                        </span>
+                    </div>
+                </div>
+                <ClientOnly>
+                    <VChart
+                        :option="barangayOption"
+                        :style="{ height: '300px', width: '100%' }"
+                        autoresize
+                    />
+                    <template #fallback>
+                        <div class="w-full" :style="{ height: '300px' }"></div>
+                    </template>
                 </ClientOnly>
             </div>
 
@@ -606,70 +852,94 @@ const highPriorityCount = computed(
                             />
                         </button>
                     </div>
-                    <div class="space-y-2">
+                    <div class="space-y-1">
                         <div
                             v-for="r in riskData"
                             :key="r.type"
-                            class="flex items-center justify-between border-b border-gray-50 py-1.5 text-xs last:border-0"
+                            class="flex items-center justify-between gap-2 rounded-md px-1 py-1.5 text-xs hover:bg-gray-50"
                         >
-                            <div>
-                                <div class="font-medium text-gray-800">
+                            <div class="min-w-0">
+                                <div class="truncate font-medium text-gray-800">
                                     {{ r.type }}
                                 </div>
                                 <div class="text-gray-400">
                                     {{ r.parcels }} parcels · {{ r.area }} ha
                                 </div>
                             </div>
-                            <div
-                                class="h-2 w-2 rounded-full"
-                                :style="{
-                                    backgroundColor: RISK_COLOR[r.trend],
-                                }"
-                                :title="r.trend"
-                            />
+                            <span
+                                class="flex flex-shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                                :class="RISK_BADGE[r.trend].cls"
+                            >
+                                <UIcon
+                                    :name="RISK_BADGE[r.trend].icon"
+                                    class="size-3"
+                                />
+                                {{ RISK_BADGE[r.trend].label }}
+                            </span>
                         </div>
+                    </div>
+                    <div
+                        class="mt-2 flex items-center justify-between border-t border-gray-100 pt-2.5 text-[11px]"
+                    >
+                        <span class="text-gray-400">Total affected</span>
+                        <span class="font-semibold text-gray-700">
+                            {{ riskTotals.parcels }} parcels ·
+                            {{ riskTotals.area }} ha
+                        </span>
                     </div>
                 </div>
 
                 <!-- Mini Map -->
                 <div
-                    class="alps-card group cursor-pointer overflow-hidden"
-                    @click="navigateTo('/map')"
+                    class="alps-card group overflow-hidden"
                 >
-                    <div
-                        class="relative h-36 bg-[#e8f0e8]"
-                        style="
-                            background-image: url('https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=400&h=200&fit=crop&auto=format');
-                            background-size: cover;
-                            background-position: center;
-                        "
-                    >
-                        <div class="absolute inset-0 bg-[#2d6a2d]/40" />
-                        <div
-                            class="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
-                        >
-                            <span
-                                class="flex items-center gap-1 rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#2d6a2d]"
-                            >
-                                <UIcon name="i-lucide-map-pin" class="size-3" />
-                                Open Full GIS Map
-                            </span>
-                        </div>
-                        <div class="absolute bottom-2 left-3">
+                    <div class="relative h-36 overflow-hidden bg-[#e8f0e8]">
+                        <ClientOnly>
+                            <div class="absolute inset-0">
+                                <MglMap
+                                    v-model:center="miniMapCenter"
+                                    v-model:zoom="miniMapZoom"
+                                    :map-style="miniMapStyle"
+                                    :attribution-control="false"
+                                    height="100%"
+                                    width="100%"
+                                />
+                            </div>
+                            <template #fallback>
+                                <div
+                                    class="absolute inset-0 flex items-center justify-center text-xs text-gray-400"
+                                >
+                                    Loading map...
+                                </div>
+                            </template>
+                        </ClientOnly>
+
+                        <div class="pointer-events-none absolute bottom-2 left-3">
                             <div
-                                class="text-xs font-medium text-white drop-shadow"
+                                class="rounded bg-[#2d6a2d]/85 px-2 py-1 backdrop-blur-sm"
                             >
-                                Agricultural Map
-                            </div>
-                            <div class="text-[10px] text-white/70">
-                                San Fernando, Pampanga
+                                <div
+                                    class="text-xs font-medium text-white drop-shadow"
+                                >
+                                    Agricultural Map
+                                </div>
+                                <div class="text-[10px] text-white/70">
+                                    San Fernando, Pampanga · OpenStreetMap
+                                </div>
                             </div>
                         </div>
                         <div
-                            class="absolute right-2 top-2 rounded bg-white/80 px-2 py-1 text-[10px] text-gray-600 backdrop-blur-sm"
+                            class="pointer-events-none absolute right-2 top-2 rounded bg-white/80 px-2 py-1 text-[10px] text-gray-600 backdrop-blur-sm"
                         >
                             312 parcels mapped
                         </div>
+                        <NuxtLink
+                            to="/map"
+                            class="absolute bottom-2 right-2 flex items-center gap-1 rounded-lg bg-white/90 px-2.5 py-1.5 text-[11px] font-semibold text-[#2d6a2d] shadow-md backdrop-blur-sm hover:bg-white"
+                        >
+                            Open Map
+                            <UIcon name="i-lucide-arrow-right" class="size-3" />
+                        </NuxtLink>
                     </div>
                 </div>
             </div>
@@ -698,7 +968,7 @@ const highPriorityCount = computed(
                             <th class="pb-2 text-left font-medium">Crop</th>
                             <th class="pb-2 text-left font-medium">Barangay</th>
                             <th class="pb-2 text-right font-medium">Area</th>
-                            <th class="pb-2 text-left font-medium">
+                            <th class="pb-2 pl-8 text-left font-medium">
                                 Est. Date
                             </th>
                             <th class="pb-2 text-left font-medium">Status</th>
@@ -708,10 +978,25 @@ const highPriorityCount = computed(
                         <tr
                             v-for="(h, i) in upcomingHarvests"
                             :key="i"
-                            class="border-b border-gray-50 last:border-0 hover:bg-gray-50/50"
+                            class="border-b border-gray-50 transition-colors last:border-0 hover:bg-[#f0f7f0]/70"
                         >
-                            <td class="py-2.5 font-medium text-gray-800">
-                                {{ h.farmer }}
+                            <td class="py-2.5">
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
+                                        :style="{
+                                            backgroundColor:
+                                                avatarColor(h.farmer),
+                                        }"
+                                    >
+                                        {{ initials(h.farmer) }}
+                                    </span>
+                                    <span
+                                        class="font-medium text-gray-800"
+                                    >
+                                        {{ h.farmer }}
+                                    </span>
+                                </div>
                             </td>
                             <td class="py-2.5 text-gray-600">{{ h.crop }}</td>
                             <td class="py-2.5 text-gray-500">
@@ -722,8 +1007,20 @@ const highPriorityCount = computed(
                             >
                                 {{ h.area }} ha
                             </td>
-                            <td class="py-2.5 text-gray-600">
-                                {{ h.expectedDate }}
+                            <td class="py-2.5 pl-8">
+                                <div class="text-gray-600">
+                                    {{ h.expectedDate }}
+                                </div>
+                                <div
+                                    class="text-[10px]"
+                                    :class="
+                                        daysUntil(h.expectedDate) <= 10
+                                            ? 'font-medium text-amber-600'
+                                            : 'text-gray-400'
+                                    "
+                                >
+                                    in {{ daysUntil(h.expectedDate) }} days
+                                </div>
                             </td>
                             <td class="py-2.5">
                                 <span
@@ -744,17 +1041,46 @@ const highPriorityCount = computed(
 
             <!-- Crop Distribution -->
             <div class="alps-card col-span-12 p-5 md:col-span-4">
-                <h3 class="mb-4 text-sm font-semibold text-gray-700">
-                    Crop Distribution
-                </h3>
+                <div
+                    class="mb-3 flex items-center justify-between border-b border-gray-100 pb-3"
+                >
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="flex h-7 w-7 items-center justify-center rounded-md bg-[#dcfce7] text-green-700"
+                        >
+                            <UIcon name="i-lucide-sprout" class="size-4" />
+                        </span>
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-700">
+                                Crop Distribution
+                            </h3>
+                            <p class="text-[11px] text-gray-400">
+                                Share of planted area
+                            </p>
+                        </div>
+                    </div>
+                </div>
                 <ClientOnly>
-                    <div class="w-full" :style="{ height: '160px' }">
+                    <div class="relative">
                         <VChart
                             :option="cropDistributionOption"
                             :style="{ height: '160px', width: '100%' }"
                             autoresize
                         />
+                        <div
+                            class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
+                        >
+                            <div class="text-lg font-bold text-gray-900">
+                                {{ cropDistributionData[0].value }}%
+                            </div>
+                            <div class="text-[10px] text-gray-400">
+                                Rice leads
+                            </div>
+                        </div>
                     </div>
+                    <template #fallback>
+                        <div class="w-full" :style="{ height: '160px' }"></div>
+                    </template>
                 </ClientOnly>
                 <div class="mt-2 space-y-1.5">
                     <div

@@ -497,7 +497,7 @@ const detailStats = computed(() => {
             <div class="alps-card mb-5 p-6">
                 <div class="flex items-start gap-5">
                     <div
-                        class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#5cba5c] to-[#2f7d2f] text-xl font-bold text-white shadow-lg shadow-black/10"
+                        class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-[#5cba5c] to-[#2f7d2f] text-xl font-bold text-white shadow-lg shadow-black/10"
                     >
                         {{ initials(selectedFarmer.name) }}
                     </div>
@@ -505,9 +505,7 @@ const detailStats = computed(() => {
                         <div class="flex items-start justify-between">
                             <div>
                                 <div class="flex items-center gap-3">
-                                    <h2
-                                        class="text-xl font-bold text-gray-900"
-                                    >
+                                    <h2 class="text-xl font-bold text-gray-900">
                                         {{ selectedFarmer.name }}
                                     </h2>
                                     <span
@@ -742,7 +740,9 @@ const detailStats = computed(() => {
                         <UIcon name="i-lucide-x" class="size-3" />
                     </button>
                 </div>
-                <div class="ml-auto flex items-center gap-1.5 text-xs text-gray-400">
+                <div
+                    class="ml-auto flex items-center gap-1.5 text-xs text-gray-400"
+                >
                     <UIcon name="i-lucide-filter" class="size-3" />
                     {{ filtered.length }} of {{ farmers.length }} farmers
                 </div>

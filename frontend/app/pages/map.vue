@@ -129,8 +129,7 @@ const { getAllForSelect: getFarms } = useFarmsApi()
 
 function toParcelFeature(parcel: FarmParcel): GeoJSONStoreFeatures {
     const boundary = parcel.boundary_geojson
-    const geometry =
-        boundary.type === 'Feature' ? boundary.geometry : boundary
+    const geometry = boundary.type === 'Feature' ? boundary.geometry : boundary
 
     return {
         type: 'Feature',
@@ -280,17 +279,11 @@ function fitToParcel(parcel: FarmParcel) {
 
     const firstLng = first[0]
     const firstLat = first[1]
-    if (
-        typeof firstLng !== 'number' ||
-        typeof firstLat !== 'number'
-    ) {
+    if (typeof firstLng !== 'number' || typeof firstLat !== 'number') {
         return
     }
 
-    const bounds = new LngLatBounds(
-        [firstLng, firstLat],
-        [firstLng, firstLat]
-    )
+    const bounds = new LngLatBounds([firstLng, firstLat], [firstLng, firstLat])
     coordinates.forEach((coordinate) => {
         const lng = coordinate[0]
         const lat = coordinate[1]
@@ -370,19 +363,14 @@ async function loadExistingParcels() {
             parcelCount.value = countParcels(draw.value)
         }
     } catch (value: unknown) {
-        error.value = getErrorMessage(
-            value,
-            'Unable to load existing parcels.'
-        )
+        error.value = getErrorMessage(value, 'Unable to load existing parcels.')
     }
 }
 
 async function onParcelSelect(id: string | number) {
     if (hydratingSelection.value || draftFeatureId.value === id) return
 
-    const parcel = parcels.value.find(
-        (item) => item.documentId === String(id)
-    )
+    const parcel = parcels.value.find((item) => item.documentId === String(id))
     if (!parcel) return
 
     selectedParcelId.value = parcel.documentId
@@ -837,9 +825,7 @@ async function handleSaveParcel() {
                                 :disabled="loading || farms.length === 0"
                                 class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:cursor-not-allowed disabled:bg-gray-50"
                             >
-                                <option value="" disabled>
-                                    Select a farm...
-                                </option>
+                                <option value="">Select a farm...</option>
                                 <option
                                     v-for="farm in farms"
                                     :key="farm.documentId"

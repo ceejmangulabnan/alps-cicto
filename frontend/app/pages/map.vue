@@ -264,7 +264,7 @@ function calculateAreaHectares(geojson: GeoJSON.Polygon): number {
     try {
         const turfFeature = feature(geojson)
         const areaSqMeters = area(turfFeature)
-        return Math.round((areaSqMeters / 10000) * 10000) / 10000
+        return areaSqMeters / 10000
     } catch {
         return 0
     }

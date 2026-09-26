@@ -5,10 +5,9 @@ import { Position } from '@indoorequal/vue-maplibre-gl'
 import {
     TerraDraw,
     TerraDrawPolygonMode,
-    TerraDrawRenderMode,
     TerraDrawSelectMode,
 } from 'terra-draw'
-import type { GeoJSONStoreFeatures } from 'terra-draw'
+import type { GeoJSONStoreFeatures, HexColor } from 'terra-draw'
 import { TerraDrawMapLibreGLAdapter } from 'terra-draw-maplibre-gl-adapter'
 import { area } from '@turf/area'
 import { feature } from '@turf/helpers'
@@ -83,7 +82,7 @@ const hydratingSelection = ref(false)
 
 const landStatusOptions = LAND_STATUS_OPTIONS
 
-const STATUS_COLOR: Record<string, string> = {
+const STATUS_COLOR: Record<string, HexColor> = {
     Cultivated: '#16a34a',
     Preparation: '#0369a1',
     Harvesting: '#ca8a04',
@@ -91,6 +90,34 @@ const STATUS_COLOR: Record<string, string> = {
     Idle: '#6b7280',
     'At Risk': '#dc2626',
     Converted: '#0f766e',
+}
+
+/**
+ * Colour for features that have no persisted land_status yet, i.e. a polygon
+ * that is still being drawn. Neutral so it never implies a real status.
+ */
+const STATUS_COLOR_FALLBACK: HexColor = '#6b7280'
+
+/**
+ * Resolves a parcel polygon's map colour from its persisted land_status.
+ *
+ * TerraDraw routes each feature to the mode named in its `properties.mode`,
+ * and `featureProperties` sets that to 'polygon' — so these callbacks are what
+ * actually paint saved parcels. Must always return a concrete colour: terra-draw
+ * silently substitutes its default blue when a styling callback returns
+ * undefined, which would make a saved parcel look like a fresh drawing.
+ */
+function statusColor(status: unknown): HexColor {
+    return typeof status === 'string'
+        ? (STATUS_COLOR[status] ?? STATUS_COLOR_FALLBACK)
+        : STATUS_COLOR_FALLBACK
+}
+
+function parcelFeatureColor(feature: GeoJSONStoreFeatures): HexColor {
+    const status = (feature.properties as { landStatus?: unknown } | undefined)
+        ?.landStatus
+
+    return statusColor(status)
 }
 
 const MODE_META: Record<
@@ -116,6 +143,21 @@ const MODE_META: Record<
 
 const modeMeta = computed(() => MODE_META[drawMode.value])
 
+/** Legend entries, derived from the same source as STATUS_COLOR so the two
+ *  cannot drift apart. */
+const statusLegend = computed(() =>
+    LAND_STATUS_OPTIONS.map((status) => ({
+        label: status,
+        color: STATUS_COLOR[status] ?? STATUS_COLOR_FALLBACK,
+    }))
+)
+
+const parcelList = computed(() =>
+    [...parcels.value].sort((a, b) =>
+        a.parcel_code.localeCompare(b.parcel_code)
+    )
+)
+
 // ---------------------------------------------------------------------------
 // API Composables
 // ---------------------------------------------------------------------------
@@ -129,15 +171,43 @@ const { getAllForSelect: getFarms } = useFarmsApi()
 
 function toParcelFeature(parcel: FarmParcel): GeoJSONStoreFeatures {
     const boundary = parcel.boundary_geojson
-    const geometry =
-        boundary.type === 'Feature' ? boundary.geometry : boundary
+    const geometry = boundary.type === 'Feature' ? boundary.geometry : boundary
 
     return {
         type: 'Feature',
         id: parcel.documentId,
         geometry,
-        properties: featureProperties(parcel),
+        // `mode` is required when a feature enters the store, but it is a
+        // reserved name that must not be passed back to updateFeatureProperties.
+        properties: { ...featureProperties(parcel), mode: 'polygon' },
     }
+}
+
+// terra-draw validates every incoming feature id against its configured
+// idStrategy, and the default strategy only accepts UUID4 ids. Strapi 5
+// documentIds are nanoid-style tokens (e.g. "gmk7s1h6wni2qevbz8nzdnie"), so
+// addFeatures() rejected every saved parcel with
+// "Feature must match the id strategy (default is UUID4)" and the map rendered
+// nothing. The returned validation array is easy to miss, so the parcels were
+// silently dropped rather than erroring. Accept both id shapes here.
+const UUID_PATTERN =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const STRAPI_DOCUMENT_ID_PATTERN = /^[a-z0-9]{16,64}$/i
+
+const parcelIdStrategy = {
+    isValidId: (id: string | number) =>
+        typeof id === 'string' &&
+        (UUID_PATTERN.test(id) || STRAPI_DOCUMENT_ID_PATTERN.test(id)),
+    // Only used for features drawn on the map before they are persisted; those
+    // drafts are discarded and replaced with the documentId the API returns.
+    // randomUUID() needs a secure context, so fall back to a plain token that
+    // still satisfies the validator above.
+    getId: () =>
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : `draft${Date.now().toString(36)}${Math.random()
+                  .toString(36)
+                  .slice(2, 10)}`,
 }
 
 // ---------------------------------------------------------------------------
@@ -233,7 +303,7 @@ function calculateAreaHectares(geojson: GeoJSON.Polygon): number {
     try {
         const turfFeature = feature(geojson)
         const areaSqMeters = area(turfFeature)
-        return Math.round((areaSqMeters / 10000) * 10000) / 10000
+        return areaSqMeters / 10000
     } catch {
         return 0
     }
@@ -250,9 +320,12 @@ function updateAreaForFeature(id: string | number) {
     parcelForm.area_hectares = calculateAreaHectares(geometry).toFixed(4)
 }
 
+// Deliberately excludes `mode`: terra-draw owns that property and rejects
+// attempts to update it ("You are trying to update a reserved property name:
+// mode"), which aborted the save handler after the API call had already
+// succeeded. It is only added on ingest, in toParcelFeature.
 function featureProperties(parcel: FarmParcel) {
     return {
-        mode: 'polygon',
         parcelCode: parcel.parcel_code,
         landStatus: parcel.land_status,
         areaHectares: parcel.area_hectares,
@@ -280,17 +353,11 @@ function fitToParcel(parcel: FarmParcel) {
 
     const firstLng = first[0]
     const firstLat = first[1]
-    if (
-        typeof firstLng !== 'number' ||
-        typeof firstLat !== 'number'
-    ) {
+    if (typeof firstLng !== 'number' || typeof firstLat !== 'number') {
         return
     }
 
-    const bounds = new LngLatBounds(
-        [firstLng, firstLat],
-        [firstLng, firstLat]
-    )
+    const bounds = new LngLatBounds([firstLng, firstLat], [firstLng, firstLat])
     coordinates.forEach((coordinate) => {
         const lng = coordinate[0]
         const lat = coordinate[1]
@@ -299,6 +366,27 @@ function fitToParcel(parcel: FarmParcel) {
         }
     })
     instance.fitBounds(bounds, { padding: 80, maxZoom: 17, duration: 500 })
+}
+
+function fitToAllParcels() {
+    const instance = mapInstance.value
+    if (!instance || parcels.value.length === 0) return
+
+    const bounds = new LngLatBounds()
+    let extended = false
+    for (const parcel of parcels.value) {
+        for (const coordinate of getParcelGeometry(parcel).coordinates[0] ?? []) {
+            const lng = coordinate[0]
+            const lat = coordinate[1]
+            if (typeof lng === 'number' && typeof lat === 'number') {
+                bounds.extend([lng, lat])
+                extended = true
+            }
+        }
+    }
+    if (!extended) return
+
+    instance.fitBounds(bounds, { padding: 80, maxZoom: 17, duration: 0 })
 }
 
 function loadParcelIntoForm(parcel: FarmParcel) {
@@ -344,7 +432,7 @@ function closeSidebar() {
     discardDraft()
     clearSelection()
     showSidebar.value = false
-    draw.value?.setMode('render')
+    draw.value?.setMode('select')
     drawMode.value = 'view'
     router.replace({ path: '/map' })
     resetForm()
@@ -366,23 +454,31 @@ async function loadExistingParcels() {
         })
         parcels.value = response.data
         if (draw.value && response.data.length > 0) {
-            draw.value.addFeatures(response.data.map(toParcelFeature))
+            const results = draw.value.addFeatures(
+                response.data.map(toParcelFeature),
+            )
+            const rejected = results.filter((result) => !result.valid)
+            if (rejected.length > 0) {
+                console.error(
+                    'terra-draw rejected parcel features:',
+                    rejected,
+                )
+                error.value = `${rejected.length} parcel(s) could not be plotted on the map.`
+            }
             parcelCount.value = countParcels(draw.value)
+            // The default centre is a fixed San Fernando coordinate, so any
+            // parcel plotted elsewhere would load off-screen and look missing.
+            fitToAllParcels()
         }
     } catch (value: unknown) {
-        error.value = getErrorMessage(
-            value,
-            'Unable to load existing parcels.'
-        )
+        error.value = getErrorMessage(value, 'Unable to load existing parcels.')
     }
 }
 
 async function onParcelSelect(id: string | number) {
     if (hydratingSelection.value || draftFeatureId.value === id) return
 
-    const parcel = parcels.value.find(
-        (item) => item.documentId === String(id)
-    )
+    const parcel = parcels.value.find((item) => item.documentId === String(id))
     if (!parcel) return
 
     selectedParcelId.value = parcel.documentId
@@ -429,7 +525,7 @@ async function openParcelForEdit(documentId: string) {
 async function focusParcel(documentId: string) {
     try {
         const parcel = await ensureParcel(documentId)
-        draw.value?.setMode('render')
+        draw.value?.setMode('select')
         drawMode.value = 'view'
         fitToParcel(parcel)
     } catch (value: unknown) {
@@ -442,10 +538,40 @@ function onMapLoad(payload: { map: MaplibreMap }) {
 
     const instance = new TerraDraw({
         adapter: new TerraDrawMapLibreGLAdapter({ map: payload.map }),
+        idStrategy: parcelIdStrategy,
         modes: [
-            new TerraDrawPolygonMode({ modeName: 'polygon' }),
+            new TerraDrawPolygonMode({
+                modeName: 'polygon',
+                styles: {
+                    fillColor: parcelFeatureColor,
+                    outlineColor: parcelFeatureColor,
+                    fillOpacity: 0.3,
+                    outlineWidth: 2,
+                },
+            }),
             new TerraDrawSelectMode({
                 modeName: 'select',
+                // terra-draw hands styling of a *selected* feature to the select
+                // mode, which otherwise repaints it in its own default blue and
+                // drops the land_status colour. Reuse the same resolver so a
+                // selected parcel still matches the legend; the heavier outline
+                // is what signals the selection.
+                styles: {
+                    selectedPolygonColor: parcelFeatureColor,
+                    selectedPolygonOutlineColor: parcelFeatureColor,
+                    selectedPolygonOutlineWidth: 3,
+                    selectedPolygonFillOpacity: 0.35,
+                },
+                // Default binds Delete to removing the whole feature, which would
+                // drop the polygon from the map with no way to restore it (there
+                // is no delete endpoint wired up). Coordinate/vertex deletion
+                // still works via the flags below.
+                keyEvents: {
+                    deselect: 'Escape',
+                    delete: null,
+                    rotate: null,
+                    scale: null,
+                },
                 flags: {
                     polygon: {
                         feature: {
@@ -461,7 +587,6 @@ function onMapLoad(payload: { map: MaplibreMap }) {
                     },
                 },
             }),
-            new TerraDrawRenderMode({ modeName: 'render', styles: {} }),
         ],
     })
 
@@ -510,7 +635,7 @@ function onMapLoad(payload: { map: MaplibreMap }) {
 }
 
 function setViewMode() {
-    draw.value?.setMode('render')
+    draw.value?.setMode('select')
     drawMode.value = 'view'
 }
 
@@ -754,24 +879,85 @@ async function handleSaveParcel() {
                         >
                             <div class="flex items-center gap-2">
                                 <span
-                                    class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#2d6a2d]"
+                                    class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#2d6a2d]"
                                 ></span>
                                 Click points to trace the parcel boundary
                             </div>
                             <div class="flex items-center gap-2">
                                 <span
-                                    class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#2d6a2d]"
+                                    class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#2d6a2d]"
                                 ></span>
                                 Click the first point again to close the parcel
                             </div>
                             <div class="flex items-center gap-2">
                                 <span
-                                    class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-amber-500"
+                                    class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500"
                                 ></span>
                                 Use Edit mode to adjust existing vertices
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <div
+                    v-if="parcelList.length > 0"
+                    class="absolute right-4 top-24 z-10 w-60 overflow-hidden rounded-xl bg-white/95 shadow-lg ring-1 ring-black/5 backdrop-blur-sm"
+                >
+                    <div class="flex items-center justify-between px-3 py-2">
+                        <span
+                            class="text-[10px] font-semibold uppercase tracking-wider text-gray-400"
+                        >
+                            Parcels ({{ parcelList.length }})
+                        </span>
+                        <button
+                            type="button"
+                            class="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-[#2d6a2d] hover:bg-[#2d6a2d]/10"
+                            @click="fitToAllParcels"
+                        >
+                            <UIcon name="i-lucide-scan" class="size-3" />
+                            Fit all
+                        </button>
+                    </div>
+                    <ul
+                        class="max-h-64 divide-y divide-gray-100 overflow-y-auto border-t border-gray-100"
+                    >
+                        <li v-for="parcel in parcelList" :key="parcel.documentId">
+                            <button
+                                type="button"
+                                class="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-gray-50"
+                                :class="
+                                    selectedParcelId === parcel.documentId
+                                        ? 'bg-[#2d6a2d]/10'
+                                        : ''
+                                "
+                                @click="openParcelForEdit(parcel.documentId)"
+                            >
+                                <span
+                                    class="size-2 shrink-0 rounded-full"
+                                    :style="{
+                                        backgroundColor:
+                                            statusColor(parcel.land_status),
+                                    }"
+                                />
+                                <span class="min-w-0 flex-1">
+                                    <span
+                                        class="block truncate text-xs font-semibold text-gray-800"
+                                    >
+                                        {{ parcel.parcel_code }}
+                                    </span>
+                                    <span
+                                        class="block truncate text-[10px] text-gray-500"
+                                    >
+                                        {{ parcel.land_status }} ·
+                                        {{
+                                            parcel.area_hectares.toFixed(2)
+                                        }}
+                                        ha
+                                    </span>
+                                </span>
+                            </button>
+                        </li>
+                    </ul>
                 </div>
 
                 <div
@@ -788,6 +974,33 @@ async function handleSaveParcel() {
                     >
                         <UIcon :name="modeMeta.icon" class="size-3" />
                         {{ modeMeta.label }}
+                    </div>
+                </div>
+
+                <!-- Land Status Legend -->
+                <div
+                    v-if="parcelCount > 0"
+                    class="pointer-events-none absolute bottom-4 right-4 z-10 rounded-xl bg-white/95 px-3 py-2.5 shadow-lg ring-1 ring-black/5 backdrop-blur-sm"
+                >
+                    <div
+                        class="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400"
+                    >
+                        Land Status
+                    </div>
+                    <div class="grid grid-cols-2 gap-x-3 gap-y-1">
+                        <div
+                            v-for="entry in statusLegend"
+                            :key="entry.label"
+                            class="flex items-center gap-1.5"
+                        >
+                            <span
+                                class="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/10"
+                                :style="{ backgroundColor: entry.color }"
+                            ></span>
+                            <span class="text-[10px] text-gray-600">
+                                {{ entry.label }}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -815,7 +1028,11 @@ async function handleSaveParcel() {
                     </button>
                 </div>
 
-                <form class="space-y-4" @submit.prevent="handleSaveParcel">
+                <form
+                    id="parcel-form"
+                    class="space-y-4"
+                    @submit.prevent="handleSaveParcel"
+                >
                     <div class="border-b border-gray-100 pb-4">
                         <div
                             class="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400"
@@ -837,9 +1054,7 @@ async function handleSaveParcel() {
                                 :disabled="loading || farms.length === 0"
                                 class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:cursor-not-allowed disabled:bg-gray-50"
                             >
-                                <option value="" disabled>
-                                    Select a farm...
-                                </option>
+                                <option value="">Select a farm...</option>
                                 <option
                                     v-for="farm in farms"
                                     :key="farm.documentId"
@@ -978,6 +1193,7 @@ async function handleSaveParcel() {
                 <div class="mt-6 border-t border-gray-100 pt-4">
                     <button
                         type="submit"
+                        form="parcel-form"
                         :disabled="!canSave"
                         class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-[#245524] disabled:cursor-not-allowed disabled:opacity-60"
                     >
@@ -1004,7 +1220,7 @@ async function handleSaveParcel() {
                     >
                         <UIcon
                             name="i-lucide-info"
-                            class="mt-0.5 size-3 flex-shrink-0 text-gray-400"
+                            class="mt-0.5 size-3 shrink-0 text-gray-400"
                         />
                         <p class="text-[10px] leading-relaxed text-gray-500">
                             {{

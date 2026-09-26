@@ -497,7 +497,7 @@ const detailStats = computed(() => {
             <div class="alps-card mb-5 p-6">
                 <div class="flex items-start gap-5">
                     <div
-                        class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#5cba5c] to-[#2f7d2f] text-xl font-bold text-white shadow-lg shadow-black/10"
+                        class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-[#5cba5c] to-[#2f7d2f] text-xl font-bold text-white shadow-lg shadow-black/10"
                     >
                         {{ initials(selectedFarmer.name) }}
                     </div>
@@ -505,9 +505,7 @@ const detailStats = computed(() => {
                         <div class="flex items-start justify-between">
                             <div>
                                 <div class="flex items-center gap-3">
-                                    <h2
-                                        class="text-xl font-bold text-gray-900"
-                                    >
+                                    <h2 class="text-xl font-bold text-gray-900">
                                         {{ selectedFarmer.name }}
                                     </h2>
                                     <span
@@ -562,7 +560,7 @@ const detailStats = computed(() => {
                                 >
                                     <UIcon
                                         :name="field.icon"
-                                        class="size-[11px] text-gray-400"
+                                        class="size-2.75 text-gray-400"
                                     />
                                     {{ field.val }}
                                 </div>
@@ -733,16 +731,18 @@ const detailStats = computed(() => {
                         placeholder="Search name or Farmer Code..."
                         class="w-full rounded-full border border-gray-200 bg-white py-2 pl-8 pr-8 text-xs shadow-sm focus:outline-none focus:border-[#2d6a2d] focus:ring-1 focus:ring-green-500"
                     />
-                    <button
+                    <UButton
                         v-if="search"
                         type="button"
                         class="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:text-gray-600"
                         @click="search = ''"
                     >
                         <UIcon name="i-lucide-x" class="size-3" />
-                    </button>
+                    </UButton>
                 </div>
-                <div class="ml-auto flex items-center gap-1.5 text-xs text-gray-400">
+                <div
+                    class="ml-auto flex items-center gap-1.5 text-xs text-gray-400"
+                >
                     <UIcon name="i-lucide-filter" class="size-3" />
                     {{ filtered.length }} of {{ farmers.length }} farmers
                 </div>
@@ -812,7 +812,7 @@ const detailStats = computed(() => {
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-2.5">
                                 <span
-                                    class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                                    class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
                                     :style="{
                                         backgroundColor: avatarColor(f.name),
                                     }"
@@ -828,7 +828,7 @@ const detailStats = computed(() => {
                             <span class="flex items-center gap-1">
                                 <UIcon
                                     name="i-lucide-map-pin"
-                                    class="size-[10px] text-gray-400"
+                                    class="size-2.5 text-gray-400"
                                 />
                                 {{ farmerBarangay(f) }}
                             </span>

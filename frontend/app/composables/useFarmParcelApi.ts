@@ -111,33 +111,25 @@ const createQuery = (
 
 export const useFarmParcelApi = () => {
     const config = useRuntimeConfig()
-    const { jwt } = useAuth()
+    const { authFetch } = useAuth()
     const baseUrl = `${String(config.public.strapiUrl || '').replace(/\/$/, '')}/api/farm-parcels`
-    const authHeaders = () =>
-        jwt.value ? { Authorization: `Bearer ${jwt.value}` } : undefined
 
     const fetchPage = async (
         params: FarmParcelQuery,
         page: number
     ): Promise<FarmParcelListResponse> => {
         const query = createQuery(params, page)
-        return await $fetch<FarmParcelListResponse>(
-            `${baseUrl}?${query.toString()}`,
-            {
-                credentials: 'include',
-                headers: authHeaders(),
-            }
+        return await authFetch<FarmParcelListResponse>(
+            `${baseUrl}?${query.toString()}`
         )
     }
 
     const createFromMap = async (
         data: CreateFromMapData
     ): Promise<FarmParcelResponse> => {
-        return await $fetch<FarmParcelResponse>(`${baseUrl}/from-map`, {
+        return await authFetch<FarmParcelResponse>(`${baseUrl}/from-map`, {
             method: 'POST',
             body: data,
-            credentials: 'include',
-            headers: authHeaders(),
         })
     }
 
@@ -175,7 +167,7 @@ export const useFarmParcelApi = () => {
     }
 
     const getById = async (documentId: string): Promise<FarmParcelResponse> => {
-        return await $fetch<FarmParcelResponse>(`${baseUrl}/${documentId}`, {
+        return await authFetch<FarmParcelResponse>(`${baseUrl}/${documentId}`, {
             query: {
                 populate: [
                     'farm',
@@ -185,8 +177,6 @@ export const useFarmParcelApi = () => {
                     'inspections',
                 ],
             },
-            credentials: 'include',
-            headers: authHeaders(),
         })
     }
 
@@ -194,7 +184,7 @@ export const useFarmParcelApi = () => {
         documentId: string,
         data: UpdateParcelData
     ): Promise<FarmParcelResponse> => {
-        return await $fetch<FarmParcelResponse>(`${baseUrl}/${documentId}`, {
+        return await authFetch<FarmParcelResponse>(`${baseUrl}/${documentId}`, {
             method: 'PUT',
             body: { data },
             query: {
@@ -206,8 +196,6 @@ export const useFarmParcelApi = () => {
                     'inspections',
                 ],
             },
-            credentials: 'include',
-            headers: authHeaders(),
         })
     }
 

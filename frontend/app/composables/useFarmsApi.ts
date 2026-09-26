@@ -20,6 +20,20 @@ export interface Farm {
     }>
 }
 
+export const FARMER_STATUS_OPTIONS = [
+    'Active',
+    'Inactive',
+    'Departed',
+] as const
+
+export type FarmerStatus = (typeof FARMER_STATUS_OPTIONS)[number]
+
+export interface CreateFarmData {
+    barangay: string
+    farmers?: string[]
+    farmer_status: FarmerStatus
+}
+
 export type FarmQuery = Record<
     string,
     string | number | boolean | string[] | undefined | null
@@ -58,9 +72,14 @@ const appendQuery = (
     query.set(key, String(value))
 }
 
-const createQuery = (params: FarmQuery = {}, page?: number): URLSearchParams => {
+const createQuery = (
+    params: FarmQuery = {},
+    page?: number
+): URLSearchParams => {
     const query = new URLSearchParams()
-    Object.entries(params).forEach(([key, value]) => appendQuery(query, key, value))
+    Object.entries(params).forEach(([key, value]) =>
+        appendQuery(query, key, value)
+    )
 
     if (!query.has('pagination[pageSize]')) {
         query.set('pagination[pageSize]', String(MAX_PAGE_SIZE))
@@ -72,20 +91,22 @@ const createQuery = (params: FarmQuery = {}, page?: number): URLSearchParams => 
 
 export const useFarmsApi = () => {
     const config = useRuntimeConfig()
-    const { jwt } = useAuth()
+    const { authFetch } = useAuth()
     const baseUrl = `${String(config.public.strapiUrl || '').replace(/\/$/, '')}/api/farms`
-    const authHeaders = () =>
-        jwt.value ? { Authorization: `Bearer ${jwt.value}` } : undefined
 
-    const fetchPage = async (params: FarmQuery, page: number): Promise<FarmListResponse> => {
+    const fetchPage = async (
+        params: FarmQuery,
+        page: number
+    ): Promise<FarmListResponse> => {
         const query = createQuery(params, page)
-        return await $fetch<FarmListResponse>(`${baseUrl}?${query.toString()}`, {
-            credentials: 'include',
-            headers: authHeaders(),
-        })
+        return await authFetch<FarmListResponse>(
+            `${baseUrl}?${query.toString()}`
+        )
     }
 
-    const getAll = async (params: FarmQuery = {}): Promise<FarmListResponse> => {
+    const getAll = async (
+        params: FarmQuery = {}
+    ): Promise<FarmListResponse> => {
         const firstPage = await fetchPage(params, 1)
         const pagination = firstPage.meta?.pagination
         const pageCount = pagination?.pageCount ?? 1
@@ -127,19 +148,31 @@ export const useFarmsApi = () => {
         return response.data
     }
 
+    const create = async (data: CreateFarmData): Promise<FarmResponse> => {
+        return await authFetch<FarmResponse>(baseUrl, {
+            method: 'POST',
+            body: {
+                data: {
+                    barangay: data.barangay,
+                    farmer_status: data.farmer_status,
+                    ...(data.farmers?.length ? { farmers: data.farmers } : {}),
+                },
+            },
+        })
+    }
+
     const getById = async (documentId: string): Promise<FarmResponse> => {
-        return await $fetch<FarmResponse>(`${baseUrl}/${documentId}`, {
+        return await authFetch<FarmResponse>(`${baseUrl}/${documentId}`, {
             query: {
                 populate: ['barangay', 'farmers', 'farm_parcels'],
             },
-            credentials: 'include',
-            headers: authHeaders(),
         })
     }
 
     return {
         getAll,
         getAllForSelect,
+        create,
         getById,
     }
 }

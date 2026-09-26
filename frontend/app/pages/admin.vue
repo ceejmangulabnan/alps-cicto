@@ -221,21 +221,9 @@ function addUser() {
     <div class="space-y-6 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <div class="flex items-center gap-3">
-                    <h1 class="text-2xl font-bold text-gray-900">
-                        Administration
-                    </h1>
-                    <span
-                        class="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700"
-                    >
-                        {{ users.length }} users
-                    </span>
-                    <span
-                        class="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700"
-                    >
-                        ALPS v2.4.1
-                    </span>
-                </div>
+                <h1 class="text-2xl font-bold text-gray-900">
+                    Administration
+                </h1>
                 <p class="mt-0.5 text-sm text-gray-500">
                     System users · Data management · GIS configuration
                 </p>

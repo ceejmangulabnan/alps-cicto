@@ -80,6 +80,28 @@ const selectedParcel = ref<FarmParcel | null>(null)
 const hasGeometry = ref(false)
 const hydratingSelection = ref(false)
 
+// Terra Draw validates feature ids against its id strategy (default UUID4)
+// and coordinates against the adapter coordinate precision. Strapi document
+// ids are not UUIDs and stored boundaries may carry float artifacts, so we
+// accept arbitrary string ids and normalize coordinates before plotting.
+const COORD_PRECISION = 9
+
+function normalizeCoordinate(value: number): number {
+    return Math.round(value * 10 ** COORD_PRECISION) / 10 ** COORD_PRECISION
+}
+
+function normalizeRing(ring: GeoJSON.Position[]): GeoJSON.Position[] {
+    return ring.map((coordinate) => [
+        normalizeCoordinate(coordinate[0] ?? 0),
+        normalizeCoordinate(coordinate[1] ?? 0),
+    ])
+}
+
+const parcelIdStrategy = {
+    getId: () => crypto.randomUUID(),
+    isValidId: () => true,
+}
+
 const landStatusOptions = LAND_STATUS_OPTIONS
 
 const STATUS_COLOR: Record<string, HexColor> = {
@@ -171,7 +193,11 @@ const { getAllForSelect: getFarms } = useFarmsApi()
 
 function toParcelFeature(parcel: FarmParcel): GeoJSONStoreFeatures {
     const boundary = parcel.boundary_geojson
-    const geometry = boundary.type === 'Feature' ? boundary.geometry : boundary
+    const raw = boundary.type === 'Feature' ? boundary.geometry : boundary
+    const geometry: GeoJSON.Polygon = {
+        type: 'Polygon',
+        coordinates: raw.coordinates.map(normalizeRing),
+    }
 
     return {
         type: 'Feature',
@@ -240,6 +266,9 @@ const sidebarSubtitle = computed(() =>
 const loading = ref(false)
 const error = ref<string | null>(null)
 const success = ref<string | null>(null)
+const mapLoadError = ref<string | null>(null)
+const sessionExpired = ref(false)
+const permissionDenied = ref(false)
 const farms = ref<Farm[]>([])
 
 const parcelForm = reactive({
@@ -253,6 +282,47 @@ const parcelForm = reactive({
 function clearMessages() {
     error.value = null
     success.value = null
+}
+
+function getHttpStatus(value: unknown): number | undefined {
+    return (
+        (value as { statusCode?: number })?.statusCode ??
+        (value as { response?: { status?: number } })?.response?.status
+    )
+}
+
+function handleMapLoadError(value: unknown) {
+    sessionExpired.value = false
+    permissionDenied.value = false
+    const status = getHttpStatus(value)
+    if (status === 401) {
+        sessionExpired.value = true
+        mapLoadError.value =
+            'Your session has expired. Please sign in again to view parcels on the map.'
+    } else if (status === 403) {
+        permissionDenied.value = true
+        mapLoadError.value =
+            'You do not have access to parcel data. Ask an administrator to grant the "find" permission for the farms and farm-parcels content types to your role.'
+    } else {
+        mapLoadError.value = getErrorMessage(
+            value,
+            'Unable to load parcels. Check that the API is running and press Retry.'
+        )
+    }
+    error.value = mapLoadError.value
+}
+
+async function retryMapLoad() {
+    clearMessages()
+    mapLoadError.value = null
+    await loadFarms()
+    await loadExistingParcels()
+}
+
+async function signInAgain() {
+    const { logout } = useAuth()
+    await logout()
+    await navigateTo('/login')
 }
 
 function getErrorMessage(value: unknown, fallback: string) {
@@ -443,7 +513,7 @@ async function loadFarms() {
     try {
         farms.value = await getFarms()
     } catch (value: unknown) {
-        error.value = getErrorMessage(value, 'Unable to load farms.')
+        handleMapLoadError(value)
     }
 }
 
@@ -471,7 +541,7 @@ async function loadExistingParcels() {
             fitToAllParcels()
         }
     } catch (value: unknown) {
-        error.value = getErrorMessage(value, 'Unable to load existing parcels.')
+        handleMapLoadError(value)
     }
 }
 
@@ -766,21 +836,14 @@ async function handleSaveParcel() {
                 >
                     <UIcon name="i-lucide-map" class="size-4.5" />
                 </span>
-                <div>
-                    <div class="flex items-center gap-2">
+<div>
                         <span class="text-sm font-bold text-gray-900 font-sans">
                             Agricultural Parcel Map
                         </span>
-                        <span
-                            class="rounded-full bg-[#e8f5e8] px-2 py-0.5 text-[10px] font-medium text-[#2d6a2d] ring-1 ring-green-100"
-                        >
-                            San Fernando, Pampanga
-                        </span>
+                        <div class="text-[11px] text-gray-400">
+                            Base map · OpenStreetMap / MapTiler GL
+                        </div>
                     </div>
-                    <div class="text-[11px] text-gray-400">
-                        Base map · OpenStreetMap / MapTiler GL
-                    </div>
-                </div>
             </div>
             <div class="flex items-center gap-3">
                 <span
@@ -845,6 +908,31 @@ async function handleSaveParcel() {
                         </div>
                     </template>
                 </ClientOnly>
+
+                <div
+                    v-if="mapLoadError"
+                    class="absolute left-1/2 top-4 z-20 flex w-[min(36rem,calc(100%-2rem))] -translate-x-1/2 items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700 shadow-lg"
+                    role="alert"
+                >
+                    <span>{{ mapLoadError }}</span>
+                    <button
+                        v-if="sessionExpired"
+                        type="button"
+                        class="flex flex-shrink-0 items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-xs font-medium text-red-700 ring-1 ring-red-200 hover:bg-red-100"
+                        @click="signInAgain"
+                    >
+                        <UIcon name="i-lucide-log-in" class="size-3" />
+                        Sign in again
+                    </button>
+                    <button
+                        v-else
+                        type="button"
+                        class="flex-shrink-0 rounded-md bg-white px-3 py-1.5 text-xs font-medium text-red-700 ring-1 ring-red-200 hover:bg-red-100"
+                        @click="retryMapLoad"
+                    >
+                        Retry
+                    </button>
+                </div>
 
                 <div
                     v-if="

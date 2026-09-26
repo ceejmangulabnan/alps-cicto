@@ -193,7 +193,7 @@ const toggle = () => {
                         >
                             <UIcon
                                 :name="item.icon"
-                                class="size-[14px] text-white"
+                                class="size-[14px] text-[#8fe08f]"
                             />
                         </span>
                         <UIcon

@@ -353,26 +353,9 @@ function confirmDelete() {
     <div class="p-6">
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <div class="flex items-center gap-3">
-                    <h1 class="text-2xl font-bold text-gray-900">
-                        Field Inspections
-                    </h1>
-                    <span
-                        class="rounded-full bg-[#e8f5e8] px-2 py-0.5 text-[11px] font-semibold text-[#2d6a2d]"
-                    >
-                        {{ inspections.length }} total
-                    </span>
-                    <span
-                        class="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700"
-                    >
-                        {{ stats[1].val }} completed
-                    </span>
-                    <span
-                        class="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700"
-                    >
-                        {{ stats[3].val }} high risk
-                    </span>
-                </div>
+                <h1 class="text-2xl font-bold text-gray-900">
+                    Field Inspections
+                </h1>
                 <p class="mt-0.5 text-sm text-gray-500">
                     GPS-tagged visits · Photo documentation
                 </p>

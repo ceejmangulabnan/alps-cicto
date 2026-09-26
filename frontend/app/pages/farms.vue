@@ -24,6 +24,8 @@ const parcels = ref<Parcel[]>([])
 const selected = ref<Parcel | null>(null)
 const loading = ref(false)
 const loadError = ref<string | null>(null)
+const sessionExpired = ref(false)
+const permissionDenied = ref(false)
 
 function toParcel(parcel: FarmParcel): Parcel {
     const farm = parcel.farm
@@ -54,11 +56,34 @@ async function loadParcels() {
         parcels.value = response.data.map(toParcel)
         selected.value = null
     } catch (error: unknown) {
-        loadError.value =
-            error instanceof Error ? error.message : 'Unable to load parcels.'
+        sessionExpired.value = false
+        permissionDenied.value = false
+        const status =
+            (error as { statusCode?: number })?.statusCode ??
+            (error as { response?: { status?: number } })?.response?.status
+
+        if (status === 401) {
+            sessionExpired.value = true
+            loadError.value = 'Your session has expired. Please sign in again.'
+        } else if (status === 403) {
+            permissionDenied.value = true
+            loadError.value =
+                'You do not have access to parcel data. Ask an administrator to grant the "find" permission for the farm-parcels content type to your role.'
+        } else {
+            loadError.value =
+                error instanceof Error
+                    ? error.message
+                    : 'Unable to load parcels.'
+        }
     } finally {
         loading.value = false
     }
+}
+
+async function signInAgain() {
+    const { logout } = useAuth()
+    await logout()
+    await navigateTo('/login')
 }
 
 onMounted(loadParcels)
@@ -152,16 +177,6 @@ const filtered = computed(() =>
     })
 )
 
-const farmerCount = computed(
-    () =>
-        new Set(parcels.value.map((p) => p.farmerDocumentId ?? p.farmerName))
-            .size
-)
-
-const barangayCount = computed(
-    () => new Set(parcels.value.map((p) => p.barangay)).size
-)
-
 const summaryCards = computed(() => [
     {
         label: 'Total Parcels',
@@ -230,26 +245,9 @@ onBeforeUnmount(() => {
     <div class="p-6">
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <div class="flex items-center gap-3">
-                    <h1 class="text-2xl font-bold text-gray-900">
-                        Farms & Parcels
-                    </h1>
-                    <span
-                        class="rounded-full bg-[#e8f5e8] px-2 py-0.5 text-[11px] font-semibold text-[#2d6a2d]"
-                    >
-                        {{ parcels.length }} parcels
-                    </span>
-                    <span
-                        class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500"
-                    >
-                        {{ farmerCount }} farmers
-                    </span>
-                    <span
-                        class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500"
-                    >
-                        {{ barangayCount }} barangays
-                    </span>
-                </div>
+                <h1 class="text-2xl font-bold text-gray-900">
+                    Farms & Parcels
+                </h1>
                 <p class="mt-0.5 text-sm text-gray-500">
                     Agricultural land inventory · cultivated, idle & at-risk
                     parcels
@@ -339,6 +337,16 @@ onBeforeUnmount(() => {
         >
             <span>{{ loadError }}</span>
             <button
+                v-if="sessionExpired"
+                type="button"
+                class="flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-xs font-medium text-red-700 ring-1 ring-red-200 hover:bg-red-100"
+                @click="signInAgain"
+            >
+                <UIcon name="i-lucide-log-in" class="size-3" />
+                Sign in again
+            </button>
+            <button
+                v-else
                 type="button"
                 class="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-red-700 ring-1 ring-red-200 hover:bg-red-100"
                 @click="loadParcels"

@@ -294,26 +294,9 @@ function confirmDelete() {
     <div class="space-y-6 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <div class="flex items-center gap-3">
-                    <h1 class="text-2xl font-bold text-gray-900">
-                        Assistance Programs
-                    </h1>
-                    <span
-                        class="rounded-full bg-[#e8f5e8] px-2 py-0.5 text-[11px] font-semibold text-[#2d6a2d]"
-                    >
-                        {{ assistancePrograms.length }} programs
-                    </span>
-                    <span
-                        class="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700"
-                    >
-                        {{ kpis[1].val }} released
-                    </span>
-                    <span
-                        class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700"
-                    >
-                        {{ kpis[2].val }} on queue
-                    </span>
-                </div>
+                <h1 class="text-2xl font-bold text-gray-900">
+                    Assistance Programs
+                </h1>
                 <p class="mt-0.5 text-sm text-gray-500">
                     Seed, fertilizer, training, and livelihood support
                 </p>

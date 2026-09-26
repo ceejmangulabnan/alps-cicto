@@ -377,24 +377,7 @@ function confirmDelete() {
     <div class="space-y-6 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <div class="flex items-center gap-3">
-                    <h1 class="text-2xl font-bold text-gray-900">Harvests</h1>
-                    <span
-                        class="rounded-full bg-[#e8f5e8] px-2 py-0.5 text-[11px] font-semibold text-[#2d6a2d]"
-                    >
-                        {{ harvestRecords.length }} records
-                    </span>
-                    <span
-                        class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500"
-                    >
-                        {{ kpis[1].val }} t · 2024
-                    </span>
-                    <span
-                        class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700"
-                    >
-                        {{ kpis[3].val }} upcoming
-                    </span>
-                </div>
+                <h1 class="text-2xl font-bold text-gray-900">Harvests</h1>
                 <p class="mt-0.5 text-sm text-gray-500">
                     Yield records · Season tracking · Production data
                 </p>

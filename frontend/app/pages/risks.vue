@@ -438,26 +438,9 @@ function confirmDelete() {
         <!-- Header -->
         <div class="flex items-center justify-between">
             <div>
-                <div class="flex items-center gap-3">
-                    <h1 class="text-2xl font-bold text-gray-900">
-                        Risk Monitoring
-                    </h1>
-                    <span
-                        class="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700"
-                    >
-                        {{ kpis[0]?.val }} high risk
-                    </span>
-                    <span
-                        class="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-semibold text-orange-700"
-                    >
-                        {{ kpis[2]?.val }} area at risk
-                    </span>
-                    <span
-                        class="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700"
-                    >
-                        {{ kpis[3]?.val }} interventions
-                    </span>
-                </div>
+                <h1 class="text-2xl font-bold text-gray-900">
+                    Risk Monitoring
+                </h1>
                 <p class="mt-0.5 text-sm text-gray-500">
                     Active alerts · ALPS decision support · Intervention
                     tracking

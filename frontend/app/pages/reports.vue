@@ -276,21 +276,9 @@ const barangayOption = computed(() => ({
     <div class="space-y-6 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <div class="flex items-center gap-3">
-                    <h1 class="text-2xl font-bold text-gray-900">
-                        Reports & Analytics
-                    </h1>
-                    <span
-                        class="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700"
-                    >
-                        {{ reportMeta.count }} reports
-                    </span>
-                    <span
-                        class="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700"
-                    >
-                        {{ reportMeta.total }} MB archive
-                    </span>
-                </div>
+                <h1 class="text-2xl font-bold text-gray-900">
+                    Reports & Analytics
+                </h1>
                 <p class="mt-0.5 text-sm text-gray-500">
                     Production summaries · Land use analytics · Export center
                 </p>

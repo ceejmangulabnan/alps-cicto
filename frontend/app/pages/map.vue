@@ -107,12 +107,17 @@ const STATUS_COLOR_FALLBACK: HexColor = '#6b7280'
  * silently substitutes its default blue when a styling callback returns
  * undefined, which would make a saved parcel look like a fresh drawing.
  */
+function statusColor(status: unknown): HexColor {
+    return typeof status === 'string'
+        ? (STATUS_COLOR[status] ?? STATUS_COLOR_FALLBACK)
+        : STATUS_COLOR_FALLBACK
+}
+
 function parcelFeatureColor(feature: GeoJSONStoreFeatures): HexColor {
     const status = (feature.properties as { landStatus?: unknown } | undefined)
         ?.landStatus
-    const color = typeof status === 'string' ? STATUS_COLOR[status] : undefined
 
-    return color ?? STATUS_COLOR_FALLBACK
+    return statusColor(status)
 }
 
 const MODE_META: Record<
@@ -145,6 +150,12 @@ const statusLegend = computed(() =>
         label: status,
         color: STATUS_COLOR[status] ?? STATUS_COLOR_FALLBACK,
     }))
+)
+
+const parcelList = computed(() =>
+    [...parcels.value].sort((a, b) =>
+        a.parcel_code.localeCompare(b.parcel_code)
+    )
 )
 
 // ---------------------------------------------------------------------------
@@ -325,6 +336,27 @@ function fitToParcel(parcel: FarmParcel) {
     instance.fitBounds(bounds, { padding: 80, maxZoom: 17, duration: 500 })
 }
 
+function fitToAllParcels() {
+    const instance = mapInstance.value
+    if (!instance || parcels.value.length === 0) return
+
+    const bounds = new LngLatBounds()
+    let extended = false
+    for (const parcel of parcels.value) {
+        for (const coordinate of getParcelGeometry(parcel).coordinates[0] ?? []) {
+            const lng = coordinate[0]
+            const lat = coordinate[1]
+            if (typeof lng === 'number' && typeof lat === 'number') {
+                bounds.extend([lng, lat])
+                extended = true
+            }
+        }
+    }
+    if (!extended) return
+
+    instance.fitBounds(bounds, { padding: 80, maxZoom: 17, duration: 0 })
+}
+
 function loadParcelIntoForm(parcel: FarmParcel) {
     parcelForm.farm = parcel.farm?.documentId ?? ''
     parcelForm.parcel_code = parcel.parcel_code
@@ -392,6 +424,9 @@ async function loadExistingParcels() {
         if (draw.value && response.data.length > 0) {
             draw.value.addFeatures(response.data.map(toParcelFeature))
             parcelCount.value = countParcels(draw.value)
+            // The default centre is a fixed San Fernando coordinate, so any
+            // parcel plotted elsewhere would load off-screen and look missing.
+            fitToAllParcels()
         }
     } catch (value: unknown) {
         error.value = getErrorMessage(value, 'Unable to load existing parcels.')
@@ -819,6 +854,67 @@ async function handleSaveParcel() {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <div
+                    v-if="parcelList.length > 0"
+                    class="absolute right-4 top-24 z-10 w-60 overflow-hidden rounded-xl bg-white/95 shadow-lg ring-1 ring-black/5 backdrop-blur-sm"
+                >
+                    <div class="flex items-center justify-between px-3 py-2">
+                        <span
+                            class="text-[10px] font-semibold uppercase tracking-wider text-gray-400"
+                        >
+                            Parcels ({{ parcelList.length }})
+                        </span>
+                        <button
+                            type="button"
+                            class="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-[#2d6a2d] hover:bg-[#2d6a2d]/10"
+                            @click="fitToAllParcels"
+                        >
+                            <UIcon name="i-lucide-scan" class="size-3" />
+                            Fit all
+                        </button>
+                    </div>
+                    <ul
+                        class="max-h-64 divide-y divide-gray-100 overflow-y-auto border-t border-gray-100"
+                    >
+                        <li v-for="parcel in parcelList" :key="parcel.documentId">
+                            <button
+                                type="button"
+                                class="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-gray-50"
+                                :class="
+                                    selectedParcelId === parcel.documentId
+                                        ? 'bg-[#2d6a2d]/10'
+                                        : ''
+                                "
+                                @click="openParcelForEdit(parcel.documentId)"
+                            >
+                                <span
+                                    class="size-2 shrink-0 rounded-full"
+                                    :style="{
+                                        backgroundColor:
+                                            statusColor(parcel.land_status),
+                                    }"
+                                />
+                                <span class="min-w-0 flex-1">
+                                    <span
+                                        class="block truncate text-xs font-semibold text-gray-800"
+                                    >
+                                        {{ parcel.parcel_code }}
+                                    </span>
+                                    <span
+                                        class="block truncate text-[10px] text-gray-500"
+                                    >
+                                        {{ parcel.land_status }} ·
+                                        {{
+                                            parcel.area_hectares.toFixed(2)
+                                        }}
+                                        ha
+                                    </span>
+                                </span>
+                            </button>
+                        </li>
+                    </ul>
                 </div>
 
                 <div

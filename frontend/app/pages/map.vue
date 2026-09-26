@@ -8,7 +8,7 @@ import {
     TerraDrawRenderMode,
     TerraDrawSelectMode,
 } from 'terra-draw'
-import type { GeoJSONStoreFeatures } from 'terra-draw'
+import type { GeoJSONStoreFeatures, HexColor } from 'terra-draw'
 import { TerraDrawMapLibreGLAdapter } from 'terra-draw-maplibre-gl-adapter'
 import { area } from '@turf/area'
 import { feature } from '@turf/helpers'
@@ -83,7 +83,7 @@ const hydratingSelection = ref(false)
 
 const landStatusOptions = LAND_STATUS_OPTIONS
 
-const STATUS_COLOR: Record<string, string> = {
+const STATUS_COLOR: Record<string, HexColor> = {
     Cultivated: '#16a34a',
     Preparation: '#0369a1',
     Harvesting: '#ca8a04',
@@ -91,6 +91,29 @@ const STATUS_COLOR: Record<string, string> = {
     Idle: '#6b7280',
     'At Risk': '#dc2626',
     Converted: '#0f766e',
+}
+
+/**
+ * Colour for features that have no persisted land_status yet, i.e. a polygon
+ * that is still being drawn. Neutral so it never implies a real status.
+ */
+const STATUS_COLOR_FALLBACK: HexColor = '#6b7280'
+
+/**
+ * Resolves a parcel polygon's map colour from its persisted land_status.
+ *
+ * TerraDraw routes each feature to the mode named in its `properties.mode`,
+ * and `featureProperties` sets that to 'polygon' — so these callbacks are what
+ * actually paint saved parcels. Must always return a concrete colour: terra-draw
+ * silently substitutes its default blue when a styling callback returns
+ * undefined, which would make a saved parcel look like a fresh drawing.
+ */
+function parcelFeatureColor(feature: GeoJSONStoreFeatures): HexColor {
+    const status = (feature.properties as { landStatus?: unknown } | undefined)
+        ?.landStatus
+    const color = typeof status === 'string' ? STATUS_COLOR[status] : undefined
+
+    return color ?? STATUS_COLOR_FALLBACK
 }
 
 const MODE_META: Record<
@@ -115,6 +138,15 @@ const MODE_META: Record<
 }
 
 const modeMeta = computed(() => MODE_META[drawMode.value])
+
+/** Legend entries, derived from the same source as STATUS_COLOR so the two
+ *  cannot drift apart. */
+const statusLegend = computed(() =>
+    LAND_STATUS_OPTIONS.map((status) => ({
+        label: status,
+        color: STATUS_COLOR[status] ?? STATUS_COLOR_FALLBACK,
+    }))
+)
 
 // ---------------------------------------------------------------------------
 // API Composables
@@ -431,7 +463,15 @@ function onMapLoad(payload: { map: MaplibreMap }) {
     const instance = new TerraDraw({
         adapter: new TerraDrawMapLibreGLAdapter({ map: payload.map }),
         modes: [
-            new TerraDrawPolygonMode({ modeName: 'polygon' }),
+            new TerraDrawPolygonMode({
+                modeName: 'polygon',
+                styles: {
+                    fillColor: parcelFeatureColor,
+                    outlineColor: parcelFeatureColor,
+                    fillOpacity: 0.3,
+                    outlineWidth: 2,
+                },
+            }),
             new TerraDrawSelectMode({
                 modeName: 'select',
                 flags: {
@@ -776,6 +816,33 @@ async function handleSaveParcel() {
                     >
                         <UIcon :name="modeMeta.icon" class="size-3" />
                         {{ modeMeta.label }}
+                    </div>
+                </div>
+
+                <!-- Land Status Legend -->
+                <div
+                    v-if="parcelCount > 0"
+                    class="pointer-events-none absolute bottom-4 right-4 z-10 rounded-xl bg-white/95 px-3 py-2.5 shadow-lg ring-1 ring-black/5 backdrop-blur-sm"
+                >
+                    <div
+                        class="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400"
+                    >
+                        Land Status
+                    </div>
+                    <div class="grid grid-cols-2 gap-x-3 gap-y-1">
+                        <div
+                            v-for="entry in statusLegend"
+                            :key="entry.label"
+                            class="flex items-center gap-1.5"
+                        >
+                            <span
+                                class="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/10"
+                                :style="{ backgroundColor: entry.color }"
+                            ></span>
+                            <span class="text-[10px] text-gray-600">
+                                {{ entry.label }}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>

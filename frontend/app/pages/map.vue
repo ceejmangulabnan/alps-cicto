@@ -177,8 +177,37 @@ function toParcelFeature(parcel: FarmParcel): GeoJSONStoreFeatures {
         type: 'Feature',
         id: parcel.documentId,
         geometry,
-        properties: featureProperties(parcel),
+        // `mode` is required when a feature enters the store, but it is a
+        // reserved name that must not be passed back to updateFeatureProperties.
+        properties: { ...featureProperties(parcel), mode: 'polygon' },
     }
+}
+
+// terra-draw validates every incoming feature id against its configured
+// idStrategy, and the default strategy only accepts UUID4 ids. Strapi 5
+// documentIds are nanoid-style tokens (e.g. "gmk7s1h6wni2qevbz8nzdnie"), so
+// addFeatures() rejected every saved parcel with
+// "Feature must match the id strategy (default is UUID4)" and the map rendered
+// nothing. The returned validation array is easy to miss, so the parcels were
+// silently dropped rather than erroring. Accept both id shapes here.
+const UUID_PATTERN =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const STRAPI_DOCUMENT_ID_PATTERN = /^[a-z0-9]{16,64}$/i
+
+const parcelIdStrategy = {
+    isValidId: (id: string | number) =>
+        typeof id === 'string' &&
+        (UUID_PATTERN.test(id) || STRAPI_DOCUMENT_ID_PATTERN.test(id)),
+    // Only used for features drawn on the map before they are persisted; those
+    // drafts are discarded and replaced with the documentId the API returns.
+    // randomUUID() needs a secure context, so fall back to a plain token that
+    // still satisfies the validator above.
+    getId: () =>
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : `draft${Date.now().toString(36)}${Math.random()
+                  .toString(36)
+                  .slice(2, 10)}`,
 }
 
 // ---------------------------------------------------------------------------
@@ -291,9 +320,12 @@ function updateAreaForFeature(id: string | number) {
     parcelForm.area_hectares = calculateAreaHectares(geometry).toFixed(4)
 }
 
+// Deliberately excludes `mode`: terra-draw owns that property and rejects
+// attempts to update it ("You are trying to update a reserved property name:
+// mode"), which aborted the save handler after the API call had already
+// succeeded. It is only added on ingest, in toParcelFeature.
 function featureProperties(parcel: FarmParcel) {
     return {
-        mode: 'polygon',
         parcelCode: parcel.parcel_code,
         landStatus: parcel.land_status,
         areaHectares: parcel.area_hectares,
@@ -422,7 +454,17 @@ async function loadExistingParcels() {
         })
         parcels.value = response.data
         if (draw.value && response.data.length > 0) {
-            draw.value.addFeatures(response.data.map(toParcelFeature))
+            const results = draw.value.addFeatures(
+                response.data.map(toParcelFeature),
+            )
+            const rejected = results.filter((result) => !result.valid)
+            if (rejected.length > 0) {
+                console.error(
+                    'terra-draw rejected parcel features:',
+                    rejected,
+                )
+                error.value = `${rejected.length} parcel(s) could not be plotted on the map.`
+            }
             parcelCount.value = countParcels(draw.value)
             // The default centre is a fixed San Fernando coordinate, so any
             // parcel plotted elsewhere would load off-screen and look missing.
@@ -496,6 +538,7 @@ function onMapLoad(payload: { map: MaplibreMap }) {
 
     const instance = new TerraDraw({
         adapter: new TerraDrawMapLibreGLAdapter({ map: payload.map }),
+        idStrategy: parcelIdStrategy,
         modes: [
             new TerraDrawPolygonMode({
                 modeName: 'polygon',

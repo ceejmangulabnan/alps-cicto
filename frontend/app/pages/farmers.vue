@@ -731,14 +731,14 @@ const detailStats = computed(() => {
                         placeholder="Search name or Farmer Code..."
                         class="w-full rounded-full border border-gray-200 bg-white py-2 pl-8 pr-8 text-xs shadow-sm focus:outline-none focus:border-[#2d6a2d] focus:ring-1 focus:ring-green-500"
                     />
-                    <button
+                    <UButton
                         v-if="search"
                         type="button"
                         class="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:text-gray-600"
                         @click="search = ''"
                     >
                         <UIcon name="i-lucide-x" class="size-3" />
-                    </button>
+                    </UButton>
                 </div>
                 <div
                     class="ml-auto flex items-center gap-1.5 text-xs text-gray-400"

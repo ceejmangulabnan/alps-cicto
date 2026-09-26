@@ -5,7 +5,6 @@ import { Position } from '@indoorequal/vue-maplibre-gl'
 import {
     TerraDraw,
     TerraDrawPolygonMode,
-    TerraDrawRenderMode,
     TerraDrawSelectMode,
 } from 'terra-draw'
 import type { GeoJSONStoreFeatures, HexColor } from 'terra-draw'
@@ -369,7 +368,7 @@ function closeSidebar() {
     discardDraft()
     clearSelection()
     showSidebar.value = false
-    draw.value?.setMode('render')
+    draw.value?.setMode('select')
     drawMode.value = 'view'
     router.replace({ path: '/map' })
     resetForm()
@@ -449,7 +448,7 @@ async function openParcelForEdit(documentId: string) {
 async function focusParcel(documentId: string) {
     try {
         const parcel = await ensureParcel(documentId)
-        draw.value?.setMode('render')
+        draw.value?.setMode('select')
         drawMode.value = 'view'
         fitToParcel(parcel)
     } catch (value: unknown) {
@@ -474,6 +473,27 @@ function onMapLoad(payload: { map: MaplibreMap }) {
             }),
             new TerraDrawSelectMode({
                 modeName: 'select',
+                // terra-draw hands styling of a *selected* feature to the select
+                // mode, which otherwise repaints it in its own default blue and
+                // drops the land_status colour. Reuse the same resolver so a
+                // selected parcel still matches the legend; the heavier outline
+                // is what signals the selection.
+                styles: {
+                    selectedPolygonColor: parcelFeatureColor,
+                    selectedPolygonOutlineColor: parcelFeatureColor,
+                    selectedPolygonOutlineWidth: 3,
+                    selectedPolygonFillOpacity: 0.35,
+                },
+                // Default binds Delete to removing the whole feature, which would
+                // drop the polygon from the map with no way to restore it (there
+                // is no delete endpoint wired up). Coordinate/vertex deletion
+                // still works via the flags below.
+                keyEvents: {
+                    deselect: 'Escape',
+                    delete: null,
+                    rotate: null,
+                    scale: null,
+                },
                 flags: {
                     polygon: {
                         feature: {
@@ -489,7 +509,6 @@ function onMapLoad(payload: { map: MaplibreMap }) {
                     },
                 },
             }),
-            new TerraDrawRenderMode({ modeName: 'render', styles: {} }),
         ],
     })
 
@@ -538,7 +557,7 @@ function onMapLoad(payload: { map: MaplibreMap }) {
 }
 
 function setViewMode() {
-    draw.value?.setMode('render')
+    draw.value?.setMode('select')
     drawMode.value = 'view'
 }
 

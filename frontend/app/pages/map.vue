@@ -803,7 +803,11 @@ async function handleSaveParcel() {
                     </button>
                 </div>
 
-                <form class="space-y-4" @submit.prevent="handleSaveParcel">
+                <form
+                    id="parcel-form"
+                    class="space-y-4"
+                    @submit.prevent="handleSaveParcel"
+                >
                     <div class="border-b border-gray-100 pb-4">
                         <div
                             class="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400"
@@ -964,6 +968,7 @@ async function handleSaveParcel() {
                 <div class="mt-6 border-t border-gray-100 pt-4">
                     <button
                         type="submit"
+                        form="parcel-form"
                         :disabled="!canSave"
                         class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-[#245524] disabled:cursor-not-allowed disabled:opacity-60"
                     >

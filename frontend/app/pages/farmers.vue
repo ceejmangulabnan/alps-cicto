@@ -560,7 +560,7 @@ const detailStats = computed(() => {
                                 >
                                     <UIcon
                                         :name="field.icon"
-                                        class="size-[11px] text-gray-400"
+                                        class="size-2.75 text-gray-400"
                                     />
                                     {{ field.val }}
                                 </div>
@@ -812,7 +812,7 @@ const detailStats = computed(() => {
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-2.5">
                                 <span
-                                    class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                                    class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
                                     :style="{
                                         backgroundColor: avatarColor(f.name),
                                     }"
@@ -828,7 +828,7 @@ const detailStats = computed(() => {
                             <span class="flex items-center gap-1">
                                 <UIcon
                                     name="i-lucide-map-pin"
-                                    class="size-[10px] text-gray-400"
+                                    class="size-2.5 text-gray-400"
                                 />
                                 {{ farmerBarangay(f) }}
                             </span>

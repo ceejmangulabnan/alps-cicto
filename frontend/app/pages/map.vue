@@ -742,19 +742,19 @@ async function handleSaveParcel() {
                         >
                             <div class="flex items-center gap-2">
                                 <span
-                                    class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#2d6a2d]"
+                                    class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#2d6a2d]"
                                 ></span>
                                 Click points to trace the parcel boundary
                             </div>
                             <div class="flex items-center gap-2">
                                 <span
-                                    class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#2d6a2d]"
+                                    class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#2d6a2d]"
                                 ></span>
                                 Click the first point again to close the parcel
                             </div>
                             <div class="flex items-center gap-2">
                                 <span
-                                    class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-amber-500"
+                                    class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500"
                                 ></span>
                                 Use Edit mode to adjust existing vertices
                             </div>
@@ -990,7 +990,7 @@ async function handleSaveParcel() {
                     >
                         <UIcon
                             name="i-lucide-info"
-                            class="mt-0.5 size-3 flex-shrink-0 text-gray-400"
+                            class="mt-0.5 size-3 shrink-0 text-gray-400"
                         />
                         <p class="text-[10px] leading-relaxed text-gray-500">
                             {{

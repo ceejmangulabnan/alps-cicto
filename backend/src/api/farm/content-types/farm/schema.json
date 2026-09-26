@@ -26,7 +26,8 @@
             "type": "relation",
             "relation": "manyToOne",
             "target": "api::barangay.barangay",
-            "inversedBy": "farms"
+            "inversedBy": "farms",
+            "required": true
         },
         "farm_parcels": {
             "type": "relation",

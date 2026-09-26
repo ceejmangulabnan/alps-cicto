@@ -44,9 +44,7 @@ export default {
                     )
                 }
             } else {
-                data.area_hectares = Number(
-                    geoValidation.calculatedAreaHectares!.toFixed(4)
-                )
+                data.area_hectares = geoValidation.calculatedAreaHectares
             }
         }
     },
@@ -85,9 +83,7 @@ export default {
                     )
                 }
             } else {
-                data.area_hectares = Number(
-                    geoValidation.calculatedAreaHectares!.toFixed(4)
-                )
+                data.area_hectares = geoValidation.calculatedAreaHectares
             }
         }
     },

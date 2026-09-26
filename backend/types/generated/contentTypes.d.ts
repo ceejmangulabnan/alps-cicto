@@ -534,7 +534,7 @@ export interface ApiFarmParcelFarmParcel extends Struct.CollectionTypeSchema {
         draftAndPublish: false
     }
     attributes: {
-        area_hectares: Schema.Attribute.Decimal & Schema.Attribute.Required
+        area_hectares: Schema.Attribute.Float & Schema.Attribute.Required
         boundary_geojson: Schema.Attribute.JSON & Schema.Attribute.Required
         createdAt: Schema.Attribute.DateTime
         createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &

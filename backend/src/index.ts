@@ -53,9 +53,7 @@ function registerGeneratedFields(strapi: Core.Strapi) {
             ) {
                 const geo = validateGeoJSONPolygon(data.boundary_geojson)
                 if (geo.valid && geo.calculatedAreaHectares !== undefined) {
-                    data.area_hectares = Number(
-                        geo.calculatedAreaHectares.toFixed(4)
-                    )
+                    data.area_hectares = geo.calculatedAreaHectares
                 }
             }
         }

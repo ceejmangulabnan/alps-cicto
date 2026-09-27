@@ -209,33 +209,6 @@ function toParcelFeature(parcel: FarmParcel): GeoJSONStoreFeatures {
     }
 }
 
-// terra-draw validates every incoming feature id against its configured
-// idStrategy, and the default strategy only accepts UUID4 ids. Strapi 5
-// documentIds are nanoid-style tokens (e.g. "gmk7s1h6wni2qevbz8nzdnie"), so
-// addFeatures() rejected every saved parcel with
-// "Feature must match the id strategy (default is UUID4)" and the map rendered
-// nothing. The returned validation array is easy to miss, so the parcels were
-// silently dropped rather than erroring. Accept both id shapes here.
-const UUID_PATTERN =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const STRAPI_DOCUMENT_ID_PATTERN = /^[a-z0-9]{16,64}$/i
-
-const parcelIdStrategy = {
-    isValidId: (id: string | number) =>
-        typeof id === 'string' &&
-        (UUID_PATTERN.test(id) || STRAPI_DOCUMENT_ID_PATTERN.test(id)),
-    // Only used for features drawn on the map before they are persisted; those
-    // drafts are discarded and replaced with the documentId the API returns.
-    // randomUUID() needs a secure context, so fall back to a plain token that
-    // still satisfies the validator above.
-    getId: () =>
-        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-            ? crypto.randomUUID()
-            : `draft${Date.now().toString(36)}${Math.random()
-                  .toString(36)
-                  .slice(2, 10)}`,
-}
-
 // ---------------------------------------------------------------------------
 // New Parcel sidebar (connected to backend)
 // ---------------------------------------------------------------------------

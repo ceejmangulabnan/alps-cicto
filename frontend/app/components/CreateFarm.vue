@@ -141,6 +141,7 @@ import {
 } from '~/composables/useFarmsApi'
 import type { Barangay } from '~/composables/useBarangayApi'
 import type { Farmer } from '~/composables/useFarmersApi'
+import { getErrorMessage } from '~/utils/apiError'
 
 const props = defineProps<{ modelValue: boolean }>()
 
@@ -202,22 +203,6 @@ async function loadOptions() {
     } finally {
         optionsLoading.value = false
     }
-}
-
-function getErrorMessage(value: unknown, fallback: string) {
-    if (value && typeof value === 'object') {
-        const apiError = value as {
-            data?: { message?: string; error?: { message?: string } }
-            message?: string
-        }
-        return (
-            apiError.data?.error?.message ||
-            apiError.data?.message ||
-            apiError.message ||
-            fallback
-        )
-    }
-    return fallback
 }
 
 async function submit() {

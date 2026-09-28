@@ -65,9 +65,12 @@ export default {
         // request path, because required-field validation runs before this hook.
         if (!data.farm_code) {
             const farmCode = await generateFarmCode(data.barangay)
-            if (farmCode) {
-                data.farm_code = farmCode
+            if (!farmCode) {
+                throw new Error(
+                    'A farm code is derived from the barangay, so a valid barangay is required.'
+                )
             }
+            data.farm_code = farmCode
         }
     },
 }

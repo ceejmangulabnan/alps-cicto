@@ -40,13 +40,17 @@ const emit = defineEmits<{
                     type="button"
                     class="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-gray-50"
                     :class="
-                        selectedId === parcel.documentId ? 'bg-[#2d6a2d]/10' : ''
+                        selectedId === parcel.documentId
+                            ? 'bg-[#2d6a2d]/10'
+                            : ''
                     "
                     @click="emit('select', parcel.documentId)"
                 >
                     <span
                         class="size-2 shrink-0 rounded-full"
-                        :style="{ backgroundColor: statusColor(parcel.land_status) }"
+                        :style="{
+                            backgroundColor: statusColor(parcel.land_status),
+                        }"
                     />
                     <span class="min-w-0 flex-1">
                         <span

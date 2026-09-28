@@ -99,7 +99,9 @@ const createQuery = (
     page?: number
 ): URLSearchParams => {
     const query = new URLSearchParams()
-    Object.entries(params).forEach(([key, value]) => appendQuery(query, key, value))
+    Object.entries(params).forEach(([key, value]) =>
+        appendQuery(query, key, value)
+    )
 
     if (!query.has('pagination[pageSize]')) {
         query.set('pagination[pageSize]', String(MAX_PAGE_SIZE))

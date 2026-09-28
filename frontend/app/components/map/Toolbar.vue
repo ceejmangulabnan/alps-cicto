@@ -34,7 +34,9 @@ const emit = defineEmits<{
                     name="i-lucide-vector-polygon"
                     class="size-3.5 text-[#2d6a2d]"
                 />
-                <span class="font-semibold text-gray-800">{{ parcelCount }}</span>
+                <span class="font-semibold text-gray-800">{{
+                    parcelCount
+                }}</span>
                 parcel{{ parcelCount === 1 ? '' : 's' }} drawn
             </span>
             <button

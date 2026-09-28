@@ -257,9 +257,7 @@ function openEditModal(a: AssistanceProgram) {
 }
 
 function saveEdit() {
-    const idx = assistancePrograms.findIndex(
-        (r) => r.id === editForm.id
-    )
+    const idx = assistancePrograms.findIndex((r) => r.id === editForm.id)
     if (idx === -1) return
     const a = assistancePrograms[idx]
     a.program = editForm.program
@@ -313,7 +311,11 @@ function confirmDelete() {
 
         <!-- KPIs -->
         <div class="grid grid-cols-4 gap-4">
-            <div v-for="kpi in kpis" :key="kpi.label" class="alps-card relative overflow-hidden p-5">
+            <div
+                v-for="kpi in kpis"
+                :key="kpi.label"
+                class="alps-card relative overflow-hidden p-5"
+            >
                 <div
                     class="absolute inset-x-0 top-0 h-0.5 opacity-70"
                     :style="{
@@ -400,7 +402,8 @@ function confirmDelete() {
                     {{ s }}
                 </button>
                 <span class="ml-auto text-[11px] text-gray-400">
-                    {{ filtered.length }} of {{ assistancePrograms.length }} shown
+                    {{ filtered.length }} of
+                    {{ assistancePrograms.length }} shown
                 </span>
             </div>
             <table class="w-full text-xs">
@@ -454,9 +457,7 @@ function confirmDelete() {
                         v-for="(a, i) in filtered"
                         :key="a.id"
                         class="border-b border-gray-50 last:border-0 transition-colors hover:bg-green-50/30"
-                        :class="
-                            i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'
-                        "
+                        :class="i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'"
                     >
                         <td class="px-5 py-3 font-mono text-gray-400">
                             {{ a.id }}
@@ -503,9 +504,7 @@ function confirmDelete() {
                         <td class="px-4 py-3 text-gray-500">
                             {{ a.barangay }}
                         </td>
-                        <td
-                            class="max-w-xs truncate px-4 py-3 text-gray-600"
-                        >
+                        <td class="max-w-xs truncate px-4 py-3 text-gray-600">
                             {{ a.items }}
                         </td>
                         <td
@@ -541,9 +540,7 @@ function confirmDelete() {
                             </span>
                         </td>
                         <td class="px-4 py-3">
-                            <div
-                                class="flex items-center justify-end gap-1"
-                            >
+                            <div class="flex items-center justify-end gap-1">
                                 <button
                                     type="button"
                                     class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
@@ -990,8 +987,7 @@ function confirmDelete() {
                         {{ deleteTarget?.id }}
                     </span>
                     ({{ deleteTarget?.program }}) for
-                    {{ deleteTarget?.recipient }}? This action cannot be
-                    undone.
+                    {{ deleteTarget?.recipient }}? This action cannot be undone.
                 </p>
                 <div class="mt-6 flex justify-end gap-2">
                     <button

@@ -278,7 +278,9 @@ onBeforeUnmount(() => {
             <span class="flex items-center gap-2">
                 <UIcon name="i-lucide-circle-check" class="size-4 shrink-0" />
                 Farm
-                <span class="font-mono font-semibold">{{ createdFarmCode }}</span>
+                <span class="font-mono font-semibold">{{
+                    createdFarmCode
+                }}</span>
                 created. Draw a parcel for it from the Add Parcel button.
             </span>
             <button

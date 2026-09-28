@@ -127,9 +127,7 @@ function openEditModal(r: PlantingRecord) {
 }
 
 function saveEdit() {
-    const idx = plantingRecords.findIndex(
-        (r) => r.id === editForm.id
-    )
+    const idx = plantingRecords.findIndex((r) => r.id === editForm.id)
     if (idx === -1) return
     const r = plantingRecords[idx]
     r.farmer = editForm.farmer
@@ -254,8 +252,9 @@ const summaryCards = computed(() => [
     },
 ])
 
-const cropAreaTotal = computed(() =>
-    Math.round(cropAreaData.value.reduce((s, d) => s + d.area, 0) * 10) / 10
+const cropAreaTotal = computed(
+    () =>
+        Math.round(cropAreaData.value.reduce((s, d) => s + d.area, 0) * 10) / 10
 )
 
 const search = ref('')
@@ -560,8 +559,9 @@ const barangayOptions = computed(() =>
                                         <span
                                             class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
                                             :style="{
-                                                backgroundColor:
-                                                    avatarColor(p.farmer),
+                                                backgroundColor: avatarColor(
+                                                    p.farmer
+                                                ),
                                             }"
                                         >
                                             {{ initials(p.farmer) }}
@@ -588,21 +588,15 @@ const barangayOptions = computed(() =>
                                                     '#94a3b8',
                                             }"
                                         />
-                                        <span
-                                            class="font-medium text-gray-700"
-                                        >
+                                        <span class="font-medium text-gray-700">
                                             {{ p.crop }}
                                         </span>
                                     </div>
-                                    <div
-                                        class="pl-3.5 italic text-gray-400"
-                                    >
+                                    <div class="pl-3.5 italic text-gray-400">
                                         {{ p.variety }}
                                     </div>
                                 </td>
-                                <td
-                                    class="px-4 py-3 font-mono text-gray-500"
-                                >
+                                <td class="px-4 py-3 font-mono text-gray-500">
                                     {{ p.parcel }}
                                 </td>
                                 <td
@@ -633,9 +627,7 @@ const barangayOptions = computed(() =>
                                                 class="size-2.5"
                                             />
                                             in
-                                            {{
-                                                daysUntil(p.expected_harvest)
-                                            }}
+                                            {{ daysUntil(p.expected_harvest) }}
                                             days
                                         </div>
                                         <div

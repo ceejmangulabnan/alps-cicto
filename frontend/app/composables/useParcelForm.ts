@@ -88,7 +88,11 @@ export const useParcelForm = (props: ParcelFormProps, emit: ParcelFormEmit) => {
     )
 
     const submitLabel = computed(() =>
-        loading.value ? 'Saving...' : props.isEditing ? 'Save Changes' : 'Save Parcel'
+        loading.value
+            ? 'Saving...'
+            : props.isEditing
+              ? 'Save Changes'
+              : 'Save Parcel'
     )
 
     function clearMessages() {

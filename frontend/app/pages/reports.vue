@@ -76,9 +76,16 @@ const reportMeta = computed(() => {
     }
 })
 
-const FORMAT_STYLE: Record<string, { bg: string; color: string; icon: string }> = {
+const FORMAT_STYLE: Record<
+    string,
+    { bg: string; color: string; icon: string }
+> = {
     PDF: { bg: '#fee2e2', color: '#dc2626', icon: 'i-lucide-file-text' },
-    XLSX: { bg: '#dcfce7', color: '#15803d', icon: 'i-lucide-file-spreadsheet' },
+    XLSX: {
+        bg: '#dcfce7',
+        color: '#15803d',
+        icon: 'i-lucide-file-spreadsheet',
+    },
 }
 
 const MONTHS = [
@@ -139,14 +146,10 @@ const landStatusTotals = computed(() => {
 })
 
 const topBarangay = computed(() =>
-    barangayAreaData.reduce((a, b) =>
-        b.cultivated > a.cultivated ? b : a
-    )
+    barangayAreaData.reduce((a, b) => (b.cultivated > a.cultivated ? b : a))
 )
 
-const yieldLatest = computed(() =>
-    yieldTrendData[yieldTrendData.length - 1]
-)
+const yieldLatest = computed(() => yieldTrendData[yieldTrendData.length - 1])
 
 const yieldOption = computed(() => ({
     animation: false,
@@ -464,8 +467,10 @@ const barangayOption = computed(() => ({
                         class="h-2 w-2 rounded-full"
                         style="background: #2d6a2d"
                     />
-                    {{ topBarangay.barangay }} leads cultivated area
-                    ({{ topBarangay.cultivated }} ha)
+                    {{ topBarangay.barangay }} leads cultivated area ({{
+                        topBarangay.cultivated
+                    }}
+                    ha)
                 </span>
                 <span class="text-gray-400">
                     {{ topBarangay.area }} ha total area
@@ -498,9 +503,7 @@ const barangayOption = computed(() => ({
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <div
-                        class="relative"
-                    >
+                    <div class="relative">
                         <UIcon
                             name="i-lucide-search"
                             class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-gray-400"
@@ -591,10 +594,7 @@ const barangayOption = computed(() => ({
                             type="button"
                             class="rounded-lg border border-gray-200 bg-white p-1.5 text-gray-500 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[#2d6a2d] hover:text-white"
                         >
-                            <UIcon
-                                name="i-lucide-download"
-                                class="size-3.5"
-                            />
+                            <UIcon name="i-lucide-download" class="size-3.5" />
                         </button>
                     </div>
                 </div>

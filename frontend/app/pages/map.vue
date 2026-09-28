@@ -178,9 +178,7 @@ async function signInAgain() {
 function onParcelSelect(id: string | number) {
     if (draftFeatureId.value === id) return
 
-    const parcel = parcels.value.find(
-        (item) => item.documentId === String(id)
-    )
+    const parcel = parcels.value.find((item) => item.documentId === String(id))
     if (!parcel) return
 
     discardDraft()
@@ -278,7 +276,9 @@ function onMapLoad(payload: { map: MaplibreMap }) {
 
                 <MapPlottingGuide
                     v-if="
-                        showSidebar || drawMode === 'plot' || drawMode === 'edit'
+                        showSidebar ||
+                        drawMode === 'plot' ||
+                        drawMode === 'edit'
                     "
                     :is-editing="isEditing"
                 />
@@ -291,10 +291,7 @@ function onMapLoad(payload: { map: MaplibreMap }) {
                     @fit-all="fitToAllParcels"
                 />
 
-                <MapStatusBar
-                    :coordinates="coordinatesText"
-                    :mode="modeMeta"
-                />
+                <MapStatusBar :coordinates="coordinatesText" :mode="modeMeta" />
 
                 <MapStatusLegend
                     v-if="parcelCount > 0"

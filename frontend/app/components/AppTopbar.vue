@@ -78,10 +78,7 @@ const handleLogout = async () => {
             <div class="text-xs text-gray-400">
                 City Agriculture Office · San Fernando, Pampanga
             </div>
-            <UIcon
-                name="i-lucide-chevron-right"
-                class="size-3 text-gray-300"
-            />
+            <UIcon name="i-lucide-chevron-right" class="size-3 text-gray-300" />
             <div class="text-xs font-semibold text-gray-700">
                 {{ PAGE_TITLES[page] || page }}
             </div>

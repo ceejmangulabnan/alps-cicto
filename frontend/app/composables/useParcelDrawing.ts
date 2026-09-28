@@ -117,10 +117,7 @@ export const useParcelDrawing = () => {
             : 0
     }
 
-    function init(
-        map: MaplibreMap,
-        nextHandlers: ParcelDrawingHandlers = {}
-    ) {
+    function init(map: MaplibreMap, nextHandlers: ParcelDrawingHandlers = {}) {
         mapInstance.value = map
         handlers = nextHandlers
 
@@ -264,7 +261,9 @@ export const useParcelDrawing = () => {
     }
 
     /** Plots saved parcels, returning the ones terra-draw refused. */
-    function addParcelFeatures(parcels: FarmParcel[]): ParcelFeatureRejection[] {
+    function addParcelFeatures(
+        parcels: FarmParcel[]
+    ): ParcelFeatureRejection[] {
         const instance = draw.value
         if (!instance || parcels.length === 0) return []
 

@@ -144,10 +144,7 @@ const toggle = () => {
                     <div
                         class="mt-1.5 inline-flex items-center gap-1 rounded-full bg-white/5 px-2 py-0.5 text-[9px] font-medium text-green-200/70 ring-1 ring-white/10"
                     >
-                        <UIcon
-                            name="i-lucide-shield-check"
-                            class="size-2.5"
-                        />
+                        <UIcon name="i-lucide-shield-check" class="size-2.5" />
                         LGU San Fernando
                     </div>
                 </div>
@@ -163,10 +160,7 @@ const toggle = () => {
                 >
                     {{ group.label }}
                 </div>
-                <div
-                    v-else
-                    class="mx-auto mb-2 h-px w-7 bg-white/10"
-                ></div>
+                <div v-else class="mx-auto mb-2 h-px w-7 bg-white/10"></div>
                 <div class="space-y-0.5">
                     <NuxtLink
                         v-for="item in group.items"
@@ -201,19 +195,16 @@ const toggle = () => {
                             :name="item.icon"
                             class="size-[17px] flex-shrink-0 text-green-300/60 group-hover:text-white"
                         />
-                        <span
-                            v-if="!collapsed"
-                            class="truncate"
-                        >{{ item.label }}</span>
+                        <span v-if="!collapsed" class="truncate">{{
+                            item.label
+                        }}</span>
                     </NuxtLink>
                 </div>
             </div>
         </nav>
 
         <!-- Footer -->
-        <div
-            class="relative border-t border-white/10 px-3 pb-3 pt-2"
-        >
+        <div class="relative border-t border-white/10 px-3 pb-3 pt-2">
             <button
                 type="button"
                 class="flex w-full items-center justify-center rounded-lg py-2 text-xs text-green-200/60 transition-colors hover:bg-white/10 hover:text-white"

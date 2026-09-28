@@ -26,9 +26,7 @@ defineProps<{ isEditing: boolean }>()
                 Click the first point again to close the parcel
             </div>
             <div class="flex items-center gap-2">
-                <span
-                    class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500"
-                />
+                <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
                 Use Edit mode to adjust existing vertices
             </div>
         </div>

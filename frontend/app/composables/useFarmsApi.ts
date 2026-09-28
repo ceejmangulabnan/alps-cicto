@@ -20,11 +20,7 @@ export interface Farm {
     }>
 }
 
-export const FARMER_STATUS_OPTIONS = [
-    'Active',
-    'Inactive',
-    'Departed',
-] as const
+export const FARMER_STATUS_OPTIONS = ['Active', 'Inactive', 'Departed'] as const
 
 export type FarmerStatus = (typeof FARMER_STATUS_OPTIONS)[number]
 

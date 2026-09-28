@@ -80,7 +80,10 @@ export const useParcelData = (drawing: ParcelDrawing) => {
             if (drawing.draw.value && response.data.length > 0) {
                 const rejected = drawing.addParcelFeatures(response.data)
                 if (rejected.length > 0) {
-                    console.error('terra-draw rejected parcel features:', rejected)
+                    console.error(
+                        'terra-draw rejected parcel features:',
+                        rejected
+                    )
                     setAlert(
                         `${rejected.length} parcel(s) could not be plotted on the map.`
                     )
@@ -140,7 +143,10 @@ export const useParcelData = (drawing: ParcelDrawing) => {
             return
         }
 
-        const bounds = new LngLatBounds([firstLng, firstLat], [firstLng, firstLat])
+        const bounds = new LngLatBounds(
+            [firstLng, firstLat],
+            [firstLng, firstLat]
+        )
         coordinates.forEach((coordinate) => {
             const lng = coordinate[0]
             const lat = coordinate[1]

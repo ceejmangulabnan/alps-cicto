@@ -221,9 +221,7 @@ function addUser() {
     <div class="space-y-6 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">
-                    Administration
-                </h1>
+                <h1 class="text-2xl font-bold text-gray-900">Administration</h1>
                 <p class="mt-0.5 text-sm text-gray-500">
                     System users · Data management · GIS configuration
                 </p>
@@ -407,9 +405,7 @@ function addUser() {
                                 :key="u.email"
                                 class="cursor-pointer border-b border-gray-50 last:border-0 hover:bg-gray-50/50"
                                 :class="
-                                    i % 2 === 1
-                                        ? 'bg-gray-50/40'
-                                        : 'bg-white'
+                                    i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'
                                 "
                             >
                                 <td class="px-4 py-3">
@@ -423,9 +419,7 @@ function addUser() {
                                         >
                                             {{ initials(u.name) }}
                                         </span>
-                                        <span
-                                            class="font-medium text-gray-800"
-                                        >
+                                        <span class="font-medium text-gray-800">
                                             {{ u.name }}
                                         </span>
                                     </div>
@@ -458,9 +452,7 @@ function addUser() {
                                         {{ u.status }}
                                     </span>
                                 </td>
-                                <td
-                                    class="px-4 py-3 font-mono text-gray-400"
-                                >
+                                <td class="px-4 py-3 font-mono text-gray-400">
                                     {{ lastLoginLabel(u.lastLogin) }}
                                 </td>
                             </tr>
@@ -501,13 +493,12 @@ function addUser() {
                 <div
                     class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100"
                 >
-                    <UIcon
-                        :name="info.icon"
-                        class="size-4 text-gray-600"
-                    />
+                    <UIcon :name="info.icon" class="size-4 text-gray-600" />
                 </div>
                 <div>
-                    <div class="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                    <div
+                        class="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400"
+                    >
                         {{ info.label }}
                     </div>
                     <div class="text-xs font-medium text-gray-700">
@@ -596,7 +587,12 @@ function addUser() {
                                 class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
                             >
                                 <option
-                                    v-for="r in ['System Admin', 'Agricultural Engineer', 'Agriculture Technician', 'Data Encoder']"
+                                    v-for="r in [
+                                        'System Admin',
+                                        'Agricultural Engineer',
+                                        'Agriculture Technician',
+                                        'Data Encoder',
+                                    ]"
                                     :key="r"
                                     :value="r"
                                 >
@@ -631,10 +627,7 @@ function addUser() {
                             type="submit"
                             class="flex items-center gap-1.5 rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
                         >
-                            <UIcon
-                                name="i-lucide-user-plus"
-                                class="size-3.5"
-                            />
+                            <UIcon name="i-lucide-user-plus" class="size-3.5" />
                             Add User
                         </button>
                     </div>

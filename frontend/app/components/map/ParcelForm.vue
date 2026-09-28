@@ -54,7 +54,10 @@ const {
                 <div
                     class="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400"
                 >
-                    <UIcon name="i-lucide-tractor" class="size-3.5 text-[#2d6a2d]" />
+                    <UIcon
+                        name="i-lucide-tractor"
+                        class="size-3.5 text-[#2d6a2d]"
+                    />
                     Farm Reference
                 </div>
                 <div>
@@ -86,8 +89,8 @@ const {
                         v-if="farms.length === 0"
                         class="mt-1 text-[11px] leading-relaxed text-amber-600"
                     >
-                        No farms available yet. A parcel cannot be saved
-                        without one because every parcel must belong to a farm.
+                        No farms available yet. A parcel cannot be saved without
+                        one because every parcel must belong to a farm.
                         <NuxtLink
                             to="/farms"
                             class="font-semibold underline underline-offset-2"
@@ -115,7 +118,10 @@ const {
                 <div
                     class="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400"
                 >
-                    <UIcon name="i-lucide-layers" class="size-3.5 text-[#2d6a2d]" />
+                    <UIcon
+                        name="i-lucide-layers"
+                        class="size-3.5 text-[#2d6a2d]"
+                    />
                     Land Details
                 </div>
                 <div>
@@ -155,7 +161,9 @@ const {
                         >
                             <span
                                 class="h-2 w-2 rounded-full"
-                                :style="{ backgroundColor: STATUS_COLOR[status] }"
+                                :style="{
+                                    backgroundColor: STATUS_COLOR[status],
+                                }"
                             />
                             {{ status }}
                         </button>
@@ -231,7 +239,9 @@ const {
                     name="i-lucide-info"
                     class="mt-0.5 size-3 shrink-0 text-gray-400"
                 />
-                <p class="text-[10px] leading-relaxed text-gray-500">{{ hint }}</p>
+                <p class="text-[10px] leading-relaxed text-gray-500">
+                    {{ hint }}
+                </p>
             </div>
         </div>
     </aside>

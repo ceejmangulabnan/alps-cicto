@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { Farmer, FarmerStatus } from '~/composables/useFarmersApi'
+
 definePageMeta({ middleware: 'auth' })
 type LandStatus =
     | 'Cultivated'
@@ -9,16 +11,12 @@ type LandStatus =
     | 'At Risk'
     | 'Converted'
 
-type Barangay = {
-    name: string
-}
-
-type Farmer = {
-    farmer_code: string
-    name: string
-    barangays: Barangay[]
-    farms: number
-}
+/**
+ * A farmer as this page needs them: the API record, plus the parcel tally the
+ * table shows. The tally is derived rather than stored, because a farmer has no
+ * count of its own any more — they are counted by the parcels they tend.
+ */
+type FarmerRow = Farmer & { parcelCount: number }
 
 type Parcel = {
     parcel_code: string
@@ -29,268 +27,59 @@ type Parcel = {
     current_use: string | null
 }
 
-const farmers: Farmer[] = [
-    {
-        farmer_code: 'FRM-0001',
-        name: 'Jose Mendoza',
-        barangays: [{ name: 'Sto. Niño' }],
-        farms: 3,
-    },
-    {
-        farmer_code: 'FRM-0002',
-        name: 'Rosa Dizon',
-        barangays: [{ name: 'Sindalan' }],
-        farms: 2,
-    },
-    {
-        farmer_code: 'FRM-0003',
-        name: 'Pedro Santos',
-        barangays: [{ name: 'Sto. Niño' }],
-        farms: 2,
-    },
-    {
-        farmer_code: 'FRM-0004',
-        name: 'Ana Reyes',
-        barangays: [{ name: 'Calulut' }],
-        farms: 1,
-    },
-    {
-        farmer_code: 'FRM-0005',
-        name: 'Carlos Garcia',
-        barangays: [{ name: 'Pulung Bulu' }],
-        farms: 3,
-    },
-    {
-        farmer_code: 'FRM-0006',
-        name: 'Liza Ramos',
-        barangays: [{ name: 'Dolores' }],
-        farms: 2,
-    },
-    {
-        farmer_code: 'FRM-0007',
-        name: 'Mario Cruz',
-        barangays: [{ name: 'Telabastagan' }],
-        farms: 2,
-    },
-    {
-        farmer_code: 'FRM-0008',
-        name: 'Elena Bautista',
-        barangays: [{ name: 'San Pedro' }],
-        farms: 1,
-    },
-    {
-        farmer_code: 'FRM-0009',
-        name: 'Ramon Villanueva',
-        barangays: [{ name: 'Maimpis' }],
-        farms: 1,
-    },
-    {
-        farmer_code: 'FRM-0010',
-        name: 'Fe Domingo',
-        barangays: [{ name: 'Del Pilar' }],
-        farms: 2,
-    },
-    {
-        farmer_code: 'FRM-0011',
-        name: 'Arturo Salazar',
-        barangays: [{ name: 'Pulung Bulu' }],
-        farms: 2,
-    },
-    {
-        farmer_code: 'FRM-0012',
-        name: 'Corazon Lim',
-        barangays: [{ name: 'Sindalan' }],
-        farms: 1,
-    },
-]
-
-const parcels: Parcel[] = [
-    {
-        parcel_code: 'PLC-0101',
-        farmer_code: 'FRM-0001',
-        barangay: 'Sto. Niño',
-        area_hectares: 2.0,
-        land_status: 'Cultivated',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0102',
-        farmer_code: 'FRM-0001',
-        barangay: 'Sto. Niño',
-        area_hectares: 2.0,
-        land_status: 'Harvesting',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0103',
-        farmer_code: 'FRM-0001',
-        barangay: 'Sto. Niño',
-        area_hectares: 1.8,
-        land_status: 'Preparation',
-        current_use: 'Corn',
-    },
-    {
-        parcel_code: 'PLC-0201',
-        farmer_code: 'FRM-0002',
-        barangay: 'Sindalan',
-        area_hectares: 2.2,
-        land_status: 'Cultivated',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0202',
-        farmer_code: 'FRM-0002',
-        barangay: 'Sindalan',
-        area_hectares: 2.0,
-        land_status: 'At Risk',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0301',
-        farmer_code: 'FRM-0003',
-        barangay: 'Sto. Niño',
-        area_hectares: 3.4,
-        land_status: 'Cultivated',
-        current_use: 'Sugarcane',
-    },
-    {
-        parcel_code: 'PLC-0302',
-        farmer_code: 'FRM-0003',
-        barangay: 'Sto. Niño',
-        area_hectares: 2.7,
-        land_status: 'Fallow',
-        current_use: 'Sugarcane',
-    },
-    {
-        parcel_code: 'PLC-0401',
-        farmer_code: 'FRM-0004',
-        barangay: 'Calulut',
-        area_hectares: 1.8,
-        land_status: 'Cultivated',
-        current_use: 'Ampalaya',
-    },
-    {
-        parcel_code: 'PLC-0501',
-        farmer_code: 'FRM-0005',
-        barangay: 'Pulung Bulu',
-        area_hectares: 2.1,
-        land_status: 'Cultivated',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0502',
-        farmer_code: 'FRM-0005',
-        barangay: 'Pulung Bulu',
-        area_hectares: 1.8,
-        land_status: 'At Risk',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0503',
-        farmer_code: 'FRM-0005',
-        barangay: 'Pulung Bulu',
-        area_hectares: 1.5,
-        land_status: 'Idle',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0601',
-        farmer_code: 'FRM-0006',
-        barangay: 'Dolores',
-        area_hectares: 1.9,
-        land_status: 'Cultivated',
-        current_use: 'Corn',
-    },
-    {
-        parcel_code: 'PLC-0602',
-        farmer_code: 'FRM-0006',
-        barangay: 'Dolores',
-        area_hectares: 1.7,
-        land_status: 'Harvesting',
-        current_use: 'Corn',
-    },
-    {
-        parcel_code: 'PLC-0701',
-        farmer_code: 'FRM-0007',
-        barangay: 'Telabastagan',
-        area_hectares: 2.4,
-        land_status: 'Fallow',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0702',
-        farmer_code: 'FRM-0007',
-        barangay: 'Telabastagan',
-        area_hectares: 1.5,
-        land_status: 'Idle',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0801',
-        farmer_code: 'FRM-0008',
-        barangay: 'San Pedro',
-        area_hectares: 2.7,
-        land_status: 'Cultivated',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-0901',
-        farmer_code: 'FRM-0009',
-        barangay: 'Maimpis',
-        area_hectares: 1.5,
-        land_status: 'Idle',
-        current_use: 'Vegetables',
-    },
-    {
-        parcel_code: 'PLC-1001',
-        farmer_code: 'FRM-0010',
-        barangay: 'Del Pilar',
-        area_hectares: 2.6,
-        land_status: 'Cultivated',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-1002',
-        farmer_code: 'FRM-0010',
-        barangay: 'Del Pilar',
-        area_hectares: 2.2,
-        land_status: 'At Risk',
-        current_use: 'Rice',
-    },
-    {
-        parcel_code: 'PLC-1101',
-        farmer_code: 'FRM-0011',
-        barangay: 'Pulung Bulu',
-        area_hectares: 1.8,
-        land_status: 'Cultivated',
-        current_use: 'Corn',
-    },
-    {
-        parcel_code: 'PLC-1102',
-        farmer_code: 'FRM-0011',
-        barangay: 'Pulung Bulu',
-        area_hectares: 1.4,
-        land_status: 'Preparation',
-        current_use: 'Corn',
-    },
-    {
-        parcel_code: 'PLC-1201',
-        farmer_code: 'FRM-0012',
-        barangay: 'Sindalan',
-        area_hectares: 2.4,
-        land_status: 'Fallow',
-        current_use: 'Sugarcane',
-    },
-]
-
-const farmerBarangay = (f: Farmer) => f.barangays.map((b) => b.name).join(', ')
-
+const parcels: Parcel[] = []
 /**
- * A farmer may cover several barangays, but the form field holds one, so the
- * edit modal prefills with the first. A joined "A, B" would match no option in
- * the dropdown and silently render the field blank.
+ * A farmer has no barangay of its own: they are located by the parcels they tend,
+ * and the parcels by the farms those belong to. A farmer with no parcel therefore
+ * has no location to show.
  */
-const farmerPrimaryBarangay = (f: Farmer) => f.barangays[0]?.name ?? ''
+const farmerBarangays = (f: Farmer): string[] => [
+    ...new Set(
+        parcels
+            .filter((p) => p.farmer_code === f.farmer_code)
+            .map((p) => p.barangay)
+    ),
+]
+
+const farmerBarangay = (f: Farmer) => {
+    const names = farmerBarangays(f)
+    return names.length > 0 ? names.join(', ') : 'No parcel assigned'
+}
+
+const { getAll, create } = useFarmersApi()
+
+const farmers = ref<FarmerRow[]>([])
+const loading = ref(true)
+const loadError = ref<string | null>(null)
+
+/** How many parcels each farmer tends, keyed by registry code. */
+const parcelTally = computed(() => {
+    const counts = new Map<string, number>()
+    for (const parcel of parcels) {
+        counts.set(
+            parcel.farmer_code,
+            (counts.get(parcel.farmer_code) ?? 0) + 1
+        )
+    }
+    return counts
+})
+
+async function loadFarmers() {
+    loading.value = true
+    loadError.value = null
+    try {
+        const response = await getAll()
+        farmers.value = response.data.map((farmer) => ({
+            ...farmer,
+            parcelCount: parcelTally.value.get(farmer.farmer_code) ?? 0,
+        }))
+    } catch (error) {
+        loadError.value =
+            error instanceof Error ? error.message : 'Could not load farmers.'
+    } finally {
+        loading.value = false
+    }
+}
 
 const initials = (name: string) =>
     name
@@ -344,20 +133,59 @@ const areaByFarmer = computed(() => {
 
 const search = ref('')
 const filterBarangay = ref('All')
-const selectedFarmer = ref<Farmer | null>(null)
+const selectedFarmer = ref<FarmerRow | null>(null)
 const showRegisterModal = ref(false)
 // The farmer code is not a field: it is generated by the backend on create.
 const registerForm = reactive({
     name: '',
-    barangay: '',
     contact: '',
-    status: 'Active',
+    status: 'Active' as FarmerStatus,
 })
+const registering = ref(false)
+const registerError = ref<string | null>(null)
+
+function resetRegisterForm() {
+    registerForm.name = ''
+    registerForm.contact = ''
+    registerForm.status = 'Active'
+    registerError.value = null
+}
+
+async function submitRegister() {
+    // The name is the only field the backend requires, so it is the only one
+    // worth blocking on; everything else has a sensible empty value.
+    if (!registerForm.name.trim()) {
+        registerError.value = 'A name is required.'
+        return
+    }
+
+    registering.value = true
+    registerError.value = null
+    try {
+        await create({
+            name: registerForm.name.trim(),
+            contact: registerForm.contact.trim(),
+            farmer_status: registerForm.status,
+        })
+        showRegisterModal.value = false
+        resetRegisterForm()
+        // Re-read rather than pushing the response into the list, so the
+        // ordering and the derived parcel tally come from one place.
+        await loadFarmers()
+    } catch (error) {
+        registerError.value =
+            error instanceof Error
+                ? error.message
+                : 'Could not register the farmer.'
+    } finally {
+        registering.value = false
+    }
+}
+
 const showEditModal = ref(false)
 const editForm = reactive({
     farmer_code: '',
     name: '',
-    barangay: '',
     contact: '',
     status: 'Active',
 })
@@ -365,21 +193,30 @@ const editForm = reactive({
 function openEditModal(farmer: Farmer) {
     editForm.farmer_code = farmer.farmer_code
     editForm.name = farmer.name
-    editForm.barangay = farmerPrimaryBarangay(farmer)
-    editForm.contact = ''
-    editForm.status = 'Active'
+    editForm.contact = farmer.contact ?? ''
+    editForm.status = farmer.farmer_status
     showEditModal.value = true
 }
 
+// Closing the modal by any route — cancel, the X, or the backdrop — clears what
+// was typed, so reopening it never shows a stale name or a stale error.
+watch(showRegisterModal, (open) => {
+    if (!open) {
+        resetRegisterForm()
+    }
+})
+
 const filtered = computed(() =>
-    farmers.filter((f) => {
+    farmers.value.filter((f) => {
         const matchSearch =
             !search.value ||
             f.name.toLowerCase().includes(search.value.toLowerCase()) ||
             f.farmer_code.toLowerCase().includes(search.value.toLowerCase())
+        // The filter lists the barangays farmers work in, so a farmer with no
+        // parcel appears under "All" but under no specific barangay.
         const matchBarangay =
             filterBarangay.value === 'All' ||
-            farmerBarangay(f).includes(filterBarangay.value)
+            farmerBarangays(f).includes(filterBarangay.value)
         return matchSearch && matchBarangay
     })
 )
@@ -391,7 +228,7 @@ const barangays = computed(() =>
 const summaryCards = computed(() => [
     {
         label: 'Total Farmers',
-        val: farmers.length,
+        val: farmers.value.length,
         color: '#2d6a2d',
         bg: '#e8f5e8',
         icon: 'i-lucide-users',
@@ -439,11 +276,6 @@ const profileFields = computed(() =>
                   val: selectedFarmer.value.farmer_code,
               },
               {
-                  icon: 'i-lucide-layers',
-                  label: 'Farms',
-                  val: `${selectedFarmer.value.farms} farm(s)`,
-              },
-              {
                   icon: 'i-lucide-clipboard-check',
                   label: 'Parcels',
                   val: `${selectedFarmerParcels.value.length} parcel(s)`,
@@ -456,8 +288,8 @@ const detailStats = computed(() => {
     const fp = selectedFarmerParcels.value
     return [
         {
-            label: 'Total Farms',
-            val: selectedFarmer.value?.farms ?? 0,
+            label: 'Total Parcels',
+            val: selectedFarmer.value?.parcelCount ?? 0,
             icon: 'i-lucide-layers',
             color: '#2d6a2d',
             bg: '#e8f5e8',
@@ -485,6 +317,8 @@ const detailStats = computed(() => {
         },
     ]
 })
+
+onMounted(loadFarmers)
 </script>
 
 <template>
@@ -795,7 +629,7 @@ const detailStats = computed(() => {
                         <th
                             class="px-4 py-3 text-right font-semibold text-gray-600"
                         >
-                            Farms
+                            Parcels
                         </th>
                         <th
                             class="px-4 py-3 text-right font-semibold text-gray-600"
@@ -806,8 +640,46 @@ const detailStats = computed(() => {
                     </tr>
                 </thead>
                 <tbody>
+                    <!-- Loading -->
+                    <tr v-if="loading">
+                        <td
+                            colspan="6"
+                            class="px-4 py-10 text-center text-gray-400"
+                        >
+                            <span class="inline-flex items-center gap-2">
+                                <UIcon
+                                    name="i-lucide-loader-circle"
+                                    class="size-4 animate-spin"
+                                />
+                                Loading farmers...
+                            </span>
+                        </td>
+                    </tr>
+                    <!-- Failed -->
+                    <tr v-else-if="loadError">
+                        <td colspan="6" class="px-4 py-10 text-center">
+                            <p class="text-red-600">{{ loadError }}</p>
+                            <button
+                                type="button"
+                                class="mt-2 text-xs font-medium text-green-700 underline"
+                                @click="loadFarmers"
+                            >
+                                Try again
+                            </button>
+                        </td>
+                    </tr>
+                    <!-- Loaded but filtered down to nothing -->
+                    <tr v-else-if="filtered.length === 0">
+                        <td
+                            colspan="6"
+                            class="px-4 py-10 text-center text-gray-400"
+                        >
+                            No farmers match this search.
+                        </td>
+                    </tr>
                     <tr
                         v-for="(f, i) in filtered"
+                        v-else
                         :key="f.farmer_code"
                         class="group cursor-pointer border-b border-gray-50 transition-colors last:border-0 hover:bg-green-50/40"
                         :class="i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'"
@@ -843,7 +715,7 @@ const detailStats = computed(() => {
                         <td
                             class="px-4 py-3 text-right font-mono font-medium text-gray-900"
                         >
-                            {{ f.farms }}
+                            {{ f.parcelCount }}
                         </td>
                         <td
                             class="px-4 py-3 text-right font-mono font-semibold text-gray-900"
@@ -913,10 +785,7 @@ const detailStats = computed(() => {
                     </button>
                 </div>
 
-                <form
-                    class="space-y-4"
-                    @submit.prevent="showRegisterModal = false"
-                >
+                <form class="space-y-4" @submit.prevent="submitRegister">
                     <div>
                         <label
                             class="mb-1 block text-xs font-medium text-gray-600"
@@ -925,10 +794,12 @@ const detailStats = computed(() => {
                         </label>
                         <select
                             v-model="registerForm.status"
-                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            :disabled="registering"
+                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:opacity-60"
                         >
                             <option value="Active">Active</option>
                             <option value="Inactive">Inactive</option>
+                            <option value="Departed">Departed</option>
                         </select>
                     </div>
 
@@ -941,64 +812,61 @@ const detailStats = computed(() => {
                         <input
                             v-model="registerForm.name"
                             type="text"
+                            :disabled="registering"
                             placeholder="e.g. Juan Dela Cruz"
-                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:opacity-60"
                         />
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
-                            >
-                                Barangay
-                            </label>
-                            <select
-                                v-model="registerForm.barangay"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            >
-                                <option value="" disabled>
-                                    Select barangay
-                                </option>
-                                <option
-                                    v-for="b in barangays"
-                                    :key="b"
-                                    :value="b"
-                                >
-                                    {{ b }}
-                                </option>
-                            </select>
-                        </div>
-                        <div>
-                            <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
-                            >
-                                Contact Number
-                            </label>
-                            <input
-                                v-model="registerForm.contact"
-                                type="text"
-                                placeholder="09XX XXX XXXX"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            />
-                        </div>
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Contact Number
+                        </label>
+                        <input
+                            v-model="registerForm.contact"
+                            type="text"
+                            :disabled="registering"
+                            placeholder="09XX XXX XXXX"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:opacity-60"
+                        />
                     </div>
+
+                    <p
+                        v-if="registerError"
+                        class="rounded-lg bg-red-50 px-3 py-2 text-[11px] text-red-700"
+                    >
+                        {{ registerError }}
+                    </p>
 
                     <div
                         class="flex justify-end gap-2 border-t border-gray-100 pt-4"
                     >
                         <button
                             type="button"
-                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            :disabled="registering"
+                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-60"
                             @click="showRegisterModal = false"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
+                            :disabled="registering"
+                            class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524] disabled:opacity-60"
                         >
-                            Register Farmer
+                            <span
+                                v-if="registering"
+                                class="inline-flex items-center gap-1.5"
+                            >
+                                <UIcon
+                                    name="i-lucide-loader-circle"
+                                    class="size-3 animate-spin"
+                                />
+                                Registering...
+                            </span>
+                            <span v-else>Register Farmer</span>
                         </button>
                     </div>
                 </form>
@@ -1080,42 +948,18 @@ const detailStats = computed(() => {
                         />
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
-                            >
-                                Barangay
-                            </label>
-                            <select
-                                v-model="editForm.barangay"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            >
-                                <option value="" disabled>
-                                    Select barangay
-                                </option>
-                                <option
-                                    v-for="b in barangays"
-                                    :key="b"
-                                    :value="b"
-                                >
-                                    {{ b }}
-                                </option>
-                            </select>
-                        </div>
-                        <div>
-                            <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
-                            >
-                                Contact Number
-                            </label>
-                            <input
-                                v-model="editForm.contact"
-                                type="text"
-                                placeholder="09XX XXX XXXX"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            />
-                        </div>
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Contact Number
+                        </label>
+                        <input
+                            v-model="editForm.contact"
+                            type="text"
+                            placeholder="09XX XXX XXXX"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                        />
                     </div>
 
                     <div

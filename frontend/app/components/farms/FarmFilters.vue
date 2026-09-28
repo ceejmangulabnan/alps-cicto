@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { FarmRow, FarmStatusFilter } from '~/composables/useFarmsData'
-import { FARMER_STATUS_OPTIONS } from '~/composables/useFarmsApi'
+import { FARM_STATUS_OPTIONS } from '~/composables/useFarmsApi'
 import { farmStatusDot } from '~/utils/farmStatus'
 
 defineProps<{
@@ -16,7 +16,7 @@ const emit = defineEmits<{
     'update:filterStatus': [value: FarmStatusFilter]
 }>()
 
-const filters: FarmStatusFilter[] = ['All', ...FARMER_STATUS_OPTIONS]
+const filters: FarmStatusFilter[] = ['All', ...FARM_STATUS_OPTIONS]
 </script>
 
 <template>

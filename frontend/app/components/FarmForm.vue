@@ -27,6 +27,19 @@
             <form class="space-y-4" @submit.prevent="submit">
                 <div>
                     <label class="mb-1 block text-xs font-medium text-gray-600">
+                        Farm Name <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                        v-model="form.name"
+                        type="text"
+                        :disabled="submitting"
+                        placeholder="e.g. Sto. Niño North Farm"
+                        class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:cursor-not-allowed disabled:bg-gray-50"
+                    />
+                </div>
+
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-gray-600">
                         Barangay <span class="text-red-500">*</span>
                     </label>
                     <select
@@ -62,51 +75,18 @@
                     </p>
                 </div>
 
-                <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-600">
-                        Farmers
-                    </label>
-                    <!--
-                        `loading` matters: without it the menu briefly shows the
-                        raw documentIds held by the form before the farmer list
-                        arrives and can resolve them to names.
-                    -->
-                    <USelectMenu
-                        v-model="form.farmers"
-                        :items="farmerOptions"
-                        :disabled="submitting || optionsLoading"
-                        :loading="optionsLoading"
-                        multiple
-                        value-key="value"
-                        placeholder="Optional - assign farmers"
-                        class="w-full"
-                    />
-                    <p
-                        v-if="!optionsLoading && farmers.length === 0"
-                        class="mt-1 text-[11px] text-gray-400"
-                    >
-                        No farmers registered yet.
-                    </p>
-                </div>
-
-                <div>
-                    <label class="mb-1 block text-xs font-medium text-gray-600">
-                        Farmer Status
-                    </label>
-                    <select
-                        v-model="form.farmer_status"
-                        :disabled="submitting"
-                        class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                    >
-                        <option
-                            v-for="s in FARMER_STATUS_OPTIONS"
-                            :key="s"
-                            :value="s"
-                        >
-                            {{ s }}
-                        </option>
-                    </select>
-                </div>
+                <!--
+                    A farm's farmers and status are not editable here. Farmers are
+                    assigned to a parcel, and the farm's list is a rollup over its
+                    parcels; its status is derived from the farmers on that rollup.
+                    Both are managed on the parcel instead.
+                -->
+                <p
+                    class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-[11px] leading-relaxed text-gray-500"
+                >
+                    Farmers are assigned to a farm's parcels, and this farm's
+                    status follows from them.
+                </p>
 
                 <p
                     v-if="errorMessage"
@@ -151,13 +131,8 @@
 </template>
 
 <script lang="ts" setup>
-import {
-    FARMER_STATUS_OPTIONS,
-    type Farm,
-    type FarmerStatus,
-} from '~/composables/useFarmsApi'
+import type { Farm } from '~/composables/useFarmsApi'
 import type { Barangay } from '~/composables/useBarangayApi'
-import type { Farmer } from '~/composables/useFarmersApi'
 import { getErrorMessage } from '~/utils/apiError'
 
 const props = defineProps<{
@@ -173,10 +148,8 @@ const emit = defineEmits<{
 
 const { create, update } = useFarmsApi()
 const { getAllForSelect: getBarangays } = useBarangayApi()
-const { getAllForSelect: getFarmers } = useFarmersApi()
 
 const barangays = ref<Barangay[]>([])
-const farmers = ref<Farmer[]>([])
 const optionsLoading = ref(false)
 const submitting = ref(false)
 const errorMessage = ref<string | null>(null)
@@ -188,35 +161,18 @@ const isEditing = computed(() => Boolean(props.farm))
 // identify which farm is being changed.
 const subtitle = computed(() =>
     isEditing.value
-        ? `Update the farmers and status for ${props.farm?.farm_code}.`
+        ? `Update the details of ${props.farm?.name}.`
         : 'The farm code is generated from the barangay.'
 )
 
-const form = reactive<{
-    barangay: string
-    farmers: string[]
-    farmer_status: FarmerStatus
-}>({
+const form = reactive<{ name: string; barangay: string }>({
+    name: '',
     barangay: '',
-    farmers: [],
-    farmer_status: 'Active',
 })
 
-// The farmer registry code is generated by the backend and is not something
-// the user picks by, so the option is the farmer's name alone.
-const farmerOptions = computed(() =>
-    farmers.value.map((f) => ({
-        label: f.name,
-        value: f.documentId,
-    }))
-)
-
 function resetForm() {
+    form.name = props.farm?.name ?? ''
     form.barangay = props.farm?.barangay?.documentId ?? ''
-    form.farmers = (props.farm?.farmers ?? []).map(
-        (farmer) => farmer.documentId
-    )
-    form.farmer_status = props.farm?.farmer_status ?? 'Active'
     errorMessage.value = null
 }
 
@@ -228,14 +184,9 @@ function close() {
 async function loadOptions() {
     optionsLoading.value = true
     try {
-        const [barangayList, farmerList] = await Promise.all([
-            getBarangays(),
-            getFarmers(),
-        ])
-        barangays.value = barangayList
-        farmers.value = farmerList
+        barangays.value = await getBarangays()
     } catch {
-        errorMessage.value = 'Unable to load barangays and farmers.'
+        errorMessage.value = 'Unable to load barangays.'
     } finally {
         optionsLoading.value = false
     }
@@ -243,6 +194,11 @@ async function loadOptions() {
 
 async function submit() {
     if (submitting.value) return
+
+    if (!form.name.trim()) {
+        errorMessage.value = 'Please enter a farm name.'
+        return
+    }
 
     if (!form.barangay) {
         errorMessage.value = 'Please select a barangay.'
@@ -253,16 +209,13 @@ async function submit() {
     errorMessage.value = null
 
     try {
+        const name = form.name.trim()
         const response = props.farm
             ? await update(props.farm.documentId, {
-                  farmers: form.farmers,
-                  farmer_status: form.farmer_status,
-              })
-            : await create({
+                  name,
                   barangay: form.barangay,
-                  farmers: form.farmers,
-                  farmer_status: form.farmer_status,
               })
+            : await create({ name, barangay: form.barangay })
 
         emit('saved', response.data)
         emit('update:modelValue', false)

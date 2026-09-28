@@ -1,25 +1,40 @@
+import qs from 'qs'
+
 export interface FarmParcelSummary {
     documentId: string
     parcel_code: string
     area_hectares: number
     land_status: string
+    /** The farmers tending this parcel specifically, not the farm's rollup. */
+    farmers?: Array<{
+        documentId: string
+        farmer_code: string
+        name: string
+        farmer_status?: string
+    }>
 }
 
 export interface Farm {
     documentId: string
     id?: number
+    /** What the farm is called. Unlike the code, this is entered by hand. */
+    name: string
     farm_code: string
-    /** Optional: the lighter select queries below do not request it. */
-    farmer_status?: FarmerStatus
     barangay?: {
         documentId: string
         name: string
         code: string
     }
+    /**
+     * Rollup of the farmers tending this farm's parcels. `farmer_status` is
+     * present on the with-summary responses and is what `deriveFarmStatus`
+     * reads; the lighter select queries do not request it.
+     */
     farmers?: Array<{
         documentId: string
         farmer_code: string
         name: string
+        farmer_status?: string
     }>
     farm_parcels?: FarmParcelSummary[]
     /** Attached by GET /farms/with-summary, absent on the core routes. */
@@ -34,20 +49,65 @@ export interface FarmParcelAggregate {
     status_breakdown: Record<string, number>
 }
 
-export const FARMER_STATUS_OPTIONS = ['Active', 'Inactive', 'Departed'] as const
+/**
+ * The relation shape a single farm needs to be usable on its own: named for the
+ * table and the detail panel, and needed to re-populate the edit form. Shared by
+ * create, update and the single read so they cannot drift — a write that returns a
+ * narrower farm would leave the row it updates missing `barangay`, and the next
+ * edit of that row would then prefill nothing and refuse to save.
+ */
+const FARM_POPULATE = {
+    barangay: true,
+    farmers: {
+        fields: ['name', 'farmer_code', 'farmer_status'],
+    },
+    farm_parcels: {
+        fields: ['parcel_code', 'land_status', 'area_hectares'],
+        populate: {
+            farmers: {
+                fields: ['name', 'farmer_code', 'farmer_status'],
+            },
+        },
+    },
+} as const
 
-export type FarmerStatus = (typeof FARMER_STATUS_OPTIONS)[number]
+// Formats the nested object into a Strapi-compatible query string
+const populateQuery = qs.stringify(
+    { populate: FARM_POPULATE },
+    { encodeValuesOnly: true }
+)
+
+/**
+ * A farm has no status of its own. It is read off the farmers tending its
+ * parcels: a farm with at least one Active farmer is being worked, and one with
+ * nobody (or only Inactive/Departed farmers) is not. `Departed` describes a
+ * person, so it only surfaces in the farmer views.
+ */
+export const FARM_STATUS_OPTIONS = ['Active', 'Inactive'] as const
+
+export type FarmStatus = (typeof FARM_STATUS_OPTIONS)[number]
+
+/**
+ * Derives a farm's status from its rollup of parcel-tending farmers. Callers pass
+ * `farm.farmers`, which the with-summary endpoints populate alongside
+ * `farmer_status` so no extra request is needed.
+ */
+export const deriveFarmStatus = (
+    farmers: Array<{ farmer_status?: string }> | undefined | null
+): FarmStatus => {
+    const list = farmers ?? []
+    return list.some((farmer) => farmer.farmer_status === 'Active')
+        ? 'Active'
+        : 'Inactive'
+}
 
 export interface CreateFarmData {
+    name: string
     barangay: string
-    farmers?: string[]
-    farmer_status: FarmerStatus
 }
 
 export interface UpdateFarmData {
-    barangay?: string
-    farmers?: string[]
-    farmer_status?: FarmerStatus
+    name?: string
 }
 
 /** `/farms/with-summary` returns a bare list, without Strapi's meta. */
@@ -160,47 +220,45 @@ export const useFarmsApi = () => {
 
     const getAllForSelect = async (): Promise<Farm[]> => {
         const response = await getAll({
-            'fields[0]': 'farm_code',
+            'fields[0]': 'name',
+            'fields[1]': 'farm_code',
             'populate[barangay][fields][0]': 'name',
             'populate[barangay][fields][1]': 'code',
-            'populate[farmers][fields][0]': 'name',
-            'populate[farmers][fields][1]': 'farmer_code',
         })
         return response.data
     }
 
     const create = async (data: CreateFarmData): Promise<FarmResponse> => {
-        return await authFetch<FarmResponse>(baseUrl, {
+        // No farm_code, farmers or status: the code is derived from the barangay,
+        // the farmer list is a rollup over the parcels' farmers, and the status
+        // is derived from that list. The relations are still asked for, because
+        // the response is dropped straight into the table and the edit form reads
+        // `barangay` back off it.
+        return await authFetch<FarmResponse>(`${baseUrl}?${populateQuery}`, {
             method: 'POST',
             body: {
-                data: {
-                    barangay: data.barangay,
-                    farmer_status: data.farmer_status,
-                    ...(data.farmers?.length ? { farmers: data.farmers } : {}),
-                },
+                data: { name: data.name, barangay: data.barangay },
             },
         })
     }
 
     const getById = async (documentId: string): Promise<FarmResponse> => {
-        return await authFetch<FarmResponse>(`${baseUrl}/${documentId}`, {
-            query: {
-                populate: ['barangay', 'farmers', 'farm_parcels'],
-            },
-        })
+        return await authFetch<FarmResponse>(
+            `${baseUrl}/${documentId}?${populateQuery}`
+        )
     }
 
     const update = async (
         documentId: string,
         data: UpdateFarmData
     ): Promise<FarmResponse> => {
-        return await authFetch<FarmResponse>(`${baseUrl}/${documentId}`, {
-            method: 'PUT',
-            body: { data },
-            query: {
-                populate: ['barangay', 'farmers', 'farm_parcels'],
-            },
-        })
+        return await authFetch<FarmResponse>(
+            `${baseUrl}/${documentId}?${populateQuery}`,
+            {
+                method: 'PUT',
+                body: { data },
+            }
+        )
     }
 
     /**

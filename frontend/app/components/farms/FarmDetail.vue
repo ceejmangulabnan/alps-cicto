@@ -34,6 +34,10 @@ const statusBreakdown = computed(() => {
         count: counts[entry.label] ?? 0,
     })).filter((entry) => entry.count > 0)
 })
+
+/** The farmers working one parcel, by name. */
+const tenantNames = (farmers: Array<{ name: string }>) =>
+    farmers.map((farmer) => farmer.name).join(', ')
 </script>
 
 <template>
@@ -48,12 +52,15 @@ const statusBreakdown = computed(() => {
             <div class="p-5">
                 <div class="flex items-start justify-between">
                     <div>
-                        <div class="font-mono text-xs text-gray-600">
+                        <h3 class="text-sm font-bold text-gray-800">
+                            {{ farm.name }}
+                        </h3>
+                        <div class="mt-0.5 text-[11px] text-gray-500">
+                            {{ farm.barangay }}
+                        </div>
+                        <div class="mt-0.5 font-mono text-xs text-gray-600">
                             {{ farm.farm_code }}
                         </div>
-                        <h3 class="mt-0.5 text-sm font-bold text-gray-800">
-                            {{ farm.barangay }}
-                        </h3>
                     </div>
                     <span
                         :class="farmStatusClass(farm.farmer_status)"
@@ -161,14 +168,36 @@ const statusBreakdown = computed(() => {
                         <div
                             v-for="parcel in parcels"
                             :key="parcel.documentId"
-                            class="flex items-center justify-between rounded px-1 py-0.5 text-[11px] hover:bg-gray-50"
+                            class="rounded px-1 py-0.5 text-[11px] hover:bg-gray-50"
                         >
-                            <span class="font-mono text-gray-700">
-                                {{ parcel.parcel_code }}
-                            </span>
-                            <span class="font-mono text-gray-500">
-                                {{ Number(parcel.area_hectares).toFixed(2) }} ha
-                            </span>
+                            <div class="flex items-center justify-between">
+                                <span class="font-mono text-gray-700">
+                                    {{ parcel.parcel_code }}
+                                </span>
+                                <span class="font-mono text-gray-500">
+                                    {{
+                                        Number(parcel.area_hectares).toFixed(2)
+                                    }}
+                                    ha
+                                </span>
+                            </div>
+                            <!--
+                                A parcel names its own tendees, which is what
+                                keeps a farm with several farmers on one parcel
+                                readable.
+                            -->
+                            <div
+                                v-if="parcel.farmers?.length"
+                                class="mt-0.5 truncate text-[10px] text-gray-400"
+                            >
+                                {{ tenantNames(parcel.farmers) }}
+                            </div>
+                            <div
+                                v-else
+                                class="mt-0.5 text-[10px] text-gray-300"
+                            >
+                                No farmer assigned
+                            </div>
                         </div>
                     </div>
                 </div>

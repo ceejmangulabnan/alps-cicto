@@ -18,15 +18,21 @@ export default factories.createCoreController(
                 const queryParams = {
                     ...query,
                     populate: {
-                        farms: {
+                        parcels: {
                             populate: {
-                                farm_parcels: {
-                                    populate: ['planting_cycle', 'inspections'],
+                                farm: {
+                                    populate: {
+                                        farm_parcels: {
+                                            populate: [
+                                                'planting_cycle',
+                                                'inspections',
+                                            ],
+                                        },
+                                        barangay: true,
+                                    },
                                 },
-                                barangay: true,
                             },
                         },
-                        barangays: true,
                     },
                 } as Record<string, unknown>
 
@@ -55,15 +61,21 @@ export default factories.createCoreController(
                 const queryParams = {
                     ...query,
                     populate: {
-                        farms: {
+                        parcels: {
                             populate: {
-                                farm_parcels: {
-                                    populate: ['planting_cycle', 'inspections'],
+                                farm: {
+                                    populate: {
+                                        farm_parcels: {
+                                            populate: [
+                                                'planting_cycle',
+                                                'inspections',
+                                            ],
+                                        },
+                                        barangay: true,
+                                    },
                                 },
-                                barangay: true,
                             },
                         },
-                        barangays: true,
                     },
                 } as Record<string, unknown>
 
@@ -103,33 +115,46 @@ export default factories.createCoreController(
                     searchFilters.farmer_code = { $eq: filters.farmer_code }
                 }
 
-                if (filters.barangay) {
-                    searchFilters.farms = {
-                        barangay: {
-                            $or: [
-                                { name: { $eq: filters.barangay } },
-                                { code: { $eq: filters.barangay } },
-                            ],
+                // A farmer has no barangay of its own; it is reached through the
+                // parcels it tends and the farms those parcels belong to. Going
+                // via parcels rather than the farm rollup keeps this independent
+                // of the rollup being in sync.
+                const { barangay, ...fieldFilters } = filters
+
+                if (barangay) {
+                    searchFilters.parcels = {
+                        farm: {
+                            barangay: {
+                                $or: [
+                                    { name: { $eq: barangay } },
+                                    { code: { $eq: barangay } },
+                                ],
+                            },
                         },
                     }
                 }
 
                 const mergedFilters = {
                     ...searchFilters,
-                    ...filters,
+                    // barangay is only a search term, not a farmer column, so it
+                    // is dropped rather than passed through as a field filter.
+                    ...fieldFilters,
                 }
 
                 const queryParams = {
                     ...query,
                     filters: mergedFilters,
                     populate: {
-                        farms: {
+                        parcels: {
                             populate: {
-                                barangay: true,
-                                farm_parcels: true,
+                                farm: {
+                                    populate: {
+                                        barangay: true,
+                                        farm_parcels: true,
+                                    },
+                                },
                             },
                         },
-                        barangays: true,
                     },
                 } as Record<string, unknown>
 

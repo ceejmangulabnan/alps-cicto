@@ -1,4 +1,5 @@
 import type { Farm } from '~/composables/useFarmsApi'
+import type { Farmer } from '~/composables/useFarmersApi'
 import type { FarmParcel, LandStatus } from '~/composables/useFarmParcelApi'
 import type { ParcelDrawing } from '~/composables/useParcelDrawing'
 import { getErrorMessage } from '~/utils/apiError'
@@ -20,6 +21,8 @@ export interface ParcelFormState {
     parcel_code: string
     land_status: LandStatus
     current_use: string
+    /** Farmer documentIds tending this parcel. */
+    farmers: string[]
 }
 
 /** Events the sidebar form raises. Declared here, emitted from the component. */
@@ -35,6 +38,7 @@ export interface ParcelFormEmit {
  */
 export const useParcelForm = (props: ParcelFormProps, emit: ParcelFormEmit) => {
     const { createFromMap, update: updateParcel } = useFarmParcelApi()
+    const { getAllForSelect: getFarmers } = useFarmersApi()
     const { drawing } = props
 
     const form = reactive<ParcelFormState>({
@@ -42,11 +46,22 @@ export const useParcelForm = (props: ParcelFormProps, emit: ParcelFormEmit) => {
         parcel_code: '',
         land_status: 'Cultivated',
         current_use: '',
+        farmers: [],
     })
 
+    const farmers = ref<Farmer[]>([])
+    const farmersLoading = ref(false)
     const loading = ref(false)
     const error = ref<string | null>(null)
     const success = ref<string | null>(null)
+
+    // The farmer registry code is backend-generated, so the option is the name.
+    const farmerOptions = computed(() =>
+        farmers.value.map((farmer) => ({
+            label: farmer.name,
+            value: farmer.documentId,
+        }))
+    )
 
     /**
      * Last area we knew for the active polygon. Committing a draft hands the
@@ -76,6 +91,7 @@ export const useParcelForm = (props: ParcelFormProps, emit: ParcelFormEmit) => {
     const canSave = computed(
         () =>
             !loading.value &&
+            !farmersLoading.value &&
             Boolean(form.farm) &&
             Boolean(form.land_status) &&
             hasGeometry.value
@@ -100,11 +116,27 @@ export const useParcelForm = (props: ParcelFormProps, emit: ParcelFormEmit) => {
         success.value = null
     }
 
+    // Loaded once for the sidebar's lifetime rather than per save, since the
+    // farmer registry changes independently of the parcel being edited.
+    async function loadFarmers() {
+        farmersLoading.value = true
+        try {
+            farmers.value = await getFarmers()
+        } catch {
+            // A parcel can still be saved without tendees, so this only costs the
+            // ability to assign them here.
+            farmers.value = []
+        } finally {
+            farmersLoading.value = false
+        }
+    }
+
     function resetForm() {
         form.farm = ''
         form.parcel_code = ''
         form.land_status = 'Cultivated'
         form.current_use = ''
+        form.farmers = []
         frozenAreaHectares.value = ''
     }
 
@@ -113,6 +145,7 @@ export const useParcelForm = (props: ParcelFormProps, emit: ParcelFormEmit) => {
         form.parcel_code = parcel.parcel_code
         form.land_status = parcel.land_status
         form.current_use = parcel.current_use ?? ''
+        form.farmers = (parcel.farmers ?? []).map((farmer) => farmer.documentId)
     }
 
     /**
@@ -181,6 +214,7 @@ export const useParcelForm = (props: ParcelFormProps, emit: ParcelFormEmit) => {
                     land_status: form.land_status,
                     current_use: form.current_use,
                     area_hectares: areaHectares,
+                    farmers: form.farmers,
                 })
                 const updated = response.data
 
@@ -197,6 +231,7 @@ export const useParcelForm = (props: ParcelFormProps, emit: ParcelFormEmit) => {
                 land_status: form.land_status,
                 current_use: form.current_use,
                 area_hectares: areaHectares,
+                farmers: form.farmers,
             })
             const created = response.data
 
@@ -217,9 +252,14 @@ export const useParcelForm = (props: ParcelFormProps, emit: ParcelFormEmit) => {
         }
     }
 
+    void loadFarmers()
+
     return {
         form,
         loading,
+        farmers,
+        farmerOptions,
+        farmersLoading,
         error,
         success,
         areaHectares,

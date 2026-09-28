@@ -540,7 +540,8 @@ export interface ApiFarmParcelFarmParcel extends Struct.CollectionTypeSchema {
         createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
             Schema.Attribute.Private
         current_use: Schema.Attribute.String
-        farm: Schema.Attribute.Relation<'manyToOne', 'api::farm.farm'>
+        farm: Schema.Attribute.Relation<'manyToOne', 'api::farm.farm'> &
+            Schema.Attribute.Required
         inspections: Schema.Attribute.Relation<
             'oneToMany',
             'api::inspection.inspection'

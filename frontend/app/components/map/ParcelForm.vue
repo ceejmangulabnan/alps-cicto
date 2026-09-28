@@ -66,7 +66,13 @@ const {
                         :disabled="loading || farms.length === 0"
                         class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:cursor-not-allowed disabled:bg-gray-50"
                     >
-                        <option value="">Select a farm...</option>
+                        <option value="">
+                            {{
+                                farms.length === 0
+                                    ? 'No farms available'
+                                    : 'Select a farm...'
+                            }}
+                        </option>
                         <option
                             v-for="farm in farms"
                             :key="farm.documentId"
@@ -76,6 +82,20 @@ const {
                             {{ farm.barangay?.name ?? 'Unknown' }}
                         </option>
                     </select>
+                    <p
+                        v-if="farms.length === 0"
+                        class="mt-1 text-[11px] leading-relaxed text-amber-600"
+                    >
+                        No farms available yet. A parcel cannot be saved
+                        without one because every parcel must belong to a farm.
+                        <NuxtLink
+                            to="/farms"
+                            class="font-semibold underline underline-offset-2"
+                        >
+                            Create a farm
+                        </NuxtLink>
+                        first.
+                    </p>
                 </div>
                 <div class="mt-3">
                     <label class="mb-1 block text-xs font-medium text-gray-600">

@@ -1036,10 +1036,10 @@ const detailStats = computed(() => {
                                 Farmer Code
                             </label>
                             <input
-                                v-model="editForm.farmer_code"
+                                :value="editForm.farmer_code"
                                 type="text"
-                                placeholder="e.g. FRM-0005"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                                readonly
+                                class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 font-mono text-xs text-gray-900"
                             />
                         </div>
                         <div>

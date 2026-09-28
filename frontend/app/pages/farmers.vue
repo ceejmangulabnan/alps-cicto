@@ -285,6 +285,13 @@ const parcels: Parcel[] = [
 
 const farmerBarangay = (f: Farmer) => f.barangays.map((b) => b.name).join(', ')
 
+/**
+ * A farmer may cover several barangays, but the form field holds one, so the
+ * edit modal prefills with the first. A joined "A, B" would match no option in
+ * the dropdown and silently render the field blank.
+ */
+const farmerPrimaryBarangay = (f: Farmer) => f.barangays[0]?.name ?? ''
+
 const initials = (name: string) =>
     name
         .split(' ')
@@ -358,7 +365,7 @@ const editForm = reactive({
 function openEditModal(farmer: Farmer) {
     editForm.farmer_code = farmer.farmer_code
     editForm.name = farmer.name
-    editForm.barangay = farmerBarangay(farmer)
+    editForm.barangay = farmerPrimaryBarangay(farmer)
     editForm.contact = ''
     editForm.status = 'Active'
     showEditModal.value = true
@@ -946,20 +953,21 @@ const detailStats = computed(() => {
                             >
                                 Barangay
                             </label>
-                            <input
+                            <select
                                 v-model="registerForm.barangay"
-                                type="text"
-                                list="farmer-barangay-options"
-                                placeholder="Select barangay"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            />
-                            <datalist id="farmer-barangay-options">
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option value="" disabled>
+                                    Select barangay
+                                </option>
                                 <option
                                     v-for="b in barangays"
                                     :key="b"
                                     :value="b"
-                                />
-                            </datalist>
+                                >
+                                    {{ b }}
+                                </option>
+                            </select>
                         </div>
                         <div>
                             <label
@@ -1079,20 +1087,21 @@ const detailStats = computed(() => {
                             >
                                 Barangay
                             </label>
-                            <input
+                            <select
                                 v-model="editForm.barangay"
-                                type="text"
-                                list="farmer-barangay-options"
-                                placeholder="Select barangay"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            />
-                            <datalist id="farmer-barangay-options">
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option value="" disabled>
+                                    Select barangay
+                                </option>
                                 <option
                                     v-for="b in barangays"
                                     :key="b"
                                     :value="b"
-                                />
-                            </datalist>
+                                >
+                                    {{ b }}
+                                </option>
+                            </select>
                         </div>
                         <div>
                             <label

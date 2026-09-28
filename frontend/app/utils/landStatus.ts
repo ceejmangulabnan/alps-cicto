@@ -1,5 +1,8 @@
 import type { HexColor } from 'terra-draw'
-import { LAND_STATUS_OPTIONS } from '~/composables/useFarmParcelApi'
+import {
+    LAND_STATUS_OPTIONS,
+    type LandStatus,
+} from '~/composables/useFarmParcelApi'
 
 /**
  * Single source of truth for land_status -> colour. Both the terra-draw style
@@ -46,3 +49,39 @@ export const STATUS_LEGEND: StatusLegendEntry[] = LAND_STATUS_OPTIONS.map(
         color: STATUS_COLOR[status] ?? STATUS_COLOR_FALLBACK,
     })
 )
+
+/**
+ * Table palette, keyed off the same `status-*` classes declared in main.css.
+ *
+ * These sit a shade darker than STATUS_COLOR because they are used for a small
+ * dot and pill text rather than a large map fill.
+ */
+export const STATUS_DOT: Record<LandStatus, string> = {
+    Cultivated: '#166534',
+    Preparation: '#0369a1',
+    Harvesting: '#a16207',
+    Fallow: '#b45309',
+    Idle: '#4b5563',
+    'At Risk': '#b91c1c',
+    Converted: '#0f766e',
+}
+
+export const STATUS_CLASS: Record<LandStatus, string> = {
+    Cultivated: 'status-cultivated',
+    Preparation: 'status-preparation',
+    Harvesting: 'status-harvesting',
+    Fallow: 'status-fallow',
+    Idle: 'status-idle',
+    'At Risk': 'status-atrisk',
+    Converted: 'status-converted',
+}
+
+const TABLE_FALLBACK_DOT = '#4b5563'
+
+export function statusClass(status: string): string {
+    return STATUS_CLASS[status as LandStatus] ?? 'status-idle'
+}
+
+export function statusDot(status: string): string {
+    return STATUS_DOT[status as LandStatus] ?? TABLE_FALLBACK_DOT
+}

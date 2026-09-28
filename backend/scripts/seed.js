@@ -16,15 +16,41 @@ const BARANGAY_UID = 'api::barangay.barangay'
 const FARMER_UID = 'api::farmer.farmer'
 
 const BARANGAYS = [
-    { name: 'Sto. Niño', code: 'STONINO' },
-    { name: 'Sindalan', code: 'SINDALAN' },
+    { name: 'Alasas', code: 'ALASAS' },
+    { name: 'Baliti', code: 'BALITI' },
+    { name: 'Bulaon', code: 'BULAON' },
     { name: 'Calulut', code: 'CALULUT' },
-    { name: 'Pulung Bulu', code: 'PULUNGBULU' },
-    { name: 'Dolores', code: 'DOLORES' },
-    { name: 'Telabastagan', code: 'TELABASTAGAN' },
-    { name: 'San Pedro', code: 'SANPEDRO' },
-    { name: 'Maimpis', code: 'MAIMPIS' },
+    { name: 'Dela Paz Norte', code: 'DELAPAZNORTE' },
+    { name: 'Dela Paz Sur', code: 'DELAPAZSUR' },
+    { name: 'Del Carmen', code: 'DELCARMEN' },
     { name: 'Del Pilar', code: 'DELPILAR' },
+    { name: 'Del Rosario', code: 'DELROSARIO' },
+    { name: 'Dolores', code: 'DOLORES' },
+    { name: 'Juliana', code: 'JULIANA' },
+    { name: 'Lara', code: 'LARA' },
+    { name: 'Lourdes', code: 'LOURDES' },
+    { name: 'Magliman', code: 'MAGLIMAN' },
+    { name: 'Maimpis', code: 'MAIMPIS' },
+    { name: 'Malino', code: 'MALINO' },
+    { name: 'Malpitic', code: 'MALPITIC' },
+    { name: 'Pandaras', code: 'PANDARAS' },
+    { name: 'Panipuan', code: 'PANIPUAN' },
+    { name: 'Pulung Bulu', code: 'PULUNGBULU' },
+    { name: 'Quebiawan', code: 'QUEBIAWAN' },
+    { name: 'Saguin', code: 'SAGUIN' },
+    { name: 'San Agustin', code: 'SANAGUSTIN' },
+    { name: 'San Felipe', code: 'SANFELIPE' },
+    { name: 'San Isidro', code: 'SANISIDRO' },
+    { name: 'San Jose', code: 'SANJOSE' },
+    { name: 'San Juan', code: 'SANJUAN' },
+    { name: 'San Nicolas', code: 'SANNICOLAS' },
+    { name: 'San Pedro Cutud', code: 'SANPEDROCUTUD' },
+    { name: 'Santa Lucia', code: 'SANTALUCIA' },
+    { name: 'Santa Teresita', code: 'SANTATERESITA' },
+    { name: 'Sto. Niño', code: 'STONINO' },
+    { name: 'Santo Rosario (Poblacion)', code: 'SANTOROSARIO' },
+    { name: 'Sindalan', code: 'SINDALAN' },
+    { name: 'Telabastagan', code: 'TELABASTAGAN' },
 ]
 
 const FARMERS = [
@@ -62,7 +88,9 @@ async function seedBarangays(strapi) {
         created.push(`${name} (${entry.code})`)
     }
 
-    console.log(`barangays: ${created.length} created, ${skipped.length} already present`)
+    console.log(
+        `barangays: ${created.length} created, ${skipped.length} already present`
+    )
     created.forEach((label) => console.log(`  + ${label}`))
     skipped.forEach((label) => console.log(`  = ${label}`))
 }
@@ -92,20 +120,20 @@ async function seedFarmers(strapi) {
             )
         }
 
-        const entry = await strapi
-            .documents(FARMER_UID)
-            .create({
-                data: {
-                    name,
-                    farmer_status: 'Active',
-                    barangays: [parent.documentId],
-                },
-            })
+        const entry = await strapi.documents(FARMER_UID).create({
+            data: {
+                name,
+                farmer_status: 'Active',
+                barangays: [parent.documentId],
+            },
+        })
 
         created.push(`${entry.farmer_code} ${name} — ${barangay}`)
     }
 
-    console.log(`farmers: ${created.length} created, ${skipped.length} already present`)
+    console.log(
+        `farmers: ${created.length} created, ${skipped.length} already present`
+    )
     created.forEach((label) => console.log(`  + ${label}`))
     skipped.forEach((label) => console.log(`  = ${label}`))
 }

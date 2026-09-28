@@ -1,4 +1,5 @@
 import type { Core } from '@strapi/strapi'
+import { errors } from '@strapi/utils'
 
 import { generateFarmCode } from './api/farm/services/farm-code'
 import { generateFarmerCode } from './api/farmer/services/farmer-code'
@@ -36,9 +37,15 @@ function registerGeneratedFields(strapi: Core.Strapi) {
 
         if (uid === FARM_UID && !data.farm_code) {
             const farmCode = await generateFarmCode(data.barangay)
-            if (farmCode) {
-                data.farm_code = farmCode
+            if (!farmCode) {
+                // Without this the request dies on "farm_code must be defined",
+                // which hides the real cause: an unusable barangay reference.
+                throw new errors.ValidationError(
+                    'A farm code is derived from the barangay, so a valid barangay is required.',
+                    { farm_code: 'could not be generated' }
+                )
             }
+            data.farm_code = farmCode
         }
 
         if (uid === FARM_PARCEL_UID) {

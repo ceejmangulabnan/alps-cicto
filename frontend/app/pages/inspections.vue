@@ -189,7 +189,12 @@ const PHOTO_URLS = [
 const search = ref('')
 const selected = ref<Inspection | null>(null)
 const filterStatus = ref('All')
-const statusFilterOptions = ['All', 'Completed', 'Pending', 'In Progress'] as string[]
+const statusFilterOptions = [
+    'All',
+    'Completed',
+    'Pending',
+    'In Progress',
+] as string[]
 
 const filtered = computed(() =>
     inspections.filter((i) => {
@@ -311,9 +316,7 @@ function openEditModal(ins: Inspection) {
 }
 
 function saveEdit() {
-    const idx = inspections.findIndex(
-        (r) => r.id === editForm.id
-    )
+    const idx = inspections.findIndex((r) => r.id === editForm.id)
     if (idx === -1) return
     const i = inspections[idx]
     i.parcelId = editForm.parcelId
@@ -428,9 +431,7 @@ function confirmDelete() {
                         <UIcon name="i-lucide-x" class="size-3" />
                     </button>
                 </div>
-                <div
-                    class="mb-4 flex flex-wrap items-center gap-1.5"
-                >
+                <div class="mb-4 flex flex-wrap items-center gap-1.5">
                     <button
                         v-for="s in statusFilterOptions"
                         :key="s"
@@ -452,9 +453,7 @@ function confirmDelete() {
                         />
                         {{ s }}
                     </button>
-                    <span
-                        class="ml-auto text-[11px] text-gray-400"
-                    >
+                    <span class="ml-auto text-[11px] text-gray-400">
                         {{ filtered.length }} of {{ inspections.length }} shown
                     </span>
                 </div>
@@ -508,9 +507,8 @@ function confirmDelete() {
                                         <span
                                             class="h-1.5 w-1.5 rounded-full"
                                             :style="{
-                                                background: RISK_DOT[
-                                                    ins.riskLevel
-                                                ],
+                                                background:
+                                                    RISK_DOT[ins.riskLevel],
                                             }"
                                         />
                                         {{ ins.riskLevel }} Risk
@@ -559,10 +557,7 @@ function confirmDelete() {
                             <span
                                 class="flex items-center gap-1 rounded bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600"
                             >
-                                <UIcon
-                                    name="i-lucide-tags"
-                                    class="size-2.5"
-                                />
+                                <UIcon name="i-lucide-tags" class="size-2.5" />
                                 {{ ins.type }}
                             </span>
                             <span class="flex items-center gap-1">
@@ -625,9 +620,7 @@ function confirmDelete() {
                     <div class="p-5">
                         <div class="flex items-start justify-between">
                             <div>
-                                <h3
-                                    class="text-sm font-bold text-gray-800"
-                                >
+                                <h3 class="text-sm font-bold text-gray-800">
                                     {{ selected.id }}
                                 </h3>
                                 <div
@@ -696,9 +689,7 @@ function confirmDelete() {
                             </div>
                         </div>
 
-                        <div
-                            class="mt-4 grid grid-cols-2 gap-2.5"
-                        >
+                        <div class="mt-4 grid grid-cols-2 gap-2.5">
                             <div
                                 v-for="f in detailFields"
                                 :key="f.label"
@@ -707,9 +698,7 @@ function confirmDelete() {
                                 <div class="text-[10px] text-gray-400">
                                     {{ f.label }}
                                 </div>
-                                <div
-                                    class="mt-0.5 font-medium text-gray-700"
-                                >
+                                <div class="mt-0.5 font-medium text-gray-700">
                                     {{ f.val }}
                                 </div>
                             </div>

@@ -1,7 +1,16 @@
+export interface FarmParcelSummary {
+    documentId: string
+    parcel_code: string
+    area_hectares: number
+    land_status: string
+}
+
 export interface Farm {
     documentId: string
     id?: number
     farm_code: string
+    /** Optional: the lighter select queries below do not request it. */
+    farmer_status?: FarmerStatus
     barangay?: {
         documentId: string
         name: string
@@ -12,19 +21,20 @@ export interface Farm {
         farmer_code: string
         name: string
     }>
-    farm_parcels?: Array<{
-        documentId: string
-        parcel_code: string
-        area_hectares: number
-        land_status: string
-    }>
+    farm_parcels?: FarmParcelSummary[]
+    /** Attached by GET /farms/with-summary, absent on the core routes. */
+    parcel_summary?: FarmParcelAggregate
+    createdAt?: string
+    updatedAt?: string
 }
 
-export const FARMER_STATUS_OPTIONS = [
-    'Active',
-    'Inactive',
-    'Departed',
-] as const
+export interface FarmParcelAggregate {
+    total_area_hectares: number
+    parcel_count: number
+    status_breakdown: Record<string, number>
+}
+
+export const FARMER_STATUS_OPTIONS = ['Active', 'Inactive', 'Departed'] as const
 
 export type FarmerStatus = (typeof FARMER_STATUS_OPTIONS)[number]
 
@@ -32,6 +42,17 @@ export interface CreateFarmData {
     barangay: string
     farmers?: string[]
     farmer_status: FarmerStatus
+}
+
+export interface UpdateFarmData {
+    barangay?: string
+    farmers?: string[]
+    farmer_status?: FarmerStatus
+}
+
+/** `/farms/with-summary` returns a bare list, without Strapi's meta. */
+export interface FarmSummaryListResponse {
+    data: Farm[]
 }
 
 export type FarmQuery = Record<
@@ -169,10 +190,49 @@ export const useFarmsApi = () => {
         })
     }
 
+    const update = async (
+        documentId: string,
+        data: UpdateFarmData
+    ): Promise<FarmResponse> => {
+        return await authFetch<FarmResponse>(`${baseUrl}/${documentId}`, {
+            method: 'PUT',
+            body: { data },
+            query: {
+                populate: ['barangay', 'farmers', 'farm_parcels'],
+            },
+        })
+    }
+
+    /**
+     * Farms with their parcel totals already aggregated server-side. Skips
+     * `boundary_geojson`, which a management list has no use for.
+     */
+    const getAllWithSummary = async (): Promise<FarmSummaryListResponse> => {
+        return await authFetch<FarmSummaryListResponse>(
+            `${baseUrl}/with-summary`,
+            { query: { sort: 'farm_code:asc' } }
+        )
+    }
+
+    /**
+     * One farm with its parcels listed by code, for the detail panel. The list
+     * route above only returns each parcel's area and status.
+     */
+    const getOneWithSummary = async (
+        documentId: string
+    ): Promise<FarmResponse> => {
+        return await authFetch<FarmResponse>(
+            `${baseUrl}/${documentId}/with-summary`
+        )
+    }
+
     return {
         getAll,
         getAllForSelect,
         create,
         getById,
+        update,
+        getAllWithSummary,
+        getOneWithSummary,
     }
 }

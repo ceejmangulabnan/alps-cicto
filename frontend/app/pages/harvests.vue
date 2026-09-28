@@ -185,11 +185,10 @@ const chartTotals = computed(() => {
         h.harvest_date.startsWith('2024-')
     )
     return {
-        area: Math.round(
-            rec2024.reduce((a, h) => a + h.area_hectares, 0) * 10
-        ) / 10,
-        completed:
-            rec2024.filter((h) => h.production_kg != null).length,
+        area:
+            Math.round(rec2024.reduce((a, h) => a + h.area_hectares, 0) * 10) /
+            10,
+        completed: rec2024.filter((h) => h.production_kg != null).length,
         total: rec2024.length,
     }
 })
@@ -336,9 +335,7 @@ function openEditModal(h: HarvestRecord) {
 }
 
 function saveEdit() {
-    const idx = harvestRecords.findIndex(
-        (r) => r.id === editForm.id
-    )
+    const idx = harvestRecords.findIndex((r) => r.id === editForm.id)
     if (idx === -1) return
     const r = harvestRecords[idx]
     r.farmer = editForm.farmer
@@ -394,7 +391,11 @@ function confirmDelete() {
 
         <!-- KPIs -->
         <div class="grid grid-cols-4 gap-4">
-            <div v-for="kpi in kpis" :key="kpi.label" class="alps-card relative overflow-hidden p-5">
+            <div
+                v-for="kpi in kpis"
+                :key="kpi.label"
+                class="alps-card relative overflow-hidden p-5"
+            >
                 <div
                     class="absolute inset-x-0 top-0 h-0.5 opacity-70"
                     :style="{
@@ -530,9 +531,7 @@ function confirmDelete() {
                 >
                     {{ s }}
                 </button>
-                <span
-                    class="ml-auto text-[11px] text-gray-400"
-                >
+                <span class="ml-auto text-[11px] text-gray-400">
                     {{ filtered.length }} of {{ harvestRecords.length }} shown
                 </span>
             </div>
@@ -592,9 +591,7 @@ function confirmDelete() {
                         v-for="(h, i) in filtered"
                         :key="h.id"
                         class="border-b border-gray-50 last:border-0 transition-colors hover:bg-green-50/30"
-                        :class="
-                            i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'
-                        "
+                        :class="i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'"
                     >
                         <td class="px-5 py-3 font-mono text-gray-400">
                             {{ h.id }}
@@ -623,9 +620,7 @@ function confirmDelete() {
                                             CROP_COLORS[h.crop] ?? '#94a3b8',
                                     }"
                                 />
-                                <span class="text-gray-600">{{
-                                    h.crop
-                                }}</span>
+                                <span class="text-gray-600">{{ h.crop }}</span>
                             </span>
                         </td>
                         <td class="px-4 py-3 text-gray-500">
@@ -637,7 +632,9 @@ function confirmDelete() {
                                 {{ h.barangay }}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-right font-mono font-semibold text-gray-900">
+                        <td
+                            class="px-4 py-3 text-right font-mono font-semibold text-gray-900"
+                        >
                             {{ h.area_hectares }}
                         </td>
                         <td
@@ -665,10 +662,7 @@ function confirmDelete() {
                                     />
                                     in {{ daysUntil(h.harvest_date) }} days
                                 </div>
-                                <div
-                                    v-else
-                                    class="text-[10px] text-gray-400"
-                                >
+                                <div v-else class="text-[10px] text-gray-400">
                                     completed
                                 </div>
                             </div>
@@ -690,9 +684,7 @@ function confirmDelete() {
                             </span>
                         </td>
                         <td class="px-4 py-3">
-                            <div
-                                class="flex items-center justify-end gap-1"
-                            >
+                            <div class="flex items-center justify-end gap-1">
                                 <button
                                     type="button"
                                     class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"

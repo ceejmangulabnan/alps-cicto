@@ -20,7 +20,8 @@
             "type": "relation",
             "relation": "manyToOne",
             "target": "api::farm.farm",
-            "inversedBy": "farm_parcels"
+            "inversedBy": "farm_parcels",
+            "required": true
         },
         "boundary_geojson": {
             "type": "json",

@@ -632,9 +632,17 @@ const miniMapZoom = ref(13)
         >
             <div
                 class="pointer-events-none absolute inset-y-0 right-0 w-44 opacity-40"
-                style="background-image: radial-gradient(#2d6a2d55 1.2px, transparent 1.2px); background-size: 12px 12px;"
+                style="
+                    background-image: radial-gradient(
+                        #2d6a2d55 1.2px,
+                        transparent 1.2px
+                    );
+                    background-size: 12px 12px;
+                "
             />
-            <div class="relative flex flex-wrap items-center justify-between gap-3">
+            <div
+                class="relative flex flex-wrap items-center justify-between gap-3"
+            >
                 <div class="flex items-center gap-3">
                     <div
                         class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#2d6a2d]"
@@ -762,7 +770,8 @@ const miniMapZoom = ref(13)
                                 Monthly Harvest Volume (ha)
                             </h3>
                             <p class="text-[11px] text-gray-400">
-                                FY 2024 · {{ harvestYearTotal.toLocaleString() }}
+                                FY 2024 ·
+                                {{ harvestYearTotal.toLocaleString() }}
                                 ha total
                             </p>
                         </div>
@@ -803,9 +812,7 @@ const miniMapZoom = ref(13)
                             </p>
                         </div>
                     </div>
-                    <div
-                        class="flex items-center gap-3 text-xs text-gray-500"
-                    >
+                    <div class="flex items-center gap-3 text-xs text-gray-500">
                         <span class="flex items-center gap-1.5">
                             <span
                                 class="h-2.5 w-2.5 rounded-sm bg-[#dde5dd]"
@@ -890,9 +897,7 @@ const miniMapZoom = ref(13)
                 </div>
 
                 <!-- Mini Map -->
-                <div
-                    class="alps-card group overflow-hidden"
-                >
+                <div class="alps-card group overflow-hidden">
                     <div class="relative h-36 overflow-hidden bg-[#e8f0e8]">
                         <ClientOnly>
                             <div class="absolute inset-0">
@@ -914,7 +919,9 @@ const miniMapZoom = ref(13)
                             </template>
                         </ClientOnly>
 
-                        <div class="pointer-events-none absolute bottom-2 left-3">
+                        <div
+                            class="pointer-events-none absolute bottom-2 left-3"
+                        >
                             <div
                                 class="rounded bg-[#2d6a2d]/85 px-2 py-1 backdrop-blur-sm"
                             >
@@ -985,15 +992,14 @@ const miniMapZoom = ref(13)
                                     <span
                                         class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
                                         :style="{
-                                            backgroundColor:
-                                                avatarColor(h.farmer),
+                                            backgroundColor: avatarColor(
+                                                h.farmer
+                                            ),
                                         }"
                                     >
                                         {{ initials(h.farmer) }}
                                     </span>
-                                    <span
-                                        class="font-medium text-gray-800"
-                                    >
+                                    <span class="font-medium text-gray-800">
                                         {{ h.farmer }}
                                     </span>
                                 </div>

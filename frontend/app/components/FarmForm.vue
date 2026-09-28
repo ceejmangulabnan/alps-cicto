@@ -9,10 +9,10 @@
         >
             <div class="mb-5 flex items-start justify-between">
                 <div>
-                    <h3 class="text-lg font-bold text-gray-900">Create Farm</h3>
-                    <p class="text-xs text-gray-500">
-                        The farm code is generated from the barangay.
-                    </p>
+                    <h3 class="text-lg font-bold text-gray-900">
+                        {{ isEditing ? 'Edit Farm' : 'Create Farm' }}
+                    </h3>
+                    <p class="text-xs text-gray-500">{{ subtitle }}</p>
                 </div>
                 <button
                     type="button"
@@ -27,12 +27,24 @@
             <form class="space-y-4" @submit.prevent="submit">
                 <div>
                     <label class="mb-1 block text-xs font-medium text-gray-600">
+                        Farm Code
+                    </label>
+                    <input
+                        :value="farm?.farm_code ?? 'Generated on save'"
+                        type="text"
+                        readonly
+                        class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 font-mono text-xs text-gray-900"
+                    />
+                </div>
+
+                <div>
+                    <label class="mb-1 block text-xs font-medium text-gray-600">
                         Barangay <span class="text-red-500">*</span>
                     </label>
                     <select
                         v-model="form.barangay"
-                        :disabled="submitting || optionsLoading"
-                        class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                        :disabled="submitting || optionsLoading || isEditing"
+                        class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:cursor-not-allowed disabled:bg-gray-50"
                     >
                         <option value="" disabled>
                             {{
@@ -49,8 +61,12 @@
                             {{ b.name }} ({{ b.code }})
                         </option>
                     </select>
+                    <p v-if="isEditing" class="mt-1 text-[11px] text-gray-400">
+                        A farm code is derived from the barangay, so it cannot
+                        be changed after the farm is created.
+                    </p>
                     <p
-                        v-if="!optionsLoading && barangays.length === 0"
+                        v-else-if="!optionsLoading && barangays.length === 0"
                         class="mt-1 text-[11px] text-amber-600"
                     >
                         No barangays available yet. A farm cannot be created
@@ -62,10 +78,16 @@
                     <label class="mb-1 block text-xs font-medium text-gray-600">
                         Farmers
                     </label>
+                    <!--
+                        `loading` matters: without it the menu briefly shows the
+                        raw documentIds held by the form before the farmer list
+                        arrives and can resolve them to names.
+                    -->
                     <USelectMenu
                         v-model="form.farmers"
                         :items="farmerOptions"
                         :disabled="submitting || optionsLoading"
+                        :loading="optionsLoading"
                         multiple
                         value-key="value"
                         placeholder="Optional - assign farmers"
@@ -126,7 +148,13 @@
                             name="i-lucide-loader-circle"
                             class="size-3.5 animate-spin"
                         />
-                        {{ submitting ? 'Creating...' : 'Create Farm' }}
+                        {{
+                            submitting
+                                ? 'Saving...'
+                                : isEditing
+                                  ? 'Save Changes'
+                                  : 'Create Farm'
+                        }}
                     </button>
                 </div>
             </form>
@@ -137,19 +165,25 @@
 <script lang="ts" setup>
 import {
     FARMER_STATUS_OPTIONS,
+    type Farm,
     type FarmerStatus,
 } from '~/composables/useFarmsApi'
 import type { Barangay } from '~/composables/useBarangayApi'
 import type { Farmer } from '~/composables/useFarmersApi'
+import { getErrorMessage } from '~/utils/apiError'
 
-const props = defineProps<{ modelValue: boolean }>()
+const props = defineProps<{
+    modelValue: boolean
+    /** The farm being edited, or null when creating a new one. */
+    farm?: Farm | null
+}>()
 
 const emit = defineEmits<{
     'update:modelValue': [value: boolean]
-    created: [farmCode: string]
+    saved: [farm: Farm]
 }>()
 
-const { create } = useFarmsApi()
+const { create, update } = useFarmsApi()
 const { getAllForSelect: getBarangays } = useBarangayApi()
 const { getAllForSelect: getFarmers } = useFarmersApi()
 
@@ -158,6 +192,14 @@ const farmers = ref<Farmer[]>([])
 const optionsLoading = ref(false)
 const submitting = ref(false)
 const errorMessage = ref<string | null>(null)
+
+const isEditing = computed(() => Boolean(props.farm))
+
+const subtitle = computed(() =>
+    isEditing.value
+        ? 'Update the farmers and status for this farm.'
+        : 'The farm code is generated from the barangay.'
+)
 
 const form = reactive<{
     barangay: string
@@ -177,9 +219,11 @@ const farmerOptions = computed(() =>
 )
 
 function resetForm() {
-    form.barangay = ''
-    form.farmers = []
-    form.farmer_status = 'Active'
+    form.barangay = props.farm?.barangay?.documentId ?? ''
+    form.farmers = (props.farm?.farmers ?? []).map(
+        (farmer) => farmer.documentId
+    )
+    form.farmer_status = props.farm?.farmer_status ?? 'Active'
     errorMessage.value = null
 }
 
@@ -204,22 +248,6 @@ async function loadOptions() {
     }
 }
 
-function getErrorMessage(value: unknown, fallback: string) {
-    if (value && typeof value === 'object') {
-        const apiError = value as {
-            data?: { message?: string; error?: { message?: string } }
-            message?: string
-        }
-        return (
-            apiError.data?.error?.message ||
-            apiError.data?.message ||
-            apiError.message ||
-            fallback
-        )
-    }
-    return fallback
-}
-
 async function submit() {
     if (submitting.value) return
 
@@ -232,33 +260,41 @@ async function submit() {
     errorMessage.value = null
 
     try {
-        const response = await create({
-            barangay: form.barangay,
-            farmers: form.farmers,
-            farmer_status: form.farmer_status,
-        })
+        const response = props.farm
+            ? await update(props.farm.documentId, {
+                  farmers: form.farmers,
+                  farmer_status: form.farmer_status,
+              })
+            : await create({
+                  barangay: form.barangay,
+                  farmers: form.farmers,
+                  farmer_status: form.farmer_status,
+              })
 
-        emit('created', response.data.farm_code)
+        emit('saved', response.data)
         emit('update:modelValue', false)
-        resetForm()
     } catch (error: unknown) {
         errorMessage.value = getErrorMessage(
             error,
-            'Unable to create the farm.'
+            props.farm
+                ? 'Unable to update the farm.'
+                : 'Unable to create the farm.'
         )
     } finally {
         submitting.value = false
     }
 }
 
+// Prefill and fetch the option lists on every open, so the form is correct
+// whether it was just toggled open or arrived already open on mount.
 watch(
-    () => props.modelValue,
-    async (open) => {
-        if (!open) {
-            resetForm()
-            return
-        }
+    () => [props.modelValue, props.farm?.documentId] as const,
+    async ([open]) => {
+        if (!open) return
+
+        resetForm()
         await loadOptions()
-    }
+    },
+    { immediate: true }
 )
 </script>

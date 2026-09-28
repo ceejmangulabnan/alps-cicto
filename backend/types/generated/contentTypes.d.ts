@@ -472,7 +472,6 @@ export interface ApiBarangayBarangay extends Struct.CollectionTypeSchema {
         createdAt: Schema.Attribute.DateTime
         createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
             Schema.Attribute.Private
-        farmers: Schema.Attribute.Relation<'manyToMany', 'api::farmer.farmer'>
         farms: Schema.Attribute.Relation<'oneToMany', 'api::farm.farm'>
         locale: Schema.Attribute.String & Schema.Attribute.Private
         localizations: Schema.Attribute.Relation<
@@ -542,6 +541,7 @@ export interface ApiFarmParcelFarmParcel extends Struct.CollectionTypeSchema {
         current_use: Schema.Attribute.String
         farm: Schema.Attribute.Relation<'manyToOne', 'api::farm.farm'> &
             Schema.Attribute.Required
+        farmers: Schema.Attribute.Relation<'manyToMany', 'api::farmer.farmer'>
         inspections: Schema.Attribute.Relation<
             'oneToMany',
             'api::inspection.inspection'
@@ -609,11 +609,6 @@ export interface ApiFarmFarm extends Struct.CollectionTypeSchema {
             'oneToMany',
             'api::farm-parcel.farm-parcel'
         >
-        farmer_status: Schema.Attribute.Enumeration<
-            ['Active', 'Inactive', 'Departed']
-        > &
-            Schema.Attribute.Required &
-            Schema.Attribute.DefaultTo<'Inactive'>
         farmers: Schema.Attribute.Relation<'manyToMany', 'api::farmer.farmer'>
         locale: Schema.Attribute.String & Schema.Attribute.Private
         localizations: Schema.Attribute.Relation<
@@ -621,6 +616,7 @@ export interface ApiFarmFarm extends Struct.CollectionTypeSchema {
             'api::farm.farm'
         > &
             Schema.Attribute.Private
+        name: Schema.Attribute.String & Schema.Attribute.Required
         publishedAt: Schema.Attribute.DateTime
         updatedAt: Schema.Attribute.DateTime
         updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -639,18 +635,16 @@ export interface ApiFarmerFarmer extends Struct.CollectionTypeSchema {
         draftAndPublish: false
     }
     attributes: {
-        barangays: Schema.Attribute.Relation<
-            'manyToMany',
-            'api::barangay.barangay'
-        >
-        contact: Schema.Attribute.BigInteger
+        contact: Schema.Attribute.String
         createdAt: Schema.Attribute.DateTime
         createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
             Schema.Attribute.Private
         farmer_code: Schema.Attribute.String &
             Schema.Attribute.Required &
             Schema.Attribute.Unique
-        farmer_status: Schema.Attribute.Enumeration<['Active', 'Inactive']>
+        farmer_status: Schema.Attribute.Enumeration<
+            ['Active', 'Inactive', 'Departed']
+        >
         farms: Schema.Attribute.Relation<'manyToMany', 'api::farm.farm'>
         locale: Schema.Attribute.String & Schema.Attribute.Private
         localizations: Schema.Attribute.Relation<
@@ -659,6 +653,10 @@ export interface ApiFarmerFarmer extends Struct.CollectionTypeSchema {
         > &
             Schema.Attribute.Private
         name: Schema.Attribute.String & Schema.Attribute.Required
+        parcels: Schema.Attribute.Relation<
+            'manyToMany',
+            'api::farm-parcel.farm-parcel'
+        >
         publishedAt: Schema.Attribute.DateTime
         updatedAt: Schema.Attribute.DateTime
         updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &

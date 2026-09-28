@@ -11,6 +11,10 @@
     },
     "pluginOptions": {},
     "attributes": {
+        "name": {
+            "type": "string",
+            "required": true
+        },
         "farm_code": {
             "type": "string",
             "required": true,
@@ -34,12 +38,6 @@
             "relation": "oneToMany",
             "target": "api::farm-parcel.farm-parcel",
             "mappedBy": "farm"
-        },
-        "farmer_status": {
-            "type": "enumeration",
-            "required": true,
-            "default": "Inactive",
-            "enum": ["Active", "Inactive", "Departed"]
         }
     }
 }

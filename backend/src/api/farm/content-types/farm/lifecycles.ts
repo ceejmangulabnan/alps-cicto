@@ -2,11 +2,26 @@
  * farm lifecycles
  */
 
+import { errors } from '@strapi/utils'
+
 import { extractDocumentId, generateFarmCode } from '../../services/farm-code'
 
 export default {
     async beforeCreate(event: { params: { data: Record<string, unknown> } }) {
         const { data } = event.params
+
+        // `required` only checks that the field is present, and an empty string
+        // counts as present, so a blank name would otherwise be stored as a farm
+        // with nothing to call it. Trim first so whitespace is caught too.
+        if (typeof data.name === 'string') {
+            data.name = data.name.trim()
+        }
+
+        if (typeof data.name !== 'string' || data.name === '') {
+            throw new errors.ValidationError('A farm name is required.', {
+                name: 'must not be empty',
+            })
+        }
 
         // Validate farmer IDs exist
         if (data.farmers) {

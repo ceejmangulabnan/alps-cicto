@@ -24,12 +24,6 @@
         "boundary": {
             "type": "json"
         },
-        "farmers": {
-            "type": "relation",
-            "relation": "manyToMany",
-            "target": "api::farmer.farmer",
-            "inversedBy": "barangays"
-        },
         "farms": {
             "type": "relation",
             "relation": "oneToMany",

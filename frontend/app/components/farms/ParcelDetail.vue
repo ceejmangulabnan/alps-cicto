@@ -28,9 +28,11 @@ const detailFields = computed(() => [
                     backgroundImage: `linear-gradient(90deg, ${statusDot(parcel.land_status)}, transparent)`,
                 }"
             />
-            <div class="p-5">
-                <div class="flex items-start justify-between">
-                    <div>
+            <div class="p-4 sm:p-5">
+                <div
+                    class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+                >
+                    <div class="min-w-0">
                         <div class="font-mono text-xs text-gray-600">
                             {{ parcel.parcel_code }}
                         </div>

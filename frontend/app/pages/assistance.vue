@@ -289,8 +289,8 @@ function confirmDelete() {
 </script>
 
 <template>
-    <div class="space-y-6 p-6">
-        <div class="flex items-center justify-between">
+    <div class="space-y-6 p-4 sm:p-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">
                     Assistance Programs
@@ -310,7 +310,7 @@ function confirmDelete() {
         </div>
 
         <!-- KPIs -->
-        <div class="grid grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <div
                 v-for="kpi in kpis"
                 :key="kpi.label"
@@ -406,166 +406,176 @@ function confirmDelete() {
                     {{ assistancePrograms.length }} shown
                 </span>
             </div>
-            <table class="w-full text-xs">
-                <thead class="border-b border-gray-100 bg-gray-50">
-                    <tr>
-                        <th
-                            class="px-5 py-3 text-left font-semibold text-gray-600"
-                        >
-                            ID
-                        </th>
-                        <th
-                            class="px-4 py-3 text-left font-semibold text-gray-600"
-                        >
-                            Program
-                        </th>
-                        <th
-                            class="px-4 py-3 text-left font-semibold text-gray-600"
-                        >
-                            Recipient
-                        </th>
-                        <th
-                            class="px-4 py-3 text-left font-semibold text-gray-600"
-                        >
-                            Barangay
-                        </th>
-                        <th
-                            class="px-4 py-3 text-left font-semibold text-gray-600"
-                        >
-                            Items
-                        </th>
-                        <th
-                            class="px-4 py-3 text-right font-semibold text-gray-600"
-                        >
-                            Value (₱)
-                        </th>
-                        <th
-                            class="px-4 py-3 text-left font-semibold text-gray-600"
-                        >
-                            Date
-                        </th>
-                        <th
-                            class="px-4 py-3 text-left font-semibold text-gray-600"
-                        >
-                            Status
-                        </th>
-                        <th class="px-4 py-3 text-right"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr
-                        v-for="(a, i) in filtered"
-                        :key="a.id"
-                        class="border-b border-gray-50 last:border-0 transition-colors hover:bg-green-50/30"
-                        :class="i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'"
-                    >
-                        <td class="px-5 py-3 font-mono text-gray-400">
-                            {{ a.id }}
-                        </td>
-                        <td class="px-4 py-3">
-                            <span
-                                class="flex items-center gap-1.5 rounded-full px-2 py-0.5 font-medium"
-                                :style="{
-                                    background: `${
-                                        PROGRAM_COLORS[a.program] ?? '#6b7280'
-                                    }1a`,
-                                    color:
-                                        PROGRAM_COLORS[a.program] ?? '#6b7280',
-                                }"
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[720px] text-xs">
+                    <thead class="border-b border-gray-100 bg-gray-50">
+                        <tr>
+                            <th
+                                class="px-5 py-3 text-left font-semibold text-gray-600"
                             >
+                                ID
+                            </th>
+                            <th
+                                class="px-4 py-3 text-left font-semibold text-gray-600"
+                            >
+                                Program
+                            </th>
+                            <th
+                                class="px-4 py-3 text-left font-semibold text-gray-600"
+                            >
+                                Recipient
+                            </th>
+                            <th
+                                class="px-4 py-3 text-left font-semibold text-gray-600"
+                            >
+                                Barangay
+                            </th>
+                            <th
+                                class="px-4 py-3 text-left font-semibold text-gray-600"
+                            >
+                                Items
+                            </th>
+                            <th
+                                class="px-4 py-3 text-right font-semibold text-gray-600"
+                            >
+                                Value (₱)
+                            </th>
+                            <th
+                                class="px-4 py-3 text-left font-semibold text-gray-600"
+                            >
+                                Date
+                            </th>
+                            <th
+                                class="px-4 py-3 text-left font-semibold text-gray-600"
+                            >
+                                Status
+                            </th>
+                            <th class="px-4 py-3 text-right"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr
+                            v-for="(a, i) in filtered"
+                            :key="a.id"
+                            class="border-b border-gray-50 last:border-0 transition-colors hover:bg-green-50/30"
+                            :class="i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'"
+                        >
+                            <td class="px-5 py-3 font-mono text-gray-400">
+                                {{ a.id }}
+                            </td>
+                            <td class="px-4 py-3">
                                 <span
-                                    class="h-1.5 w-1.5 rounded-full"
+                                    class="flex items-center gap-1.5 rounded-full px-2 py-0.5 font-medium"
                                     :style="{
-                                        background:
+                                        background: `${
+                                            PROGRAM_COLORS[a.program] ??
+                                            '#6b7280'
+                                        }1a`,
+                                        color:
                                             PROGRAM_COLORS[a.program] ??
                                             '#6b7280',
                                     }"
-                                />
-                                {{ a.program }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center gap-2.5">
-                                <span
-                                    class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                                    :style="{
-                                        backgroundColor: avatarColor(
-                                            a.recipient
-                                        ),
-                                    }"
                                 >
-                                    {{ initials(a.recipient) }}
+                                    <span
+                                        class="h-1.5 w-1.5 rounded-full"
+                                        :style="{
+                                            background:
+                                                PROGRAM_COLORS[a.program] ??
+                                                '#6b7280',
+                                        }"
+                                    />
+                                    {{ a.program }}
                                 </span>
-                                <span class="font-medium text-gray-800">
-                                    {{ a.recipient }}
-                                </span>
-                            </div>
-                        </td>
-                        <td class="px-4 py-3 text-gray-500">
-                            {{ a.barangay }}
-                        </td>
-                        <td class="max-w-xs truncate px-4 py-3 text-gray-600">
-                            {{ a.items }}
-                        </td>
-                        <td
-                            class="px-4 py-3 text-right font-mono font-medium text-green-700"
-                        >
-                            {{
-                                a.value > 0
-                                    ? `₱${a.value.toLocaleString()}`
-                                    : '—'
-                            }}
-                        </td>
-                        <td class="px-4 py-3 text-gray-500">
-                            <span class="flex items-center gap-1">
-                                <UIcon
-                                    name="i-lucide-calendar"
-                                    class="size-[10px] text-gray-400"
-                                />
-                                {{ a.date }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3">
-                            <span
-                                :class="STATUS_STYLE[a.status] || 'status-idle'"
-                                class="flex w-fit items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-medium"
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2.5">
+                                    <span
+                                        class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                                        :style="{
+                                            backgroundColor: avatarColor(
+                                                a.recipient
+                                            ),
+                                        }"
+                                    >
+                                        {{ initials(a.recipient) }}
+                                    </span>
+                                    <span class="font-medium text-gray-800">
+                                        {{ a.recipient }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-gray-500">
+                                {{ a.barangay }}
+                            </td>
+                            <td
+                                class="max-w-xs truncate px-4 py-3 text-gray-600"
                             >
+                                {{ a.items }}
+                            </td>
+                            <td
+                                class="px-4 py-3 text-right font-mono font-medium text-green-700"
+                            >
+                                {{
+                                    a.value > 0
+                                        ? `₱${a.value.toLocaleString()}`
+                                        : '—'
+                                }}
+                            </td>
+                            <td class="px-4 py-3 text-gray-500">
+                                <span class="flex items-center gap-1">
+                                    <UIcon
+                                        name="i-lucide-calendar"
+                                        class="size-[10px] text-gray-400"
+                                    />
+                                    {{ a.date }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
                                 <span
-                                    class="h-1.5 w-1.5 rounded-full"
-                                    :style="{
-                                        background: STATUS_DOT[a.status],
-                                    }"
-                                />
-                                {{ a.status }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center justify-end gap-1">
-                                <button
-                                    type="button"
-                                    class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-                                    @click="openEditModal(a)"
+                                    :class="
+                                        STATUS_STYLE[a.status] || 'status-idle'
+                                    "
+                                    class="flex w-fit items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-medium"
                                 >
-                                    <UIcon
-                                        name="i-lucide-pencil"
-                                        class="size-3.5"
+                                    <span
+                                        class="h-1.5 w-1.5 rounded-full"
+                                        :style="{
+                                            background: STATUS_DOT[a.status],
+                                        }"
                                     />
-                                </button>
-                                <button
-                                    type="button"
-                                    class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                                    @click="askDelete(a)"
+                                    {{ a.status }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div
+                                    class="flex items-center justify-end gap-1"
                                 >
-                                    <UIcon
-                                        name="i-lucide-trash-2"
-                                        class="size-3.5"
-                                    />
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                                    <button
+                                        type="button"
+                                        class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                                        @click="openEditModal(a)"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-pencil"
+                                            class="size-3.5"
+                                        />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                        @click="askDelete(a)"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-trash-2"
+                                            class="size-3.5"
+                                        />
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -573,7 +583,7 @@ function confirmDelete() {
     <Teleport to="body">
         <div
             v-if="showRecordModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
             @click.self="showRecordModal = false"
         >
             <div
@@ -612,7 +622,7 @@ function confirmDelete() {
                     class="space-y-4"
                     @submit.prevent="showRecordModal = false"
                 >
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -658,7 +668,7 @@ function confirmDelete() {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -711,7 +721,7 @@ function confirmDelete() {
                         ></textarea>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -771,7 +781,7 @@ function confirmDelete() {
     <Teleport to="body">
         <div
             v-if="showEditModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
             @click.self="showEditModal = false"
         >
             <div
@@ -807,7 +817,7 @@ function confirmDelete() {
                 </div>
 
                 <form class="space-y-4" @submit.prevent="saveEdit">
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -850,7 +860,7 @@ function confirmDelete() {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -903,7 +913,7 @@ function confirmDelete() {
                         ></textarea>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -963,7 +973,7 @@ function confirmDelete() {
     <Teleport to="body">
         <div
             v-if="showDeleteModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
             @click.self="showDeleteModal = false"
         >
             <div

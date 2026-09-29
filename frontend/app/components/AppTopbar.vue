@@ -3,6 +3,7 @@ const props = defineProps<{ page: string }>()
 
 const auth = useAuth()
 const route = useRoute()
+const { toggleDrawer, close: closeDrawer } = useSidebar()
 
 const PAGE_TITLES: Record<string, string> = {
     dashboard: 'Dashboard',
@@ -58,11 +59,15 @@ watch(
     () => closeMenu()
 )
 
-onMounted(() => {
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeMenu()
-    })
-})
+// Both the user menu and the sidebar drawer dismiss on Escape.
+function onKeydown(e: KeyboardEvent) {
+    if (e.key !== 'Escape') return
+    closeMenu()
+    closeDrawer()
+}
+
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
 const handleLogout = async () => {
     await auth.logout()
@@ -72,14 +77,29 @@ const handleLogout = async () => {
 
 <template>
     <header
-        class="relative flex h-14 flex-shrink-0 items-center justify-between border-b border-gray-200 bg-white px-5 z-20"
+        class="relative z-20 flex h-14 flex-shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 sm:px-5"
     >
-        <div class="flex items-center gap-2">
-            <div class="text-xs text-gray-400">
+        <div class="flex min-w-0 items-center gap-2">
+            <button
+                type="button"
+                class="-ml-1 shrink-0 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 lg:hidden"
+                aria-label="Open navigation"
+                @click="toggleDrawer"
+            >
+                <UIcon name="i-lucide-menu" class="size-5" />
+            </button>
+            <!--
+                The office name is the first thing to go when width is tight;
+                the page title is what the user is actually reading.
+            -->
+            <div class="hidden truncate text-xs text-gray-400 sm:block">
                 City Agriculture Office · San Fernando, Pampanga
             </div>
-            <UIcon name="i-lucide-chevron-right" class="size-3 text-gray-300" />
-            <div class="text-xs font-semibold text-gray-700">
+            <UIcon
+                name="i-lucide-chevron-right"
+                class="hidden size-3 shrink-0 text-gray-300 sm:block"
+            />
+            <div class="truncate text-xs font-semibold text-gray-700">
                 {{ PAGE_TITLES[page] || page }}
             </div>
         </div>
@@ -121,7 +141,7 @@ const handleLogout = async () => {
             >
                 <div
                     v-if="showMenu"
-                    class="absolute right-0 top-full mt-2 w-60 origin-top-right overflow-hidden rounded-xl border border-gray-100 bg-white shadow-xl"
+                    class="absolute right-0 top-full mt-2 w-60 max-w-[calc(100vw-2rem)] origin-top-right overflow-hidden rounded-xl border border-gray-100 bg-white shadow-xl"
                     role="menu"
                 >
                     <div

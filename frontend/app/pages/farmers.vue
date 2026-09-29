@@ -361,7 +361,7 @@ onMounted(loadFarmers)
 
 <template>
     <!-- Farmer Detail View -->
-    <div v-if="selectedFarmer" class="p-6">
+    <div v-if="selectedFarmer" class="p-4 sm:p-6">
         <div class="max-w-5xl">
             <button
                 type="button"
@@ -373,15 +373,17 @@ onMounted(loadFarmers)
             </button>
 
             <!-- Profile Header -->
-            <div class="alps-card mb-5 p-6">
-                <div class="flex items-start gap-5">
+            <div class="alps-card mb-5 p-4 sm:p-6">
+                <div class="flex flex-col items-start gap-5 sm:flex-row">
                     <div
                         class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-[#5cba5c] to-[#2f7d2f] text-xl font-bold text-white shadow-lg shadow-black/10"
                     >
                         {{ initials(selectedFarmer.name) }}
                     </div>
-                    <div class="flex-1">
-                        <div class="flex items-start justify-between">
+                    <div class="min-w-0 flex-1">
+                        <div
+                            class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+                        >
                             <div>
                                 <div class="flex items-center gap-3">
                                     <h2 class="text-xl font-bold text-gray-900">
@@ -407,7 +409,7 @@ onMounted(loadFarmers)
                                     </span>
                                 </div>
                             </div>
-                            <div class="flex gap-2">
+                            <div class="flex flex-wrap gap-2">
                                 <button
                                     type="button"
                                     class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
@@ -424,7 +426,7 @@ onMounted(loadFarmers)
                             </div>
                         </div>
                         <div
-                            class="mt-4 grid grid-cols-4 gap-4 border-t border-gray-100 pt-4"
+                            class="mt-4 grid grid-cols-2 gap-4 border-t border-gray-100 pt-4 lg:grid-cols-4"
                         >
                             <div
                                 v-for="field in profileFields"
@@ -450,7 +452,7 @@ onMounted(loadFarmers)
             </div>
 
             <!-- Stats Row -->
-            <div class="mb-5 grid grid-cols-4 gap-4">
+            <div class="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <div
                     v-for="stat in detailStats"
                     :key="stat.label"
@@ -490,60 +492,66 @@ onMounted(loadFarmers)
                 >
                     No parcels registered for this farmer.
                 </div>
-                <table v-else class="w-full text-xs">
-                    <thead>
-                        <tr class="border-b border-gray-100 text-gray-400">
-                            <th class="pb-2 text-left font-medium">
-                                Parcel Code
-                            </th>
-                            <th class="pb-2 text-left font-medium">Barangay</th>
-                            <th class="pb-2 text-right font-medium">
-                                Area (ha)
-                            </th>
-                            <th class="pb-2 text-left font-medium">
-                                Land Status
-                            </th>
-                            <th class="pb-2 text-left font-medium">
-                                Current Use
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr
-                            v-for="p in selectedFarmerParcels"
-                            :key="p.parcel_code"
-                            class="border-b border-gray-50 last:border-0 hover:bg-gray-50/50"
-                        >
-                            <td class="py-2.5 font-mono text-gray-700">
-                                {{ p.parcel_code }}
-                            </td>
-                            <td class="py-2.5 text-gray-600">
-                                {{ p.barangay }}
-                            </td>
-                            <td class="py-2.5 text-right font-mono">
-                                {{ p.area_hectares }}
-                            </td>
-                            <td class="py-2.5">
-                                <span
-                                    :class="parcelStatusClass(p.land_status)"
-                                    class="rounded px-2 py-0.5 text-[10px] font-medium"
-                                >
-                                    {{ p.land_status }}
-                                </span>
-                            </td>
-                            <td class="py-2.5 text-gray-600">
-                                {{ p.current_use ?? '—' }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div v-else class="overflow-x-auto">
+                    <table class="w-full min-w-[560px] text-xs">
+                        <thead>
+                            <tr class="border-b border-gray-100 text-gray-400">
+                                <th class="pb-2 text-left font-medium">
+                                    Parcel Code
+                                </th>
+                                <th class="pb-2 text-left font-medium">
+                                    Barangay
+                                </th>
+                                <th class="pb-2 text-right font-medium">
+                                    Area (ha)
+                                </th>
+                                <th class="pb-2 text-left font-medium">
+                                    Land Status
+                                </th>
+                                <th class="pb-2 text-left font-medium">
+                                    Current Use
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                v-for="p in selectedFarmerParcels"
+                                :key="p.parcel_code"
+                                class="border-b border-gray-50 last:border-0 hover:bg-gray-50/50"
+                            >
+                                <td class="py-2.5 font-mono text-gray-700">
+                                    {{ p.parcel_code }}
+                                </td>
+                                <td class="py-2.5 text-gray-600">
+                                    {{ p.barangay }}
+                                </td>
+                                <td class="py-2.5 text-right font-mono">
+                                    {{ p.area_hectares }}
+                                </td>
+                                <td class="py-2.5">
+                                    <span
+                                        :class="
+                                            parcelStatusClass(p.land_status)
+                                        "
+                                        class="rounded px-2 py-0.5 text-[10px] font-medium"
+                                    >
+                                        {{ p.land_status }}
+                                    </span>
+                                </td>
+                                <td class="py-2.5 text-gray-600">
+                                    {{ p.current_use ?? '—' }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Farmers Registry List -->
-    <div v-else class="p-6">
-        <div class="mb-6 flex items-center justify-between">
+    <div v-else class="p-4 sm:p-6">
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">
                     Farmers Registry
@@ -562,7 +570,7 @@ onMounted(loadFarmers)
         </div>
 
         <!-- Summary Cards -->
-        <div class="mb-5 grid grid-cols-4 gap-4">
+        <div class="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
             <div
                 v-for="card in summaryCards"
                 :key="card.label"
@@ -645,8 +653,8 @@ onMounted(loadFarmers)
         </div>
 
         <!-- Table -->
-        <div class="alps-card overflow-hidden">
-            <table class="w-full text-xs">
+        <div class="alps-card overflow-x-auto">
+            <table class="w-full min-w-[880px] text-xs">
                 <thead class="border-b border-gray-100 bg-gray-50">
                     <tr>
                         <th
@@ -797,7 +805,7 @@ onMounted(loadFarmers)
     <Teleport to="body">
         <div
             v-if="showRegisterModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
             @click.self="showRegisterModal = false"
         >
             <div
@@ -914,7 +922,7 @@ onMounted(loadFarmers)
     <Teleport to="body">
         <div
             v-if="showEditModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
             @click.self="showEditModal = false"
         >
             <div
@@ -940,7 +948,7 @@ onMounted(loadFarmers)
                 </div>
 
                 <form class="space-y-4" @submit.prevent="showEditModal = false">
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"

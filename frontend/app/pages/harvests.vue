@@ -371,8 +371,8 @@ function confirmDelete() {
 </script>
 
 <template>
-    <div class="space-y-6 p-6">
-        <div class="flex items-center justify-between">
+    <div class="space-y-6 p-4 sm:p-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">Harvests</h1>
                 <p class="mt-0.5 text-sm text-gray-500">
@@ -390,7 +390,7 @@ function confirmDelete() {
         </div>
 
         <!-- KPIs -->
-        <div class="grid grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <div
                 v-for="kpi in kpis"
                 :key="kpi.label"
@@ -535,181 +535,193 @@ function confirmDelete() {
                     {{ filtered.length }} of {{ harvestRecords.length }} shown
                 </span>
             </div>
-            <table class="w-full text-xs">
-                <thead class="border-b border-gray-100 bg-gray-50">
-                    <tr>
-                        <th
-                            class="px-5 py-3 text-left font-semibold text-gray-600"
-                        >
-                            ID
-                        </th>
-                        <th
-                            class="px-4 py-3 text-left font-semibold text-gray-600"
-                        >
-                            Farmer
-                        </th>
-                        <th
-                            class="px-4 py-3 text-left font-semibold text-gray-600"
-                        >
-                            Crop
-                        </th>
-                        <th
-                            class="px-4 py-3 text-left font-semibold text-gray-600"
-                        >
-                            Barangay
-                        </th>
-                        <th
-                            class="px-4 py-3 text-right font-semibold text-gray-600"
-                        >
-                            Area (ha)
-                        </th>
-                        <th
-                            class="px-4 py-3 text-right font-semibold text-gray-600"
-                        >
-                            Production (kg)
-                        </th>
-                        <th
-                            class="px-4 py-3 text-right font-semibold text-gray-600"
-                        >
-                            t/ha
-                        </th>
-                        <th
-                            class="px-4 py-3 text-left font-semibold text-gray-600"
-                        >
-                            Date
-                        </th>
-                        <th
-                            class="px-4 py-3 text-left font-semibold text-gray-600"
-                        >
-                            Status
-                        </th>
-                        <th class="px-4 py-3 text-right"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr
-                        v-for="(h, i) in filtered"
-                        :key="h.id"
-                        class="border-b border-gray-50 last:border-0 transition-colors hover:bg-green-50/30"
-                        :class="i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'"
-                    >
-                        <td class="px-5 py-3 font-mono text-gray-400">
-                            {{ h.id }}
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center gap-2.5">
-                                <span
-                                    class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                                    :style="{
-                                        backgroundColor: avatarColor(h.farmer),
-                                    }"
-                                >
-                                    {{ initials(h.farmer) }}
-                                </span>
-                                <span class="font-medium text-gray-800">
-                                    {{ h.farmer }}
-                                </span>
-                            </div>
-                        </td>
-                        <td class="px-4 py-3">
-                            <span class="flex items-center gap-1.5">
-                                <span
-                                    class="h-2 w-2 flex-shrink-0 rounded-full"
-                                    :style="{
-                                        background:
-                                            CROP_COLORS[h.crop] ?? '#94a3b8',
-                                    }"
-                                />
-                                <span class="text-gray-600">{{ h.crop }}</span>
-                            </span>
-                        </td>
-                        <td class="px-4 py-3 text-gray-500">
-                            <span class="flex items-center gap-1">
-                                <UIcon
-                                    name="i-lucide-map-pin"
-                                    class="size-[10px] text-gray-400"
-                                />
-                                {{ h.barangay }}
-                            </span>
-                        </td>
-                        <td
-                            class="px-4 py-3 text-right font-mono font-semibold text-gray-900"
-                        >
-                            {{ h.area_hectares }}
-                        </td>
-                        <td
-                            class="px-4 py-3 text-right font-mono font-semibold text-green-700"
-                        >
-                            {{ h.production_kg?.toLocaleString() ?? '—' }}
-                        </td>
-                        <td
-                            class="px-4 py-3 text-right font-mono text-gray-700"
-                        >
-                            {{ h.yield_per_hectare ?? '—' }}
-                        </td>
-                        <td class="px-4 py-3">
-                            <div>
-                                <div class="text-gray-500">
-                                    {{ h.harvest_date }}
-                                </div>
-                                <div
-                                    v-if="h.production_kg == null"
-                                    class="flex items-center gap-1 text-[10px] font-semibold text-[#2d6a2d]"
-                                >
-                                    <UIcon
-                                        name="i-lucide-hourglass"
-                                        class="size-2.5"
-                                    />
-                                    in {{ daysUntil(h.harvest_date) }} days
-                                </div>
-                                <div v-else class="text-[10px] text-gray-400">
-                                    completed
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-4 py-3">
-                            <span
-                                :class="statusClass(harvestStatus(h))"
-                                class="flex w-fit items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-medium"
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[720px] text-xs">
+                    <thead class="border-b border-gray-100 bg-gray-50">
+                        <tr>
+                            <th
+                                class="px-5 py-3 text-left font-semibold text-gray-600"
                             >
+                                ID
+                            </th>
+                            <th
+                                class="px-4 py-3 text-left font-semibold text-gray-600"
+                            >
+                                Farmer
+                            </th>
+                            <th
+                                class="px-4 py-3 text-left font-semibold text-gray-600"
+                            >
+                                Crop
+                            </th>
+                            <th
+                                class="px-4 py-3 text-left font-semibold text-gray-600"
+                            >
+                                Barangay
+                            </th>
+                            <th
+                                class="px-4 py-3 text-right font-semibold text-gray-600"
+                            >
+                                Area (ha)
+                            </th>
+                            <th
+                                class="px-4 py-3 text-right font-semibold text-gray-600"
+                            >
+                                Production (kg)
+                            </th>
+                            <th
+                                class="px-4 py-3 text-right font-semibold text-gray-600"
+                            >
+                                t/ha
+                            </th>
+                            <th
+                                class="px-4 py-3 text-left font-semibold text-gray-600"
+                            >
+                                Date
+                            </th>
+                            <th
+                                class="px-4 py-3 text-left font-semibold text-gray-600"
+                            >
+                                Status
+                            </th>
+                            <th class="px-4 py-3 text-right"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr
+                            v-for="(h, i) in filtered"
+                            :key="h.id"
+                            class="border-b border-gray-50 last:border-0 transition-colors hover:bg-green-50/30"
+                            :class="i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'"
+                        >
+                            <td class="px-5 py-3 font-mono text-gray-400">
+                                {{ h.id }}
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2.5">
+                                    <span
+                                        class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                                        :style="{
+                                            backgroundColor: avatarColor(
+                                                h.farmer
+                                            ),
+                                        }"
+                                    >
+                                        {{ initials(h.farmer) }}
+                                    </span>
+                                    <span class="font-medium text-gray-800">
+                                        {{ h.farmer }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="flex items-center gap-1.5">
+                                    <span
+                                        class="h-2 w-2 flex-shrink-0 rounded-full"
+                                        :style="{
+                                            background:
+                                                CROP_COLORS[h.crop] ??
+                                                '#94a3b8',
+                                        }"
+                                    />
+                                    <span class="text-gray-600">{{
+                                        h.crop
+                                    }}</span>
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-gray-500">
+                                <span class="flex items-center gap-1">
+                                    <UIcon
+                                        name="i-lucide-map-pin"
+                                        class="size-[10px] text-gray-400"
+                                    />
+                                    {{ h.barangay }}
+                                </span>
+                            </td>
+                            <td
+                                class="px-4 py-3 text-right font-mono font-semibold text-gray-900"
+                            >
+                                {{ h.area_hectares }}
+                            </td>
+                            <td
+                                class="px-4 py-3 text-right font-mono font-semibold text-green-700"
+                            >
+                                {{ h.production_kg?.toLocaleString() ?? '—' }}
+                            </td>
+                            <td
+                                class="px-4 py-3 text-right font-mono text-gray-700"
+                            >
+                                {{ h.yield_per_hectare ?? '—' }}
+                            </td>
+                            <td class="px-4 py-3">
+                                <div>
+                                    <div class="text-gray-500">
+                                        {{ h.harvest_date }}
+                                    </div>
+                                    <div
+                                        v-if="h.production_kg == null"
+                                        class="flex items-center gap-1 text-[10px] font-semibold text-[#2d6a2d]"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-hourglass"
+                                            class="size-2.5"
+                                        />
+                                        in {{ daysUntil(h.harvest_date) }} days
+                                    </div>
+                                    <div
+                                        v-else
+                                        class="text-[10px] text-gray-400"
+                                    >
+                                        completed
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
                                 <span
-                                    class="h-1.5 w-1.5 rounded-full"
-                                    :class="
-                                        harvestStatus(h) === 'Completed'
-                                            ? 'bg-[#166534]'
-                                            : 'bg-[#a16207]'
-                                    "
-                                />
-                                {{ harvestStatus(h) }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center justify-end gap-1">
-                                <button
-                                    type="button"
-                                    class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-                                    @click="openEditModal(h)"
+                                    :class="statusClass(harvestStatus(h))"
+                                    class="flex w-fit items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-medium"
                                 >
-                                    <UIcon
-                                        name="i-lucide-pencil"
-                                        class="size-3.5"
+                                    <span
+                                        class="h-1.5 w-1.5 rounded-full"
+                                        :class="
+                                            harvestStatus(h) === 'Completed'
+                                                ? 'bg-[#166534]'
+                                                : 'bg-[#a16207]'
+                                        "
                                     />
-                                </button>
-                                <button
-                                    type="button"
-                                    class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                                    @click="askDelete(h)"
+                                    {{ harvestStatus(h) }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div
+                                    class="flex items-center justify-end gap-1"
                                 >
-                                    <UIcon
-                                        name="i-lucide-trash-2"
-                                        class="size-3.5"
-                                    />
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                                    <button
+                                        type="button"
+                                        class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                                        @click="openEditModal(h)"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-pencil"
+                                            class="size-3.5"
+                                        />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                        @click="askDelete(h)"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-trash-2"
+                                            class="size-3.5"
+                                        />
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -717,7 +729,7 @@ function confirmDelete() {
     <Teleport to="body">
         <div
             v-if="showRecordModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
             @click.self="showRecordModal = false"
         >
             <div
@@ -756,7 +768,7 @@ function confirmDelete() {
                     class="space-y-4"
                     @submit.prevent="showRecordModal = false"
                 >
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -801,7 +813,7 @@ function confirmDelete() {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -838,7 +850,7 @@ function confirmDelete() {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -910,7 +922,7 @@ function confirmDelete() {
     <Teleport to="body">
         <div
             v-if="showEditModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
             @click.self="showEditModal = false"
         >
             <div
@@ -946,7 +958,7 @@ function confirmDelete() {
                 </div>
 
                 <form class="space-y-4" @submit.prevent="saveEdit">
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -991,7 +1003,7 @@ function confirmDelete() {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -1028,7 +1040,7 @@ function confirmDelete() {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -1100,7 +1112,7 @@ function confirmDelete() {
     <Teleport to="body">
         <div
             v-if="showDeleteModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
             @click.self="showDeleteModal = false"
         >
             <div

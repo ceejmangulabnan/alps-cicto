@@ -17,8 +17,8 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <div class="alps-card flex-1 overflow-hidden">
-        <table class="w-full text-xs">
+    <div class="alps-card flex-1 overflow-x-auto">
+        <table class="w-full min-w-[640px] text-xs">
             <thead class="border-b border-gray-100 bg-gray-50">
                 <tr>
                     <th class="px-4 py-3 text-left font-semibold text-gray-600">

@@ -35,8 +35,12 @@ const {
 </script>
 
 <template>
+    <!--
+        A fixed side panel has no room below `sm`, where it would leave the map
+        as a sliver. There it becomes a full-height sheet instead.
+    -->
     <aside
-        class="w-80 shrink-0 overflow-y-auto border-l border-gray-200 bg-white p-5"
+        class="w-full shrink-0 overflow-y-auto border-l border-gray-200 bg-white p-4 sm:w-80 sm:p-5"
     >
         <div class="mb-5 flex items-start justify-between">
             <div>

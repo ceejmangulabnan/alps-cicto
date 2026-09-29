@@ -49,9 +49,11 @@ const tenantNames = (farmers: Array<{ name: string }>) =>
                     backgroundImage: `linear-gradient(90deg, ${farmStatusDot(farm.farmer_status)}, transparent)`,
                 }"
             />
-            <div class="p-5">
-                <div class="flex items-start justify-between">
-                    <div>
+            <div class="p-4 sm:p-5">
+                <div
+                    class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+                >
+                    <div class="min-w-0">
                         <h3 class="text-sm font-bold text-gray-800">
                             {{ farm.name }}
                         </h3>

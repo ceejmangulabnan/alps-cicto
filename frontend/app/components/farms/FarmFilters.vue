@@ -21,8 +21,8 @@ const filters: FarmStatusFilter[] = ['All', ...FARM_STATUS_OPTIONS]
 
 <template>
     <div class="mb-5 space-y-3">
-        <div class="flex items-center gap-3">
-            <div class="relative max-w-xs flex-1">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+            <div class="relative w-full max-w-xs sm:flex-1">
                 <UIcon
                     name="i-lucide-search"
                     class="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-gray-400"
@@ -49,7 +49,7 @@ const filters: FarmStatusFilter[] = ['All', ...FARM_STATUS_OPTIONS]
                 </button>
             </div>
             <div
-                class="ml-auto flex items-center gap-1.5 text-xs text-gray-400"
+                class="flex items-center gap-1.5 text-xs text-gray-400 sm:ml-auto"
             >
                 <UIcon name="i-lucide-filter" class="size-3" />
                 {{ filteredCount }} of {{ totalCount }} farms

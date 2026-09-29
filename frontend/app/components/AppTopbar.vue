@@ -10,7 +10,7 @@ const PAGE_TITLES: Record<string, string> = {
     map: 'Agricultural Map',
     farmers: 'Farmers',
     farms: 'Farms & Parcels',
-    'parcels-id': 'Parcel Details',
+    'parcels-code': 'Parcel Details',
     crops: 'Planting & Crops',
     harvests: 'Harvests',
     inspections: 'Inspections',

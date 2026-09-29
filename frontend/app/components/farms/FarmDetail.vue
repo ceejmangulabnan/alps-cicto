@@ -170,7 +170,7 @@ const tenantNames = (farmers: Array<{ name: string }>) =>
                         <NuxtLink
                             v-for="parcel in parcels"
                             :key="parcel.documentId"
-                            :to="`/parcels/${parcel.documentId}`"
+                            :to="`/parcels/${parcel.parcel_code}`"
                             class="block cursor-pointer rounded px-1 py-0.5 text-[11px] transition-colors hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none"
                         >
                             <div

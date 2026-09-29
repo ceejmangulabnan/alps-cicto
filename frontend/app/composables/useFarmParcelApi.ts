@@ -290,6 +290,25 @@ export const useFarmParcelApi = () => {
         )
     }
 
+    /**
+     * The hub variant of a code lookup. `parcel_code` is the human readable
+     * identifier, so the route is `/parcels/<code>`; this resolves it to its
+     * document and returns null when no published parcel carries that code.
+     * Unknown codes answer a 200 with an empty list rather than a 404, so
+     * "no such parcel" is signalled by the `null` rather than an exception.
+     */
+    const getHubByCode = async (
+        parcelCode: string
+    ): Promise<FarmParcelResponse | null> => {
+        const query = new URLSearchParams(hubPopulateQuery)
+        query.set('filters[parcel_code][$eq]', parcelCode)
+        const response = await authFetch<FarmParcelListResponse>(
+            `${baseUrl}?${query.toString()}`
+        )
+        const parcel = response.data[0]
+        return parcel ? { data: parcel } : null
+    }
+
     const update = async (
         documentId: string,
         data: UpdateParcelData
@@ -308,6 +327,7 @@ export const useFarmParcelApi = () => {
         getAll,
         getById,
         getHubById,
+        getHubByCode,
         update,
     }
 }

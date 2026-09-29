@@ -162,6 +162,7 @@ export default {
                     'api::inspection.inspection.update',
                     'api::inspection.inspection.destroy',
                     'api::inspection.inspection.count',
+                    'api::inspection.custom-inspection.destroy',
                     // Harvest permissions
                     'api::harvest.harvest.find',
                     'api::harvest.harvest.findOne',
@@ -250,6 +251,7 @@ export default {
                     'api::inspection.inspection.update',
                     'api::inspection.inspection.destroy',
                     'api::inspection.inspection.count',
+                    'api::inspection.custom-inspection.destroy',
                     // Harvest permissions
                     'api::harvest.harvest.find',
                     'api::harvest.harvest.findOne',

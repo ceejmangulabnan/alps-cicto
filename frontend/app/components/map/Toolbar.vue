@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import type { FarmParcel } from '~/composables/useFarmParcelApi'
+import type { DrawMode } from '~/composables/useParcelDrawing'
 
 defineProps<{
     parcelCount: number
     parcels: FarmParcel[]
     selectedParcelId: string | null
+    mode: DrawMode
 }>()
 
 const emit = defineEmits<{
     edit: []
+    done: []
     add: []
     selectParcel: [documentId: string]
     fitAll: []
@@ -61,22 +64,52 @@ const emit = defineEmits<{
                 }}</span>
                 parcel{{ parcelCount === 1 ? '' : 's' }} drawn
             </span>
+            <!--
+                While drawing, the create flow owns the interaction and the Edit
+                button is disabled so a stray click cannot abandon a partial
+                boundary. It becomes the "Done Editing" exit button while edit
+                mode is active.
+            -->
             <button
                 type="button"
-                :disabled="parcelCount === 0"
-                class="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
-                @click="emit('edit')"
+                :disabled="
+                    mode !== 'edit' && (mode === 'plot' || parcelCount === 0)
+                "
+                :class="[
+                    'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium shadow-sm sm:px-4',
+                    mode === 'edit'
+                        ? 'bg-amber-500 text-white hover:bg-amber-600'
+                        : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50',
+                ]"
+                @click="mode === 'edit' ? emit('done') : emit('edit')"
             >
-                <UIcon name="i-lucide-pencil" class="size-3.5" />
-                Edit
+                <UIcon
+                    :name="
+                        mode === 'edit' ? 'i-lucide-check' : 'i-lucide-pencil'
+                    "
+                    class="size-3.5"
+                />
+                {{ mode === 'edit' ? 'Done Editing' : 'Edit' }}
             </button>
             <button
                 type="button"
-                class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-[#245524] sm:px-4"
+                :class="[
+                    'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white shadow-sm sm:px-4',
+                    mode === 'plot'
+                        ? 'bg-[#2d6a2d] ring-2 ring-[#2d6a2d]/25 ring-offset-1 hover:bg-[#245524]'
+                        : 'bg-[#2d6a2d] hover:bg-[#245524]',
+                ]"
                 @click="emit('add')"
             >
-                <UIcon name="i-lucide-layers" class="size-3.5" />
-                Add Parcel
+                <UIcon
+                    :name="
+                        mode === 'plot'
+                            ? 'i-lucide-pen-tool'
+                            : 'i-lucide-layers'
+                    "
+                    class="size-3.5"
+                />
+                {{ mode === 'plot' ? 'Drawing…' : 'Add Parcel' }}
             </button>
         </div>
     </div>

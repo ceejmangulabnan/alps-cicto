@@ -1,18 +1,56 @@
 <script setup lang="ts">
-const props = defineProps<{ isEditing: boolean }>()
+import type { DrawMode } from '~/composables/useParcelDrawing'
+
+const props = defineProps<{
+    mode: DrawMode
+    /** A parcel is selected in edit mode (side panel open). */
+    isEditing: boolean
+}>()
 
 /**
- * Dismissible, and dismissed when editing ends: the guide is written for
- * plotting a boundary, so leaving it up over the canvas during every later
- * edit just covers the map it is describing.
+ * Dismissible, and re-shown whenever the mode changes so the panel always
+ * matches what the map is currently doing.
  */
 const dismissed = ref(false)
 watch(
-    () => props.isEditing,
+    () => props.mode,
     () => {
         dismissed.value = false
     }
 )
+
+const title = computed(() =>
+    props.mode === 'plot'
+        ? 'Plotting Guide'
+        : props.isEditing
+          ? 'Editing Parcel'
+          : 'Edit Mode'
+)
+
+const hintColor = computed(() =>
+    props.mode === 'edit' ? 'bg-amber-500' : 'bg-[#2d6a2d]'
+)
+
+const hints = computed<string[]>(() => {
+    if (props.mode === 'plot') {
+        return [
+            'Click points to trace the parcel boundary',
+            'Click the first point again to close the parcel',
+            'Press Esc to cancel the draft',
+        ]
+    }
+    if (props.isEditing) {
+        return [
+            'Drag the outline or its dots to reshape the parcel',
+            'Edit the parcel details in the side panel',
+            'Done Editing in the toolbar (or Esc) to exit',
+        ]
+    }
+    return [
+        'Click a parcel on the map to edit it',
+        'Done Editing in the toolbar (or Esc) to exit',
+    ]
+})
 </script>
 
 <template>
@@ -22,12 +60,20 @@ watch(
     >
         <div class="flex items-center gap-2">
             <span
-                class="flex h-6 w-6 items-center justify-center rounded-md bg-[#2d6a2d]"
+                class="flex h-6 w-6 items-center justify-center rounded-md"
+                :class="mode === 'edit' ? 'bg-amber-500' : 'bg-[#2d6a2d]'"
             >
-                <UIcon name="i-lucide-pen-tool" class="size-3 text-white" />
+                <UIcon
+                    :name="
+                        mode === 'edit'
+                            ? 'i-lucide-pencil'
+                            : 'i-lucide-pen-tool'
+                    "
+                    class="size-3 text-white"
+                />
             </span>
             <span class="text-xs font-semibold text-gray-800">
-                {{ isEditing ? 'Edit Parcel' : 'Plotting Guide' }}
+                {{ title }}
             </span>
             <button
                 type="button"
@@ -39,17 +85,16 @@ watch(
             </button>
         </div>
         <div class="mt-2.5 space-y-1.5 text-[11px] text-gray-500">
-            <div class="flex items-center gap-2">
-                <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#2d6a2d]" />
-                Click points to trace the parcel boundary
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-[#2d6a2d]" />
-                Click the first point again to close the parcel
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                Use Edit mode to adjust existing vertices
+            <div
+                v-for="hint in hints"
+                :key="hint"
+                class="flex items-center gap-2"
+            >
+                <span
+                    class="h-1.5 w-1.5 shrink-0 rounded-full"
+                    :class="hintColor"
+                />
+                {{ hint }}
             </div>
         </div>
     </div>

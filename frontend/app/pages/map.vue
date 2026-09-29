@@ -65,7 +65,6 @@ const {
     enterPlotMode,
     enterViewMode,
     enterEditMode,
-    markViewMode,
     selectParcel,
     clearSelection,
     discardDraft,
@@ -114,8 +113,17 @@ function startEditing() {
     enterEditMode()
 }
 
+/** The toolbar's "Done Editing" button: leave edit mode for view mode. */
+function exitEditMode() {
+    clearSelection()
+    showSidebar.value = false
+    enterViewMode()
+    void router.replace({ path: '/map' })
+}
+
 function openAddParcel() {
-    // Order matters: clearing the selection deselects, which can reset the mode.
+    // Clearing the selection runs the deselect handler first, which drops edit
+    // mode back to view — so this must happen before enterPlotMode() below.
     discardDraft()
     clearSelection()
     showSidebar.value = true
@@ -190,9 +198,28 @@ function onParcelSelect(id: string | number) {
 
 function onParcelDeselect(id: string | number) {
     if (selectedParcelId.value !== String(id)) return
+    if (showSidebar.value) {
+        showSidebar.value = false
+        sidebarKey.value += 1
+    }
     selectedParcelId.value = null
     selectedParcel.value = null
-    if (!showSidebar.value) markViewMode()
+
+    // Esc (or an empty-map click) deselected the parcel while edit mode was
+    // active. That is the implicit "leave edit mode" gesture, so drop back to
+    // view mode — unless the scene re-entered edit mode before the deferred
+    // check runs, e.g. clicking straight from one parcel to another.
+    if (drawMode.value === 'edit') {
+        void nextTick(() => {
+            if (
+                drawMode.value === 'edit' &&
+                !selectedParcelId.value &&
+                !showSidebar.value
+            ) {
+                enterViewMode()
+            }
+        })
+    }
 }
 
 function onMapLoad(payload: { map: MaplibreMap }) {
@@ -233,7 +260,9 @@ function onMapLoad(payload: { map: MaplibreMap }) {
             :parcel-count="parcelCount"
             :parcels="parcelList"
             :selected-parcel-id="selectedParcelId"
+            :mode="drawMode"
             @edit="startEditing"
+            @done="exitEditMode"
             @add="openAddParcel"
             @select-parcel="openParcelForEdit"
             @fit-all="fitToAllParcels"
@@ -284,6 +313,7 @@ function onMapLoad(payload: { map: MaplibreMap }) {
                         drawMode === 'plot' ||
                         drawMode === 'edit'
                     "
+                    :mode="drawMode"
                     :is-editing="isEditing"
                 />
 

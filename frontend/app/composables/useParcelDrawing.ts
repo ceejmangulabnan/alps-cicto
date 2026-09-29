@@ -2,6 +2,7 @@ import type { Map as MaplibreMap } from 'maplibre-gl'
 import {
     TerraDraw,
     TerraDrawPolygonMode,
+    TerraDrawRenderMode,
     TerraDrawSelectMode,
 } from 'terra-draw'
 import { TerraDrawMapLibreGLAdapter } from 'terra-draw-maplibre-gl-adapter'
@@ -43,6 +44,14 @@ const MODE_META: Record<DrawMode, DrawModeMeta> = {
 
 const PARCEL_MODE_NAME = 'polygon'
 const SELECT_MODE_NAME = 'select'
+/**
+ * View mode runs the terra-draw instance in its read-only render mode, whose
+ * interaction handlers are no-ops, so clicking a parcel does nothing until the
+ * user enters edit or plot mode. Parcels keep their own colours either way:
+ * feature styling dispatches on the feature's declared mode, not the active
+ * instance mode.
+ */
+const RENDER_MODE_NAME = 'render'
 
 /**
  * Terra Draw validates feature ids against its id strategy, which defaults to
@@ -125,6 +134,23 @@ export const useParcelDrawing = () => {
             adapter: new TerraDrawMapLibreGLAdapter({ map }),
             idStrategy: PARCEL_ID_STRATEGY,
             modes: [
+                // Mostly for explicit mode-switching bookkeeping: a freshly
+                // started TerraDraw instance is already passive, and every
+                // parcel declares `properties.mode` = 'polygon', so its
+                // styling comes from the polygon mode below whichever instance
+                // mode is active.
+                new TerraDrawRenderMode({
+                    modeName: RENDER_MODE_NAME,
+                    // Matching parcel colours, in case anything declares
+                    // mode 'render'; saved parcels always resolve to the
+                    // polygon styling below.
+                    styles: {
+                        polygonFillColor: parcelFeatureColor,
+                        polygonOutlineColor: parcelFeatureColor,
+                        polygonFillOpacity: 0.3,
+                        polygonOutlineWidth: 2,
+                    },
+                }),
                 new TerraDrawPolygonMode({
                     modeName: PARCEL_MODE_NAME,
                     styles: {
@@ -195,8 +221,13 @@ export const useParcelDrawing = () => {
     }
 
     function setDrawMode(mode: DrawMode) {
+        if (drawMode.value === mode) return
         draw.value?.setMode(
-            mode === 'plot' ? PARCEL_MODE_NAME : SELECT_MODE_NAME
+            mode === 'plot'
+                ? PARCEL_MODE_NAME
+                : mode === 'edit'
+                  ? SELECT_MODE_NAME
+                  : RENDER_MODE_NAME
         )
         drawMode.value = mode
     }
@@ -212,14 +243,6 @@ export const useParcelDrawing = () => {
     function enterEditMode() {
         if (!draw.value || parcelCount.value === 0) return
         setDrawMode('edit')
-    }
-
-    /**
-     * Flag-only update for the deselect handler: terra-draw is already in
-     * select mode by then, and re-setting it would restart the mode.
-     */
-    function markViewMode() {
-        drawMode.value = 'view'
     }
 
     function selectParcel(parcel: FarmParcel) {
@@ -316,7 +339,6 @@ export const useParcelDrawing = () => {
         enterPlotMode,
         enterViewMode,
         enterEditMode,
-        markViewMode,
         selectParcel,
         getFeatureGeometry,
         clearSelection,

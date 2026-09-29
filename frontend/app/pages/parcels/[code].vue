@@ -254,13 +254,20 @@ const chipClass =
                             {{ farmers.length }}
                             {{ farmers.length === 1 ? 'farmer' : 'farmers' }}
                         </span>
-                        <span v-if="farm" :class="chipClass">
+                        <NuxtLink
+                            v-if="farm"
+                            :to="{
+                                path: '/farms',
+                                query: { farm: farm.documentId },
+                            }"
+                            :class="[chipClass, 'hover:text-[#2d6a2d]']"
+                        >
                             <UIcon
                                 name="i-lucide-building"
                                 class="size-3 text-gray-400"
                             />
                             {{ farm.farm_code }}
-                        </span>
+                        </NuxtLink>
                     </div>
                 </div>
             </div>
@@ -424,7 +431,19 @@ const chipClass =
                         <div class="flex justify-between gap-3">
                             <dt class="shrink-0 text-gray-500">Farm</dt>
                             <dd class="truncate text-right text-gray-800">
-                                {{ farm.name || farm.farm_code }}
+                                <NuxtLink
+                                    :to="{
+                                        path: '/farms',
+                                        query: { farm: farm.documentId },
+                                    }"
+                                    class="inline-flex items-center gap-1 font-medium text-[#2d6a2d] hover:underline"
+                                >
+                                    {{ farm.name || farm.farm_code }}
+                                    <UIcon
+                                        name="i-lucide-external-link"
+                                        class="size-3 shrink-0"
+                                    />
+                                </NuxtLink>
                             </dd>
                         </div>
                         <div class="flex justify-between gap-3">

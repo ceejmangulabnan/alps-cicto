@@ -39,6 +39,8 @@ const {
 
 const { logout } = useAuth()
 
+const route = useRoute()
+
 const tab = ref<RegistryTab>('farms')
 
 const selectedParcel = ref<ParcelRow | null>(null)
@@ -57,6 +59,15 @@ const awaitingParcels = computed(() =>
 
 onMounted(async () => {
     await Promise.all([loadFarms(), loadParcels()])
+
+    // Deep link from the parcel hub (`?farm=<documentId>`): open that farm's
+    // card even if the current search or status filter would hide it.
+    const farmId =
+        typeof route.query.farm === 'string' ? route.query.farm : undefined
+    if (farmId) {
+        const row = farms.value.find((farm) => farm.documentId === farmId)
+        if (row) selectFarm(row)
+    }
 })
 
 onBeforeUnmount(() => {

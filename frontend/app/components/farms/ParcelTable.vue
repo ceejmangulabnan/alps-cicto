@@ -61,19 +61,36 @@ const emit = defineEmits<{
                         {{ p.parcel_code }}
                     </td>
                     <td class="px-4 py-2.5">
-                        <div class="flex items-center gap-2.5">
-                            <span
-                                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                                :style="{
-                                    backgroundColor: avatarColor(p.farmerName),
-                                }"
+                        <!--
+                            One row per tendee. A parcel usually has a single
+                            farmer, but several may share it, and each needs their
+                            own initials.
+                        -->
+                        <div
+                            v-if="p.farmerNames.length > 0"
+                            class="space-y-1.5"
+                        >
+                            <div
+                                v-for="name in p.farmerNames"
+                                :key="name"
+                                class="flex items-center gap-2.5"
                             >
-                                {{ initials(p.farmerName) }}
-                            </span>
-                            <span class="font-medium text-gray-800">
-                                {{ p.farmerName }}
-                            </span>
+                                <span
+                                    class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                                    :style="{
+                                        backgroundColor: avatarColor(name),
+                                    }"
+                                >
+                                    {{ initials(name) }}
+                                </span>
+                                <span class="font-medium text-gray-800">
+                                    {{ name }}
+                                </span>
+                            </div>
                         </div>
+                        <span v-else class="text-gray-400">
+                            {{ p.farmerName }}
+                        </span>
                     </td>
                     <td class="px-4 py-2.5 text-gray-500">{{ p.barangay }}</td>
                     <td

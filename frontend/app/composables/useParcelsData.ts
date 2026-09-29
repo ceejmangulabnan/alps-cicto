@@ -3,11 +3,17 @@ import { toLoadError, type LoadError } from '~/utils/loadError'
 
 export type ParcelStatusFilter = 'All' | LandStatus
 
-const PARCEL_POPULATE = ['farm', 'farm.barangay', 'farm.farmers']
+/**
+ * `farmers` is the parcel's own tendees. `farm.farmers` is the farm-wide rollup,
+ * which is every farmer on any of the farm's parcels, so reading a name off it
+ * would put the same farmer on all of them.
+ */
+const PARCEL_POPULATE = ['farm', 'farm.barangay', 'farm.farmers', 'farmers']
 
 const PARCEL_SUBJECT = { name: 'parcels', contentType: 'farm-parcel' } as const
 
 const UNKNOWN = 'Unknown'
+const NO_FARMER = `${UNKNOWN} farmer`
 
 /** A parcel denormalised with the farm and farmer fields the table shows. */
 export interface ParcelRow {
@@ -15,6 +21,9 @@ export interface ParcelRow {
     parcel_code: string
     farmDocumentId: string
     farm_code: string
+    /** The farmers tending this parcel specifically, by name. */
+    farmerNames: string[]
+    /** A display string for the table: every tendee, comma separated. */
     farmerName: string
     barangay: string
     area_hectares: number
@@ -24,14 +33,15 @@ export interface ParcelRow {
 
 function toParcelRow(parcel: FarmParcel): ParcelRow {
     const farm = parcel.farm
-    const farmer = farm?.farmers?.[0]
+    const farmerNames = (parcel.farmers ?? []).map((farmer) => farmer.name)
 
     return {
         documentId: parcel.documentId,
         parcel_code: parcel.parcel_code,
         farmDocumentId: farm?.documentId ?? '',
         farm_code: farm?.farm_code ?? 'Unassigned',
-        farmerName: farmer?.name ?? `${UNKNOWN} farmer`,
+        farmerNames,
+        farmerName: farmerNames.length > 0 ? farmerNames.join(', ') : NO_FARMER,
         barangay: farm?.barangay?.name ?? `${UNKNOWN} barangay`,
         area_hectares: parcel.area_hectares,
         land_status: parcel.land_status,
@@ -59,7 +69,11 @@ export const useParcelsData = () => {
         return parcels.value.filter((row) => {
             const matchesSearch =
                 !query ||
-                row.farmerName.toLowerCase().includes(query) ||
+                // Every tendee, not just the first, so searching a name finds
+                // the parcel regardless of which slot they occupy.
+                row.farmerNames.some((name) =>
+                    name.toLowerCase().includes(query)
+                ) ||
                 row.parcel_code.toLowerCase().includes(query) ||
                 row.farm_code.toLowerCase().includes(query)
 

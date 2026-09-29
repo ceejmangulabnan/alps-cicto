@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Farmer, FarmerStatus } from '~/composables/useFarmersApi'
+import type { FarmParcel } from '~/composables/useFarmParcelApi'
 
 definePageMeta({ middleware: 'auth' })
 type LandStatus =
@@ -18,27 +19,34 @@ type LandStatus =
  */
 type FarmerRow = Farmer & { parcelCount: number }
 
+/**
+ * A parcel as this page needs it: the farmer's own tendees, flattened. A parcel
+ * can have several, so the join is on documentId rather than a single code.
+ */
 type Parcel = {
+    documentId: string
     parcel_code: string
-    farmer_code: string
+    farm_code: string
     barangay: string
     area_hectares: number
     land_status: LandStatus
     current_use: string | null
+    farmerDocumentIds: string[]
 }
 
-const parcels: Parcel[] = []
+const parcels = ref<Parcel[]>([])
+
+/** The parcels a farmer tends, matched on documentId. */
+const parcelsOf = (f: Farmer) =>
+    parcels.value.filter((p) => p.farmerDocumentIds.includes(f.documentId))
+
 /**
  * A farmer has no barangay of its own: they are located by the parcels they tend,
  * and the parcels by the farms those belong to. A farmer with no parcel therefore
  * has no location to show.
  */
 const farmerBarangays = (f: Farmer): string[] => [
-    ...new Set(
-        parcels
-            .filter((p) => p.farmer_code === f.farmer_code)
-            .map((p) => p.barangay)
-    ),
+    ...new Set(parcelsOf(f).map((p) => p.barangay)),
 ]
 
 const farmerBarangay = (f: Farmer) => {
@@ -47,31 +55,55 @@ const farmerBarangay = (f: Farmer) => {
 }
 
 const { getAll, create } = useFarmersApi()
+const { getAll: getAllParcels } = useFarmParcelApi()
 
 const farmers = ref<FarmerRow[]>([])
 const loading = ref(true)
 const loadError = ref<string | null>(null)
 
-/** How many parcels each farmer tends, keyed by registry code. */
-const parcelTally = computed(() => {
-    const counts = new Map<string, number>()
-    for (const parcel of parcels) {
-        counts.set(
-            parcel.farmer_code,
-            (counts.get(parcel.farmer_code) ?? 0) + 1
-        )
+const UNKNOWN_BARANGAY = 'Unknown barangay'
+
+/**
+ * Flattens the parcel records into the shape this page joins against. Only the
+ * parcel's own `farmers` counts: `farm.farmers` is the farm-wide rollup, which
+ * would credit every farmer on the farm with every parcel in it.
+ */
+function toFarmerParcel(parcel: FarmParcel): Parcel {
+    return {
+        documentId: parcel.documentId,
+        parcel_code: parcel.parcel_code,
+        farm_code: parcel.farm?.farm_code ?? 'Unassigned',
+        barangay: parcel.farm?.barangay?.name ?? UNKNOWN_BARANGAY,
+        area_hectares: parcel.area_hectares,
+        land_status: parcel.land_status,
+        current_use: parcel.current_use ?? null,
+        farmerDocumentIds: (parcel.farmers ?? []).map(
+            (farmer) => farmer.documentId
+        ),
     }
-    return counts
-})
+}
+
+/**
+ * Loads the parcels first: they are what the farmer list's counts, areas and
+ * locations are derived from, so counting before they arrive would report every
+ * farmer as having no parcels.
+ */
+async function loadParcels() {
+    const response = await getAllParcels({
+        populate: ['farm', 'farm.barangay', 'farm.farmers', 'farmers'],
+    })
+    parcels.value = response.data.map(toFarmerParcel)
+}
 
 async function loadFarmers() {
     loading.value = true
     loadError.value = null
     try {
+        await loadParcels()
         const response = await getAll()
         farmers.value = response.data.map((farmer) => ({
             ...farmer,
-            parcelCount: parcelTally.value.get(farmer.farmer_code) ?? 0,
+            parcelCount: parcelsOf(farmer).length,
         }))
     } catch (error) {
         loadError.value =
@@ -120,13 +152,19 @@ const parcelStatusClass = (s: LandStatus) =>
                     ? 'status-converted'
                     : 'status-idle'
 
+/**
+ * Total area each farmer tends. A shared parcel counts in full for every farmer
+ * on it, matching the parcel count, rather than being split between them.
+ */
 const areaByFarmer = computed(() => {
     const totals = new Map<string, number>()
-    for (const p of parcels) {
-        totals.set(
-            p.farmer_code,
-            (totals.get(p.farmer_code) ?? 0) + p.area_hectares
-        )
+    for (const parcel of parcels.value) {
+        for (const farmerId of parcel.farmerDocumentIds) {
+            totals.set(
+                farmerId,
+                (totals.get(farmerId) ?? 0) + parcel.area_hectares
+            )
+        }
     }
     return totals
 })
@@ -222,7 +260,7 @@ const filtered = computed(() =>
 )
 
 const barangays = computed(() =>
-    [...new Set(parcels.map((p) => p.barangay))].sort()
+    [...new Set(parcels.value.map((p) => p.barangay))].sort()
 )
 
 const summaryCards = computed(() => [
@@ -242,14 +280,14 @@ const summaryCards = computed(() => [
     },
     {
         label: 'Registered Parcels',
-        val: parcels.length,
+        val: parcels.value.length,
         color: '#16a34a',
         bg: '#dcfce7',
         icon: 'i-lucide-layers',
     },
     {
         label: 'Total Registered Area',
-        val: `${parcels
+        val: `${parcels.value
             .reduce((a, p) => a + p.area_hectares, 0)
             .toFixed(1)} ha`,
         color: '#ca8a04',
@@ -259,7 +297,7 @@ const summaryCards = computed(() => [
 ])
 
 const selectedFarmerParcels = computed(() =>
-    parcels.filter((p) => p.farmer_code === selectedFarmer.value?.farmer_code)
+    selectedFarmer.value ? parcelsOf(selectedFarmer.value) : []
 )
 
 const profileFields = computed(() =>
@@ -721,9 +759,7 @@ onMounted(loadFarmers)
                             class="px-4 py-3 text-right font-mono font-semibold text-gray-900"
                         >
                             {{
-                                (areaByFarmer.get(f.farmer_code) ?? 0).toFixed(
-                                    1
-                                )
+                                (areaByFarmer.get(f.documentId) ?? 0).toFixed(1)
                             }}
                         </td>
                         <td class="px-4 py-3">

@@ -154,6 +154,7 @@ export default {
                     'api::planting-cycle.planting-cycle.update',
                     'api::planting-cycle.planting-cycle.destroy',
                     'api::planting-cycle.planting-cycle.count',
+                    'api::planting-cycle.custom-planting-cycle.destroy',
                     // Inspection permissions
                     'api::inspection.inspection.find',
                     'api::inspection.inspection.findOne',
@@ -168,6 +169,7 @@ export default {
                     'api::harvest.harvest.update',
                     'api::harvest.harvest.destroy',
                     'api::harvest.harvest.count',
+                    'api::harvest.custom-harvest.destroy',
                     // Risk Report permissions
                     'api::risk-report.risk-report.find',
                     'api::risk-report.risk-report.findOne',
@@ -240,6 +242,7 @@ export default {
                     'api::planting-cycle.planting-cycle.update',
                     'api::planting-cycle.planting-cycle.destroy',
                     'api::planting-cycle.planting-cycle.count',
+                    'api::planting-cycle.custom-planting-cycle.destroy',
                     // Inspection permissions
                     'api::inspection.inspection.find',
                     'api::inspection.inspection.findOne',
@@ -254,6 +257,7 @@ export default {
                     'api::harvest.harvest.update',
                     'api::harvest.harvest.destroy',
                     'api::harvest.harvest.count',
+                    'api::harvest.custom-harvest.destroy',
                     // Risk Report permissions
                     'api::risk-report.risk-report.find',
                     'api::risk-report.risk-report.findOne',

@@ -29,13 +29,31 @@ export interface CreateRiskReportData {
     parcel_status: RiskParcelStatus
 }
 
+export interface UpdatePlantingCycleData {
+    /** The new crop relation, as a crop documentId. */
+    crop?: string
+    variety?: string | null
+    planting_date?: string | null
+    expected_harvest?: string | null
+}
+
+export interface UpdateHarvestData {
+    harvest_date?: string
+    production_kg?: number | null
+    yield_per_hectare?: number | null
+}
+
 /**
  * Write access to the history content types that hang off a parcel
- * (crop / planting-cycle / harvest / risk-report). Kept as one composable
- * because they are only ever written from the parcel hub; the read shapes come
- * from `useFarmParcelApi` so the two cannot drift. There is deliberately no
- * navigation here: POSTing returns the created document, which the hub
+ * (crop / planting-cycle / harvest / risk-report). Read shapes come from
+ * `useFarmParcelApi` so the two cannot drift. There is deliberately no
+ * navigation here: POSTing returns the created document, which the caller
  * re-fetches wholesale rather than stitching in place.
+ *
+ * Deletes go through the custom `.../delete/:documentId` routes: the stock
+ * REST destroy action 403s on API-created documents (they carry no createdBy)
+ * even though the destroy permission is granted, while the Document Service
+ * behind the custom routes deletes them cleanly.
  *
  * New documents are created published. Strapi 5 creates drafts by default, and
  * these records have no draft workflow — a draft harvest would simply vanish
@@ -115,6 +133,53 @@ export const useFarmRecordsApi = () => {
         return response.data
     }
 
+    const updatePlantingCycle = async (
+        documentId: string,
+        data: UpdatePlantingCycleData
+    ): Promise<ParcelPlantingCycle> => {
+        const response = await authFetch<{ data: ParcelPlantingCycle }>(
+            `${baseUrl}/planting-cycles/${documentId}`,
+            {
+                method: 'PUT',
+                body: {
+                    data: {
+                        ...(data.crop ? { crop: data.crop } : {}),
+                        variety: data.variety || null,
+                        planting_date: data.planting_date || null,
+                        expected_harvest: data.expected_harvest || null,
+                    },
+                },
+            }
+        )
+        return response.data
+    }
+
+    const deletePlantingCycle = async (documentId: string): Promise<void> => {
+        await authFetch(`${baseUrl}/planting-cycles/delete/${documentId}`, {
+            method: 'DELETE',
+        })
+    }
+
+    const updateHarvest = async (
+        documentId: string,
+        data: UpdateHarvestData
+    ): Promise<ParcelHarvest> => {
+        const response = await authFetch<{ data: ParcelHarvest }>(
+            `${baseUrl}/harvests/${documentId}`,
+            {
+                method: 'PUT',
+                body: { data },
+            }
+        )
+        return response.data
+    }
+
+    const deleteHarvest = async (documentId: string): Promise<void> => {
+        await authFetch(`${baseUrl}/harvests/delete/${documentId}`, {
+            method: 'DELETE',
+        })
+    }
+
     const createRiskReport = async (
         data: CreateRiskReportData
     ): Promise<ParcelRiskReport> => {
@@ -141,7 +206,11 @@ export const useFarmRecordsApi = () => {
         getCrops,
         createCrop,
         createPlantingCycle,
+        updatePlantingCycle,
+        deletePlantingCycle,
         createHarvest,
+        updateHarvest,
+        deleteHarvest,
         createRiskReport,
     }
 }

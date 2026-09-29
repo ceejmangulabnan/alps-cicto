@@ -1,166 +1,33 @@
 <script setup lang="ts">
+import type { CycleRow } from '~/composables/useCycleRegistry'
+import type { ParcelCrop } from '~/composables/useFarmParcelApi'
+import { useFarmParcelApi } from '~/composables/useFarmParcelApi'
+import { useFarmRecordsApi } from '~/composables/useFarmRecordsApi'
+import { getErrorMessage } from '~/utils/apiError'
+import { avatarColor, initials } from '~/utils/initials'
+import { statusClass, statusDot } from '~/utils/landStatus'
+
 definePageMeta({ middleware: 'auth' })
 
 type PlantingStatus = 'Harvested' | 'Growing'
 
-type PlantingRecord = {
-    id: string
-    farmer: string
-    barangay: string
-    parcel: string
-    crop: string
-    category: string
-    variety: string
-    area_hectares: number
-    planting_date: string
-    expected_harvest: string
-    harvest_count: number
-}
+const { update: updateParcel } = useFarmParcelApi()
+const { parcels, cycles, loading, loadError, load } = useCycleRegistry()
+const {
+    getCrops,
+    createCrop,
+    createPlantingCycle,
+    updatePlantingCycle,
+    deletePlantingCycle,
+} = useFarmRecordsApi()
 
-const plantingRecords = reactive<PlantingRecord[]>([
-    {
-        id: 'PLT-001',
-        farmer: 'Ricardo Santos',
-        barangay: 'Sindalan',
-        parcel: 'PAR-001',
-        crop: 'Rice',
-        category: 'Cereal',
-        variety: 'NSIC Rc222',
-        area_hectares: 1.8,
-        planting_date: '2024-07-15',
-        expected_harvest: '2024-10-28',
-        harvest_count: 1,
-    },
-    {
-        id: 'PLT-002',
-        farmer: 'Maria Dela Cruz',
-        barangay: 'San Jose',
-        parcel: 'PAR-003',
-        crop: 'Corn',
-        category: 'Cereal',
-        variety: 'Pioneer 3177',
-        area_hectares: 1.8,
-        planting_date: '2024-09-01',
-        expected_harvest: '2024-12-22',
-        harvest_count: 0,
-    },
-    {
-        id: 'PLT-003',
-        farmer: 'Lorna Guiao',
-        barangay: 'Quebiawan',
-        parcel: 'PAR-006',
-        crop: 'Eggplant',
-        category: 'Vegetables',
-        variety: 'FL 777',
-        area_hectares: 2.1,
-        planting_date: '2024-09-20',
-        expected_harvest: '2024-12-04',
-        harvest_count: 0,
-    },
-    {
-        id: 'PLT-004',
-        farmer: 'Eduardo Pampanga',
-        barangay: 'San Felipe',
-        parcel: 'PAR-009',
-        crop: 'Corn',
-        category: 'Cereal',
-        variety: 'Dekalb 9088',
-        area_hectares: 1.9,
-        planting_date: '2024-09-10',
-        expected_harvest: '2024-12-17',
-        harvest_count: 0,
-    },
-    {
-        id: 'PLT-005',
-        farmer: 'Felicitas Ocampo',
-        barangay: 'Dolores',
-        parcel: 'PAR-010',
-        crop: 'Rice',
-        category: 'Cereal',
-        variety: 'NSIC Rc160',
-        area_hectares: 2.8,
-        planting_date: '2024-07-22',
-        expected_harvest: '2024-11-04',
-        harvest_count: 1,
-    },
-    {
-        id: 'PLT-006',
-        farmer: 'Rosario Bautista',
-        barangay: 'Telabastagan',
-        parcel: 'PAR-008',
-        crop: 'Tomato',
-        category: 'Vegetables',
-        variety: 'Diamante Max',
-        area_hectares: 1.5,
-        planting_date: '2024-10-15',
-        expected_harvest: '2025-01-13',
-        harvest_count: 0,
-    },
-])
+/** A cycle is Harvested once it holds at least one harvest record. */
+const cycleStatus = (row: CycleRow): PlantingStatus =>
+    (row.cycle.harvests?.length ?? 0) > 0 ? 'Harvested' : 'Growing'
 
-const showEditModal = ref(false)
-const editForm = reactive({
-    id: '',
-    farmer: '',
-    barangay: '',
-    parcel: '',
-    crop: 'Rice',
-    category: 'Cereal',
-    variety: '',
-    area_hectares: '',
-    planting_date: '',
-    expected_harvest: '',
-})
-
-function openEditModal(r: PlantingRecord) {
-    editForm.id = r.id
-    editForm.farmer = r.farmer
-    editForm.barangay = r.barangay
-    editForm.parcel = r.parcel
-    editForm.crop = r.crop
-    editForm.category = r.category
-    editForm.variety = r.variety
-    editForm.area_hectares = String(r.area_hectares)
-    editForm.planting_date = r.planting_date
-    editForm.expected_harvest = r.expected_harvest
-    showEditModal.value = true
-}
-
-function saveEdit() {
-    const idx = plantingRecords.findIndex((r) => r.id === editForm.id)
-    if (idx === -1) return
-    const r = plantingRecords[idx]
-    r.farmer = editForm.farmer
-    r.barangay = editForm.barangay
-    r.parcel = editForm.parcel
-    r.crop = editForm.crop
-    r.category = editForm.category
-    r.variety = editForm.variety
-    r.area_hectares = Number(editForm.area_hectares)
-    r.planting_date = editForm.planting_date
-    r.expected_harvest = editForm.expected_harvest
-    showEditModal.value = false
-}
-
-const showDeleteModal = ref(false)
-const deleteTarget = ref<PlantingRecord | null>(null)
-
-function askDelete(r: PlantingRecord) {
-    deleteTarget.value = r
-    showDeleteModal.value = true
-}
-
-function confirmDelete() {
-    const t = deleteTarget.value
-    if (!t) return
-    const idx = plantingRecords.findIndex((r) => r.id === t.id)
-    if (idx !== -1) plantingRecords.splice(idx, 1)
-    deleteTarget.value = null
-    showDeleteModal.value = false
-}
-
-const cycleStatus = (r: PlantingRecord): PlantingStatus =>
-    r.harvest_count > 0 ? 'Harvested' : 'Growing'
+/** Page status -> land-status palette, so the shared badges can be reused. */
+const statusBackground = (status: PlantingStatus) =>
+    status === 'Harvested' ? 'Cultivated' : 'Preparation'
 
 const CROP_COLORS: Record<string, string> = {
     Rice: '#16a34a',
@@ -171,43 +38,18 @@ const CROP_COLORS: Record<string, string> = {
     Tomato: '#dc2626',
 }
 
-const PLANT_STATUSES = ['Growing', 'Harvested'] as const
-const statusFilterOptions = ['All', ...PLANT_STATUSES] as string[]
-
-const AS_OF = new Date('November 25, 2024')
-const daysUntil = (dateStr: string) =>
-    Math.round((new Date(dateStr).getTime() - AS_OF.getTime()) / 86_400_000)
-
-const AVATAR_COLORS = [
-    '#2d6a2d',
-    '#3b82f6',
-    '#7c3aed',
-    '#d97706',
-    '#dc2626',
-    '#0891b2',
-    '#db2777',
-    '#65a30d',
-]
-
-function initials(name: string) {
-    return name
-        .split(' ')
-        .map((w) => w[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase()
-}
-
-function avatarColor(name: string) {
-    let h = 0
-    for (const c of name) h = (h * 31 + c.charCodeAt(0)) % AVATAR_COLORS.length
-    return AVATAR_COLORS[h]
+const farmerLabel = (names: string[]): string => {
+    if (names.length === 0) return '—'
+    const visible = names.slice(0, 2).join(', ')
+    return names.length > 2 ? `${visible} +${names.length - 2}` : visible
 }
 
 const cropAreaData = computed(() => {
     const areas = new Map<string, number>()
-    for (const r of plantingRecords) {
-        areas.set(r.crop, (areas.get(r.crop) ?? 0) + r.area_hectares)
+    for (const row of cycles.value) {
+        const name = row.cycle.crop?.name
+        if (!name) continue
+        areas.set(name, (areas.get(name) ?? 0) + row.area_hectares)
     }
     return [...areas.entries()].map(([name, area]) => ({
         name,
@@ -216,28 +58,27 @@ const cropAreaData = computed(() => {
     }))
 })
 
-const statusClass = (s: PlantingStatus) =>
-    s === 'Harvested' ? 'status-cultivated' : 'status-preparation'
-
 const summaryCards = computed(() => [
     {
         label: 'Active Plantings',
-        val: plantingRecords.filter((p) => p.harvest_count === 0).length,
+        val: cycles.value.filter((c) => cycleStatus(c) === 'Growing').length,
         color: '#16a34a',
         bg: '#dcfce7',
         icon: 'i-lucide-sprout',
     },
     {
         label: 'Crop Types',
-        val: new Set(plantingRecords.map((p) => p.crop)).size,
+        val: new Set(
+            cycles.value.map((c) => c.cycle.crop?.name).filter(Boolean)
+        ).size,
         color: '#2d6a2d',
         bg: '#e8f5e8',
         icon: 'i-lucide-wheat',
     },
     {
         label: 'Total Planted Area',
-        val: `${plantingRecords
-            .reduce((a, p) => a + p.area_hectares, 0)
+        val: `${cycles.value
+            .reduce((sum, c) => sum + c.area_hectares, 0)
             .toFixed(1)} ha`,
         color: '#1d6fa4',
         bg: '#e0f0fb',
@@ -245,7 +86,7 @@ const summaryCards = computed(() => [
     },
     {
         label: 'Harvested Cycles',
-        val: plantingRecords.filter((p) => p.harvest_count > 0).length,
+        val: cycles.value.filter((c) => cycleStatus(c) === 'Harvested').length,
         color: '#ca8a04',
         bg: '#fef3c7',
         icon: 'i-lucide-calendar-check',
@@ -254,22 +95,32 @@ const summaryCards = computed(() => [
 
 const cropAreaTotal = computed(
     () =>
-        Math.round(cropAreaData.value.reduce((s, d) => s + d.area, 0) * 10) / 10
+        Math.round(
+            cropAreaData.value.reduce((sum, d) => sum + d.area, 0) * 10
+        ) / 10
 )
 
+const statusFilterOptions = ['All', 'Growing', 'Harvested'] as const
+type StatusFilter = (typeof statusFilterOptions)[number]
+const filterStatus = ref<StatusFilter>('All')
 const search = ref('')
-const filterStatus = ref<'All' | (typeof PLANT_STATUSES)[number]>('All')
 
 const filtered = computed(() =>
-    plantingRecords.filter((r) => {
+    cycles.value.filter((row) => {
+        const haystack = [
+            farmerLabel(row.farmerNames),
+            row.barangay,
+            row.parcel_code,
+            row.cycle.crop?.name ?? '',
+            row.cycle.variety ?? '',
+        ]
+            .join(' ')
+            .toLowerCase()
         const match =
-            !search.value ||
-            r.farmer.toLowerCase().includes(search.value.toLowerCase()) ||
-            r.barangay.toLowerCase().includes(search.value.toLowerCase()) ||
-            r.parcel.toLowerCase().includes(search.value.toLowerCase())
+            !search.value || haystack.includes(search.value.toLowerCase())
         const status =
             filterStatus.value === 'All' ||
-            cycleStatus(r) === filterStatus.value
+            cycleStatus(row) === filterStatus.value
         return match && status
     })
 )
@@ -302,35 +153,314 @@ const cropAreaOption = computed(() => ({
     ],
 }))
 
+/** Days from today until a date; negative when the date has passed. */
+function daysUntil(dateStr: string): number {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const target = new Date(`${dateStr}T00:00:00`)
+    return Math.round((target.getTime() - today.getTime()) / 86_400_000)
+}
+
+const expectedHint = (row: CycleRow) => {
+    const date = row.cycle.expected_harvest
+    if (!date) return { text: '', urgent: false, hasExpected: false }
+    const days = daysUntil(date)
+    if (days >= 0) {
+        return {
+            text: `in ${days} days`,
+            urgent: days <= 10,
+            hasExpected: true,
+        }
+    }
+    return {
+        text: `${Math.abs(days)} days ago`,
+        urgent: true,
+        hasExpected: true,
+    }
+}
+
+onMounted(() => {
+    load()
+})
+
+/* ------------------------------------------------------------------ */
+/* Crop options (shared by the register and edit forms)                 */
+/* ------------------------------------------------------------------ */
+
+const crops = ref<ParcelCrop[]>([])
+const cropsLoading = ref(false)
+const cropsError = ref<string | null>(null)
+
+const cropOptions = computed(() =>
+    crops.value.map((crop) => ({
+        label: crop.name,
+        value: crop.documentId,
+    }))
+)
+
+async function loadCrops() {
+    cropsLoading.value = true
+    cropsError.value = null
+    try {
+        crops.value = await getCrops()
+    } catch (cause) {
+        crops.value = []
+        cropsError.value = getErrorMessage(
+            cause,
+            'Could not load the crop list. You can still name a new crop below.'
+        )
+    } finally {
+        cropsLoading.value = false
+    }
+}
+
+/** A typed name wins over a selection: naming a new crop is the explicit act. */
+async function resolveCrop(
+    cropId: string,
+    newCropName: string
+): Promise<string> {
+    const name = newCropName.trim()
+    if (name) {
+        const created = await createCrop(name, '')
+        return created.documentId
+    }
+    return cropId
+}
+
+const parcelOptions = computed(() =>
+    parcels.value.map((parcel) => {
+        const parts = [
+            parcel.parcel_code,
+            parcel.farm?.barangay?.name ?? '',
+            `${(Number(parcel.area_hectares) || 0).toFixed(1)} ha`,
+        ].filter(Boolean)
+        return { value: parcel.documentId, label: parts.join(' · ') }
+    })
+)
+
+/* ------------------------------------------------------------------ */
+/* Register planting cycle                                              */
+/* ------------------------------------------------------------------ */
+
 const showRegisterModal = ref(false)
+const submittingRegister = ref(false)
+const registerError = ref<string | null>(null)
+const registerSaved = ref(false)
+let registerCloseTimer: ReturnType<typeof setTimeout> | null = null
+
 const registerForm = reactive({
-    farmer: '',
-    barangay: '',
     parcel: '',
-    crop: 'Rice',
-    category: 'Cereal',
+    crop: '',
+    newCropName: '',
     variety: '',
-    area_hectares: '',
     planting_date: '',
     expected_harvest: '',
 })
 
-const cropOptions = [
-    'Rice',
-    'Corn',
-    'Sugarcane',
-    'Vegetables',
-    'Eggplant',
-    'Tomato',
-    'Root Crops',
-]
-const categoryOptions = ['Cereal', 'Vegetables', 'Fruits', 'Root Crops']
-const farmerOptions = computed(() =>
-    [...new Set(plantingRecords.map((p) => p.farmer))].sort()
+const selectedParcel = computed(
+    () =>
+        parcels.value.find((p) => p.documentId === registerForm.parcel) ?? null
 )
-const barangayOptions = computed(() =>
-    [...new Set(plantingRecords.map((p) => p.barangay))].sort()
+
+/** A parcel can hold one cycle, so registering again replaces the old one. */
+const registerReplacesExisting = computed(() =>
+    Boolean(selectedParcel.value?.planting_cycle)
 )
+
+function openRegister() {
+    registerForm.parcel = parcels.value[0]?.documentId ?? ''
+    registerForm.crop = ''
+    registerForm.newCropName = ''
+    registerForm.variety = ''
+    registerForm.planting_date = ''
+    registerForm.expected_harvest = ''
+    registerError.value = null
+    registerSaved.value = false
+    if (crops.value.length === 0) loadCrops()
+    showRegisterModal.value = true
+}
+
+const canSaveRegister = computed(
+    () =>
+        !submittingRegister.value &&
+        !cropsLoading.value &&
+        Boolean(registerForm.parcel) &&
+        (Boolean(registerForm.crop) || Boolean(registerForm.newCropName.trim()))
+)
+
+function closeRegister() {
+    if (submittingRegister.value) return
+    if (registerCloseTimer) {
+        clearTimeout(registerCloseTimer)
+        registerCloseTimer = null
+    }
+    registerSaved.value = false
+    showRegisterModal.value = false
+}
+
+/** A parcel holds one cycle, so a registration attaches it in one update. */
+async function attachCycleToParcel(
+    parcelDocumentId: string,
+    cycleDocumentId: string
+): Promise<void> {
+    await updateParcel(parcelDocumentId, { planting_cycle: cycleDocumentId })
+}
+
+async function submitRegister() {
+    const parcelDocumentId = registerForm.parcel
+    registerError.value = null
+    submittingRegister.value = true
+    try {
+        const crop = await resolveCrop(
+            registerForm.crop,
+            registerForm.newCropName
+        )
+        const cycle = await createPlantingCycle({
+            crop,
+            variety: registerForm.variety.trim() || null,
+            planting_date: registerForm.planting_date || null,
+            expected_harvest: registerForm.expected_harvest || null,
+        })
+        await attachCycleToParcel(parcelDocumentId, cycle.documentId)
+        registerSaved.value = true
+        registerCloseTimer = setTimeout(() => {
+            registerCloseTimer = null
+            registerSaved.value = false
+            showRegisterModal.value = false
+        }, 900)
+        await load()
+    } catch (cause) {
+        registerError.value = getErrorMessage(
+            cause,
+            'Failed to log the planting cycle. Please try again.'
+        )
+    } finally {
+        submittingRegister.value = false
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Edit planting cycle                                                  */
+/* ------------------------------------------------------------------ */
+
+const showEditModal = ref(false)
+const submittingEdit = ref(false)
+const editError = ref<string | null>(null)
+const editSaved = ref(false)
+let editCloseTimer: ReturnType<typeof setTimeout> | null = null
+
+const editForm = reactive({
+    cycleDocumentId: '',
+    parcelLabel: '',
+    crop: '',
+    newCropName: '',
+    variety: '',
+    planting_date: '',
+    expected_harvest: '',
+    harvestCount: 0,
+})
+
+function openEdit(row: CycleRow) {
+    const cycle = row.cycle
+    editForm.cycleDocumentId = cycle.documentId
+    editForm.parcelLabel = `${row.parcel_code} · ${row.barangay}`
+    editForm.crop = cycle.crop?.documentId ?? ''
+    editForm.newCropName = ''
+    editForm.variety = cycle.variety ?? ''
+    editForm.planting_date = cycle.planting_date ?? ''
+    editForm.expected_harvest = cycle.expected_harvest ?? ''
+    editForm.harvestCount = cycle.harvests?.length ?? 0
+    editError.value = null
+    editSaved.value = false
+    if (crops.value.length === 0) loadCrops()
+    showEditModal.value = true
+}
+
+const canSaveEdit = computed(
+    () =>
+        !submittingEdit.value &&
+        !cropsLoading.value &&
+        (Boolean(editForm.crop) || Boolean(editForm.newCropName.trim()))
+)
+
+function closeEdit() {
+    if (submittingEdit.value) return
+    if (editCloseTimer) {
+        clearTimeout(editCloseTimer)
+        editCloseTimer = null
+    }
+    editSaved.value = false
+    showEditModal.value = false
+}
+
+async function submitEdit() {
+    editError.value = null
+    submittingEdit.value = true
+    try {
+        const crop = await resolveCrop(editForm.crop, editForm.newCropName)
+        await updatePlantingCycle(editForm.cycleDocumentId, {
+            crop,
+            variety: editForm.variety.trim() || null,
+            planting_date: editForm.planting_date || null,
+            expected_harvest: editForm.expected_harvest || null,
+        })
+        editSaved.value = true
+        editCloseTimer = setTimeout(() => {
+            editCloseTimer = null
+            editSaved.value = false
+            showEditModal.value = false
+        }, 900)
+        await load()
+    } catch (cause) {
+        editError.value = getErrorMessage(
+            cause,
+            'Failed to update the planting cycle. Please try again.'
+        )
+    } finally {
+        submittingEdit.value = false
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Delete planting cycle                                                */
+/* ------------------------------------------------------------------ */
+
+const showDeleteModal = ref(false)
+const deleteTarget = ref<CycleRow | null>(null)
+const deleting = ref(false)
+const deleteError = ref<string | null>(null)
+
+function askDelete(row: CycleRow) {
+    deleteTarget.value = row
+    deleteError.value = null
+    showDeleteModal.value = true
+}
+
+function closeDelete() {
+    if (deleting.value) return
+    deleteTarget.value = null
+    showDeleteModal.value = false
+}
+
+async function confirmDelete() {
+    const target = deleteTarget.value
+    if (!target) return
+    deleting.value = true
+    deleteError.value = null
+    try {
+        await deletePlantingCycle(target.cycle.documentId)
+        deleteTarget.value = null
+        showDeleteModal.value = false
+        await load()
+    } catch (cause) {
+        deleteError.value = getErrorMessage(
+            cause,
+            'Failed to delete the planting cycle. Please try again.'
+        )
+    } finally {
+        deleting.value = false
+    }
+}
 </script>
 
 <template>
@@ -348,7 +478,7 @@ const barangayOptions = computed(() =>
             <button
                 type="button"
                 class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
-                @click="showRegisterModal = true"
+                @click="openRegister"
             >
                 <UIcon name="i-lucide-sprout" class="size-3.5" />
                 Register Planting Cycle
@@ -380,9 +510,7 @@ const barangayOptions = computed(() =>
                 </div>
                 <div
                     class="mb-1 text-xl font-bold font-sans"
-                    :style="{
-                        color: card.color,
-                    }"
+                    :style="{ color: card.color }"
                 >
                     {{ card.val }}
                 </div>
@@ -417,7 +545,7 @@ const barangayOptions = computed(() =>
                     class="ml-auto flex items-center gap-1.5 text-xs text-gray-400"
                 >
                     <UIcon name="i-lucide-filter" class="size-3" />
-                    {{ filtered.length }} of {{ plantingRecords.length }} cycles
+                    {{ filtered.length }} of {{ cycles.length }} cycles
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-1.5">
@@ -546,9 +674,67 @@ const barangayOptions = computed(() =>
                             </tr>
                         </thead>
                         <tbody>
+                            <!-- Loading -->
+                            <tr v-if="loading">
+                                <td
+                                    colspan="8"
+                                    class="px-4 py-10 text-center text-gray-400"
+                                >
+                                    <span
+                                        class="inline-flex items-center gap-2"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-loader-circle"
+                                            class="size-4 animate-spin"
+                                        />
+                                        Loading planting cycles...
+                                    </span>
+                                </td>
+                            </tr>
+                            <!-- Failed -->
+                            <tr v-else-if="loadError">
+                                <td colspan="8" class="px-4 py-10 text-center">
+                                    <p class="text-red-600">{{ loadError }}</p>
+                                    <button
+                                        type="button"
+                                        class="mt-2 text-xs font-medium text-green-700 underline"
+                                        @click="load"
+                                    >
+                                        Try again
+                                    </button>
+                                </td>
+                            </tr>
+                            <!-- Loaded but nothing to show -->
+                            <tr v-else-if="cycles.length === 0">
+                                <td
+                                    colspan="8"
+                                    class="px-4 py-10 text-center text-gray-400"
+                                >
+                                    <div
+                                        class="flex flex-col items-center gap-2"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-sprout"
+                                            class="size-6 text-gray-300"
+                                        />
+                                        <p>
+                                            No planting cycles yet. Register the
+                                            first one to start tracking crops.
+                                        </p>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-else-if="filtered.length === 0">
+                                <td
+                                    colspan="8"
+                                    class="px-4 py-10 text-center text-gray-400"
+                                >
+                                    No cycles match this search.
+                                </td>
+                            </tr>
                             <tr
                                 v-for="(p, i) in filtered"
-                                :key="p.id"
+                                :key="p.cycle.documentId"
                                 class="border-b border-gray-50 last:border-0 transition-colors hover:bg-green-50/30"
                                 :class="
                                     i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'
@@ -560,17 +746,19 @@ const barangayOptions = computed(() =>
                                             class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
                                             :style="{
                                                 backgroundColor: avatarColor(
-                                                    p.farmer
+                                                    p.farmerNames[0] ?? ''
                                                 ),
                                             }"
                                         >
-                                            {{ initials(p.farmer) }}
+                                            {{
+                                                initials(p.farmerNames[0] ?? '')
+                                            }}
                                         </span>
                                         <div>
                                             <div
                                                 class="font-medium text-gray-800"
                                             >
-                                                {{ p.farmer }}
+                                                {{ farmerLabel(p.farmerNames) }}
                                             </div>
                                             <div class="text-gray-400">
                                                 {{ p.barangay }}
@@ -584,39 +772,59 @@ const barangayOptions = computed(() =>
                                             class="h-2 w-2 flex-shrink-0 rounded-full"
                                             :style="{
                                                 background:
-                                                    CROP_COLORS[p.crop] ??
-                                                    '#94a3b8',
+                                                    CROP_COLORS[
+                                                        p.cycle.crop?.name ?? ''
+                                                    ] ?? '#94a3b8',
                                             }"
                                         />
                                         <span class="font-medium text-gray-700">
-                                            {{ p.crop }}
+                                            {{ p.cycle.crop?.name ?? '—' }}
                                         </span>
                                     </div>
-                                    <div class="pl-3.5 italic text-gray-400">
-                                        {{ p.variety }}
+                                    <div
+                                        v-if="p.cycle.variety"
+                                        class="pl-3.5 italic text-gray-400"
+                                    >
+                                        {{ p.cycle.variety }}
                                     </div>
                                 </td>
-                                <td class="px-4 py-3 font-mono text-gray-500">
-                                    {{ p.parcel }}
+                                <td class="px-4 py-3">
+                                    <NuxtLink
+                                        :to="`/parcels/${p.parcel_code}`"
+                                        class="font-mono text-gray-500 underline-offset-2 hover:text-[#2d6a2d] hover:underline"
+                                    >
+                                        {{ p.parcel_code }}
+                                    </NuxtLink>
                                 </td>
                                 <td
                                     class="px-4 py-3 text-right font-mono font-semibold text-gray-900"
                                 >
-                                    {{ p.area_hectares }} ha
+                                    {{ p.area_hectares.toFixed(1) }} ha
                                 </td>
                                 <td class="px-4 py-3 text-gray-500">
-                                    {{ p.planting_date }}
+                                    {{ p.cycle.planting_date ?? '—' }}
                                 </td>
                                 <td class="px-4 py-3">
                                     <div>
                                         <div class="text-gray-500">
-                                            {{ p.expected_harvest }}
+                                            {{
+                                                p.cycle.expected_harvest ?? '—'
+                                            }}
                                         </div>
                                         <div
-                                            v-if="p.harvest_count === 0"
+                                            v-if="
+                                                cycleStatus(p) === 'Harvested'
+                                            "
+                                            class="text-[10px] text-gray-400"
+                                        >
+                                            completed
+                                        </div>
+                                        <div
+                                            v-else-if="
+                                                expectedHint(p).hasExpected
+                                            "
                                             :class="
-                                                daysUntil(p.expected_harvest) <=
-                                                10
+                                                expectedHint(p).urgent
                                                     ? 'text-amber-600'
                                                     : 'text-[#2d6a2d]'
                                             "
@@ -626,30 +834,28 @@ const barangayOptions = computed(() =>
                                                 name="i-lucide-hourglass"
                                                 class="size-2.5"
                                             />
-                                            in
-                                            {{ daysUntil(p.expected_harvest) }}
-                                            days
-                                        </div>
-                                        <div
-                                            v-else
-                                            class="text-[10px] text-gray-400"
-                                        >
-                                            completed
+                                            {{ expectedHint(p).text }}
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-4 py-3">
                                     <span
-                                        :class="statusClass(cycleStatus(p))"
+                                        :class="
+                                            statusClass(
+                                                statusBackground(cycleStatus(p))
+                                            )
+                                        "
                                         class="flex w-fit items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-medium"
                                     >
                                         <span
                                             class="h-1.5 w-1.5 rounded-full"
-                                            :class="
-                                                cycleStatus(p) === 'Harvested'
-                                                    ? 'bg-[#166534]'
-                                                    : 'bg-[#0369a1]'
-                                            "
+                                            :style="{
+                                                backgroundColor: statusDot(
+                                                    statusBackground(
+                                                        cycleStatus(p)
+                                                    )
+                                                ),
+                                            }"
                                         />
                                         {{ cycleStatus(p) }}
                                     </span>
@@ -661,7 +867,7 @@ const barangayOptions = computed(() =>
                                         <button
                                             type="button"
                                             class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-                                            @click="openEditModal(p)"
+                                            @click="openEdit(p)"
                                         >
                                             <UIcon
                                                 name="i-lucide-pencil"
@@ -674,7 +880,7 @@ const barangayOptions = computed(() =>
                                             @click="askDelete(p)"
                                         >
                                             <UIcon
-                                                name="i-lucide-trash-2"
+                                                name="i-lucide-trash"
                                                 class="size-3.5"
                                             />
                                         </button>
@@ -693,7 +899,7 @@ const barangayOptions = computed(() =>
         <div
             v-if="showRegisterModal"
             class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
-            @click.self="showRegisterModal = false"
+            @click.self="closeRegister"
         >
             <div
                 class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
@@ -714,121 +920,115 @@ const barangayOptions = computed(() =>
                                 Register Planting Cycle
                             </h3>
                             <p class="text-xs text-gray-500">
-                                Log a new planting cycle for a parcel.
+                                Log a planting cycle against a parcel.
                             </p>
                         </div>
                     </div>
                     <button
                         type="button"
                         class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
-                        @click="showRegisterModal = false"
+                        :disabled="submittingRegister"
+                        @click="closeRegister"
                     >
                         <UIcon name="i-lucide-x" class="size-4" />
                     </button>
                 </div>
 
-                <form
-                    class="space-y-4"
-                    @submit.prevent="showRegisterModal = false"
+                <div
+                    v-if="registerSaved"
+                    class="flex flex-col items-center gap-2 py-10"
                 >
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div>
-                            <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                    <span
+                        class="flex size-10 items-center justify-center rounded-full bg-green-50 text-green-600"
+                    >
+                        <UIcon name="i-lucide-check" class="size-5" />
+                    </span>
+                    <p class="text-sm font-semibold text-gray-800">Saved</p>
+                    <p class="text-xs text-gray-500">Planting cycle logged.</p>
+                </div>
+
+                <form v-else class="space-y-4" @submit.prevent="submitRegister">
+                    <p
+                        v-if="registerReplacesExisting"
+                        class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                    >
+                        This parcel already has a crop cycle on record. Saving
+                        replaces it.
+                    </p>
+
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Parcel <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            v-model="registerForm.parcel"
+                            :disabled="submittingRegister"
+                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                        >
+                            <option value="" disabled>Select a parcel</option>
+                            <option
+                                v-for="option in parcelOptions"
+                                :key="option.value"
+                                :value="option.value"
                             >
-                                Farmer
-                            </label>
-                            <input
-                                v-model="registerForm.farmer"
-                                type="text"
-                                list="crop-farmer-options"
-                                placeholder="e.g. Ricardo Santos"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            />
-                            <datalist id="crop-farmer-options">
-                                <option
-                                    v-for="f in farmerOptions"
-                                    :key="f"
-                                    :value="f"
-                                />
-                            </datalist>
-                        </div>
-                        <div>
-                            <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
-                            >
-                                Barangay
-                            </label>
-                            <input
-                                v-model="registerForm.barangay"
-                                type="text"
-                                list="crop-barangay-options"
-                                placeholder="Select barangay"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            />
-                            <datalist id="crop-barangay-options">
-                                <option
-                                    v-for="b in barangayOptions"
-                                    :key="b"
-                                    :value="b"
-                                />
-                            </datalist>
-                        </div>
+                                {{ option.label }}
+                            </option>
+                        </select>
+                        <p
+                            v-if="parcels.length === 0"
+                            class="mt-1 text-[11px] text-gray-400"
+                        >
+                            No parcels registered yet.
+                        </p>
                     </div>
 
                     <div>
                         <label
                             class="mb-1 block text-xs font-medium text-gray-600"
                         >
-                            Parcel
+                            Crop <span class="text-red-500">*</span>
                         </label>
-                        <input
-                            v-model="registerForm.parcel"
-                            type="text"
-                            placeholder="e.g. PAR-001"
-                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                        />
+                        <select
+                            v-model="registerForm.crop"
+                            :disabled="submittingRegister || cropsLoading"
+                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                        >
+                            <option value="" disabled>Select a crop</option>
+                            <option
+                                v-for="option in cropOptions"
+                                :key="option.value"
+                                :value="option.value"
+                            >
+                                {{ option.label }}
+                            </option>
+                        </select>
+                        <p
+                            v-if="!cropsLoading && crops.length === 0"
+                            class="mt-1 text-[11px] text-gray-400"
+                        >
+                            No crops registered — name one below.
+                        </p>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div>
-                            <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
-                            >
-                                Crop
-                            </label>
-                            <select
-                                v-model="registerForm.crop"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            >
-                                <option
-                                    v-for="c in cropOptions"
-                                    :key="c"
-                                    :value="c"
-                                >
-                                    {{ c }}
-                                </option>
-                            </select>
-                        </div>
-                        <div>
-                            <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
-                            >
-                                Category
-                            </label>
-                            <select
-                                v-model="registerForm.category"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            >
-                                <option
-                                    v-for="c in categoryOptions"
-                                    :key="c"
-                                    :value="c"
-                                >
-                                    {{ c }}
-                                </option>
-                            </select>
-                        </div>
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            …or name a new crop
+                        </label>
+                        <input
+                            v-model="registerForm.newCropName"
+                            type="text"
+                            :disabled="submittingRegister"
+                            placeholder="e.g. Mung Bean"
+                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                        />
+                        <p class="mt-1 text-[11px] text-gray-400">
+                            Typing a name creates the crop and uses it for this
+                            cycle.
+                        </p>
                     </div>
 
                     <div>
@@ -840,27 +1040,13 @@ const barangayOptions = computed(() =>
                         <input
                             v-model="registerForm.variety"
                             type="text"
+                            :disabled="submittingRegister"
                             placeholder="e.g. NSIC Rc222"
-                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
                         />
                     </div>
 
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div>
-                            <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
-                            >
-                                Area (ha)
-                            </label>
-                            <input
-                                v-model="registerForm.area_hectares"
-                                type="number"
-                                step="0.1"
-                                min="0"
-                                placeholder="0.0"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            />
-                        </div>
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -870,23 +1056,31 @@ const barangayOptions = computed(() =>
                             <input
                                 v-model="registerForm.planting_date"
                                 type="date"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                                :disabled="submittingRegister"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Expected Harvest
+                            </label>
+                            <input
+                                v-model="registerForm.expected_harvest"
+                                type="date"
+                                :disabled="submittingRegister"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
                             />
                         </div>
                     </div>
 
-                    <div>
-                        <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
-                        >
-                            Expected Harvest
-                        </label>
-                        <input
-                            v-model="registerForm.expected_harvest"
-                            type="date"
-                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                        />
-                    </div>
+                    <p
+                        v-if="registerError"
+                        class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
+                    >
+                        {{ registerError }}
+                    </p>
 
                     <div
                         class="flex justify-end gap-2 border-t border-gray-100 pt-4"
@@ -894,15 +1088,26 @@ const barangayOptions = computed(() =>
                         <button
                             type="button"
                             class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                            @click="showRegisterModal = false"
+                            :disabled="submittingRegister"
+                            @click="closeRegister"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
+                            class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524] disabled:cursor-not-allowed disabled:opacity-60"
+                            :disabled="!canSaveRegister"
                         >
-                            Register Planting Cycle
+                            <UIcon
+                                v-if="submittingRegister"
+                                name="i-lucide-loader-circle"
+                                class="size-3.5 animate-spin"
+                            />
+                            {{
+                                submittingRegister
+                                    ? 'Saving...'
+                                    : 'Register Planting Cycle'
+                            }}
                         </button>
                     </div>
                 </form>
@@ -915,7 +1120,7 @@ const barangayOptions = computed(() =>
         <div
             v-if="showEditModal"
             class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
-            @click.self="showEditModal = false"
+            @click.self="closeEdit"
         >
             <div
                 class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
@@ -936,118 +1141,92 @@ const barangayOptions = computed(() =>
                                 Edit Planting Cycle
                             </h3>
                             <p class="text-xs text-gray-500">
-                                Update the details for this planting cycle.
+                                Update the crop and planting dates.
                             </p>
                         </div>
                     </div>
                     <button
                         type="button"
                         class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
-                        @click="showEditModal = false"
+                        :disabled="submittingEdit"
+                        @click="closeEdit"
                     >
                         <UIcon name="i-lucide-x" class="size-4" />
                     </button>
                 </div>
 
-                <form class="space-y-4" @submit.prevent="saveEdit">
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div>
-                            <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                <div
+                    v-if="editSaved"
+                    class="flex flex-col items-center gap-2 py-10"
+                >
+                    <span
+                        class="flex size-10 items-center justify-center rounded-full bg-green-50 text-green-600"
+                    >
+                        <UIcon name="i-lucide-check" class="size-5" />
+                    </span>
+                    <p class="text-sm font-semibold text-gray-800">Saved</p>
+                    <p class="text-xs text-gray-500">Planting cycle updated.</p>
+                </div>
+
+                <form v-else class="space-y-4" @submit.prevent="submitEdit">
+                    <div
+                        class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600"
+                    >
+                        <span class="font-medium text-gray-800">
+                            {{ editForm.parcelLabel }}
+                        </span>
+                    </div>
+
+                    <p
+                        v-if="editForm.harvestCount > 0"
+                        class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                    >
+                        This cycle already has
+                        {{ editForm.harvestCount }}
+                        harvest record(s). Changing the crop relabels them.
+                    </p>
+
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Crop <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            v-model="editForm.crop"
+                            :disabled="submittingEdit || cropsLoading"
+                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                        >
+                            <option value="" disabled>Select a crop</option>
+                            <option
+                                v-for="option in cropOptions"
+                                :key="option.value"
+                                :value="option.value"
                             >
-                                Farmer
-                            </label>
-                            <input
-                                v-model="editForm.farmer"
-                                type="text"
-                                list="crop-farmer-options-edit"
-                                placeholder="e.g. Ricardo Santos"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            />
-                            <datalist id="crop-farmer-options-edit">
-                                <option
-                                    v-for="f in farmerOptions"
-                                    :key="f"
-                                    :value="f"
-                                />
-                            </datalist>
-                        </div>
-                        <div>
-                            <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
-                            >
-                                Barangay
-                            </label>
-                            <input
-                                v-model="editForm.barangay"
-                                type="text"
-                                list="crop-barangay-options-edit"
-                                placeholder="Select barangay"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            />
-                            <datalist id="crop-barangay-options-edit">
-                                <option
-                                    v-for="b in barangayOptions"
-                                    :key="b"
-                                    :value="b"
-                                />
-                            </datalist>
-                        </div>
+                                {{ option.label }}
+                            </option>
+                        </select>
+                        <p
+                            v-if="!cropsLoading && crops.length === 0"
+                            class="mt-1 text-[11px] text-gray-400"
+                        >
+                            No crops registered — name one below.
+                        </p>
                     </div>
 
                     <div>
                         <label
                             class="mb-1 block text-xs font-medium text-gray-600"
                         >
-                            Parcel
+                            …or name a new crop
                         </label>
                         <input
-                            v-model="editForm.parcel"
+                            v-model="editForm.newCropName"
                             type="text"
-                            placeholder="e.g. PAR-001"
-                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            :disabled="submittingEdit"
+                            placeholder="e.g. Mung Bean"
+                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
                         />
-                    </div>
-
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div>
-                            <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
-                            >
-                                Crop
-                            </label>
-                            <select
-                                v-model="editForm.crop"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            >
-                                <option
-                                    v-for="c in cropOptions"
-                                    :key="c"
-                                    :value="c"
-                                >
-                                    {{ c }}
-                                </option>
-                            </select>
-                        </div>
-                        <div>
-                            <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
-                            >
-                                Category
-                            </label>
-                            <select
-                                v-model="editForm.category"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            >
-                                <option
-                                    v-for="c in categoryOptions"
-                                    :key="c"
-                                    :value="c"
-                                >
-                                    {{ c }}
-                                </option>
-                            </select>
-                        </div>
                     </div>
 
                     <div>
@@ -1059,27 +1238,13 @@ const barangayOptions = computed(() =>
                         <input
                             v-model="editForm.variety"
                             type="text"
+                            :disabled="submittingEdit"
                             placeholder="e.g. NSIC Rc222"
-                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
                         />
                     </div>
 
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div>
-                            <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
-                            >
-                                Area (ha)
-                            </label>
-                            <input
-                                v-model="editForm.area_hectares"
-                                type="number"
-                                step="0.1"
-                                min="0"
-                                placeholder="0.0"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            />
-                        </div>
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -1089,23 +1254,31 @@ const barangayOptions = computed(() =>
                             <input
                                 v-model="editForm.planting_date"
                                 type="date"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                                :disabled="submittingEdit"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Expected Harvest
+                            </label>
+                            <input
+                                v-model="editForm.expected_harvest"
+                                type="date"
+                                :disabled="submittingEdit"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
                             />
                         </div>
                     </div>
 
-                    <div>
-                        <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
-                        >
-                            Expected Harvest
-                        </label>
-                        <input
-                            v-model="editForm.expected_harvest"
-                            type="date"
-                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                        />
-                    </div>
+                    <p
+                        v-if="editError"
+                        class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
+                    >
+                        {{ editError }}
+                    </p>
 
                     <div
                         class="flex justify-end gap-2 border-t border-gray-100 pt-4"
@@ -1113,15 +1286,22 @@ const barangayOptions = computed(() =>
                         <button
                             type="button"
                             class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                            @click="showEditModal = false"
+                            :disabled="submittingEdit"
+                            @click="closeEdit"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
+                            class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524] disabled:cursor-not-allowed disabled:opacity-60"
+                            :disabled="!canSaveEdit"
                         >
-                            Save Changes
+                            <UIcon
+                                v-if="submittingEdit"
+                                name="i-lucide-loader-circle"
+                                class="size-3.5 animate-spin"
+                            />
+                            {{ submittingEdit ? 'Saving...' : 'Save Changes' }}
                         </button>
                     </div>
                 </form>
@@ -1134,7 +1314,7 @@ const barangayOptions = computed(() =>
         <div
             v-if="showDeleteModal"
             class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
-            @click.self="showDeleteModal = false"
+            @click.self="closeDelete"
         >
             <div
                 class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"
@@ -1143,36 +1323,50 @@ const barangayOptions = computed(() =>
                 <div
                     class="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-red-50"
                 >
-                    <UIcon
-                        name="i-lucide-trash-2"
-                        class="size-5 text-red-600"
-                    />
+                    <UIcon name="i-lucide-trash" class="size-5 text-red-600" />
                 </div>
                 <h3 class="text-lg font-bold text-gray-900">
                     Delete Planting Cycle
                 </h3>
                 <p class="mt-1 text-xs text-gray-500">
-                    Remove
+                    Remove the
                     <span class="font-mono text-gray-700">
-                        {{ deleteTarget?.id }}
+                        {{ deleteTarget?.cycle.crop?.name ?? 'cycle' }}
                     </span>
-                    for {{ deleteTarget?.farmer }}? This action cannot be
+                    cycle on
+                    <span class="font-mono text-gray-700">
+                        {{ deleteTarget?.parcel_code ?? '' }}
+                    </span>
+                    ? Its harvest records are removed too. This action cannot be
                     undone.
+                </p>
+                <p
+                    v-if="deleteError"
+                    class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
+                >
+                    {{ deleteError }}
                 </p>
                 <div class="mt-6 flex justify-end gap-2">
                     <button
                         type="button"
                         class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                        @click="showDeleteModal = false"
+                        :disabled="deleting"
+                        @click="closeDelete"
                     >
                         Cancel
                     </button>
                     <button
                         type="button"
-                        class="rounded-lg bg-red-600 px-4 py-2 text-xs font-medium text-white hover:bg-red-700"
+                        class="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-xs font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        :disabled="deleting"
                         @click="confirmDelete"
                     >
-                        Delete
+                        <UIcon
+                            v-if="deleting"
+                            name="i-lucide-loader-circle"
+                            class="size-3.5 animate-spin"
+                        />
+                        {{ deleting ? 'Deleting...' : 'Delete' }}
                     </button>
                 </div>
             </div>

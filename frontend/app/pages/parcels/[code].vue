@@ -448,7 +448,7 @@ const chipClass =
                             </dd>
                         </div>
                     </div>
-                    <ParcelEmpty
+                    <ParcelsParcelEmpty
                         v-else
                         message="This parcel is not linked to a farm yet."
                     />
@@ -499,7 +499,7 @@ const chipClass =
                             </span>
                         </li>
                     </ul>
-                    <ParcelEmpty
+                    <ParcelsParcelEmpty
                         v-else
                         message="No farmers assigned to this parcel."
                     />
@@ -546,7 +546,7 @@ const chipClass =
                             </dd>
                         </div>
                     </dl>
-                    <ParcelEmpty
+                    <ParcelsParcelEmpty
                         v-else
                         icon="i-lucide-sprout"
                         message="No planting cycle logged yet."
@@ -598,7 +598,7 @@ const chipClass =
                         there is nothing to have harvested yet. The copy names the
                         cycle rather than the parcel to match that.
                     -->
-                    <ParcelEmpty
+                    <ParcelsParcelEmpty
                         v-else
                         icon="i-lucide-wheat"
                         :message="
@@ -656,7 +656,7 @@ const chipClass =
                             </p>
                         </li>
                     </ul>
-                    <ParcelEmpty
+                    <ParcelsParcelEmpty
                         v-else
                         icon="i-lucide-clipboard-check"
                         message="No field inspections recorded yet."
@@ -718,7 +718,7 @@ const chipClass =
                             </div>
                         </li>
                     </ul>
-                    <ParcelEmpty
+                    <ParcelsParcelEmpty
                         v-else
                         icon="i-lucide-triangle-alert"
                         message="No risk reports filed for this parcel."
@@ -726,27 +726,27 @@ const chipClass =
                 </div>
             </div>
 
-            <ParcelEditModal
+            <ParcelsParcelEditModal
                 v-model="showEditModal"
                 :parcel="parcel"
                 @saved="handleSaved"
             />
-            <ParcelFarmersModal
+            <ParcelsParcelFarmersModal
                 v-model="showFarmersModal"
                 :parcel="parcel"
                 @saved="handleSaved"
             />
-            <ParcelCycleModal
+            <ParcelsParcelCycleModal
                 v-model="showPlantingModal"
                 :parcel="parcel"
                 @saved="handleSaved"
             />
-            <ParcelRiskModal
+            <ParcelsParcelRiskModal
                 v-model="showRiskModal"
                 :parcel="parcel"
                 @saved="handleSaved"
             />
-            <ParcelHarvestModal
+            <ParcelsParcelHarvestModal
                 v-model="showHarvestModal"
                 :parcel="parcel"
                 @saved="handleSaved"

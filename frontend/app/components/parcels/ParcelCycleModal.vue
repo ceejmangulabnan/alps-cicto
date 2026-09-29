@@ -53,6 +53,9 @@ const canSave = computed(
         !cropsLoading.value &&
         (Boolean(form.crop) || Boolean(form.newCropName.trim()))
 )
+const saved = ref(false)
+let closeTimer: ReturnType<typeof setTimeout> | null = null
+const savedMessage = 'Planting cycle logged.'
 
 async function loadCrops() {
     cropsLoading.value = true
@@ -79,7 +82,22 @@ function seedForm() {
 
 function close() {
     if (submitting.value) return
+    if (closeTimer) {
+        clearTimeout(closeTimer)
+        closeTimer = null
+    }
+    saved.value = false
     emit('update:modelValue', false)
+}
+
+/** Briefly confirm, then close — a save that just vanishes reads as a failure. */
+function showSavedPanel() {
+    saved.value = true
+    closeTimer = setTimeout(() => {
+        closeTimer = null
+        saved.value = false
+        emit('update:modelValue', false)
+    }, 900)
 }
 
 // The component stays mounted for the parcel's lifetime; seed and reload the
@@ -88,6 +106,11 @@ watch(
     () => props.modelValue as boolean,
     async (open) => {
         if (!open) return
+        if (closeTimer) {
+            clearTimeout(closeTimer)
+            closeTimer = null
+        }
+        saved.value = false
         seedForm()
         await loadCrops()
     },
@@ -125,7 +148,7 @@ async function submit() {
         })
 
         emit('saved')
-        close()
+        showSavedPanel()
     } catch (value: unknown) {
         errorMessage.value = getErrorMessage(
             value,
@@ -166,131 +189,146 @@ async function submit() {
                     </button>
                 </div>
 
-                <p
-                    v-if="replacesExisting"
-                    class="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                <div
+                    v-if="saved"
+                    class="flex flex-col items-center gap-2 py-10"
                 >
-                    This parcel already has a crop cycle on record. Saving
-                    replaces it.
-                </p>
-
-                <form class="space-y-4" @submit.prevent="submit">
-                    <div>
-                        <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
-                        >
-                            Crop
-                        </label>
-                        <USelectMenu
-                            v-model="form.crop"
-                            :items="cropOptions"
-                            :loading="cropsLoading"
-                            :disabled="submitting || cropsLoading"
-                            value-key="value"
-                            placeholder="Select a crop"
-                            class="w-full"
-                        />
-                        <p
-                            v-if="!cropsLoading && crops.length === 0"
-                            class="mt-1 text-[11px] text-gray-400"
-                        >
-                            No crops registered — name one below.
-                        </p>
-                    </div>
-
-                    <div>
-                        <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
-                        >
-                            …or name a new crop
-                        </label>
-                        <input
-                            v-model="form.newCropName"
-                            type="text"
-                            :disabled="submitting"
-                            placeholder="e.g. Mung Bean"
-                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
-                        />
-                        <p class="mt-1 text-[11px] text-gray-400">
-                            Typing a name creates the crop and uses it for this
-                            cycle.
-                        </p>
-                    </div>
-
-                    <div>
-                        <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
-                        >
-                            Variety
-                        </label>
-                        <input
-                            v-model="form.variety"
-                            type="text"
-                            :disabled="submitting"
-                            placeholder="e.g. NSIC Rc222"
-                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
-                        />
-                    </div>
-
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                            <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
-                            >
-                                Planting date
-                            </label>
-                            <input
-                                v-model="form.planting_date"
-                                type="date"
-                                :disabled="submitting"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
-                            />
-                        </div>
-                        <div>
-                            <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
-                            >
-                                Expected harvest
-                            </label>
-                            <input
-                                v-model="form.expected_harvest"
-                                type="date"
-                                :disabled="submitting"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
-                            />
-                        </div>
-                    </div>
-
-                    <p
-                        v-if="errorMessage"
-                        class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
+                    <span
+                        class="flex size-10 items-center justify-center rounded-full bg-green-50 text-green-600"
                     >
-                        {{ errorMessage }}
+                        <UIcon name="i-lucide-check" class="size-5" />
+                    </span>
+                    <p class="text-sm font-semibold text-gray-800">Saved</p>
+                    <p class="text-xs text-gray-500">{{ savedMessage }}</p>
+                </div>
+
+                <template v-else>
+                    <p
+                        v-if="replacesExisting"
+                        class="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                    >
+                        This parcel already has a crop cycle on record. Saving
+                        replaces it.
                     </p>
 
-                    <div class="flex justify-end gap-2 pt-1">
-                        <button
-                            type="button"
-                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                            :disabled="submitting"
-                            @click="close"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524] disabled:cursor-not-allowed disabled:opacity-60"
-                            :disabled="!canSave"
-                        >
-                            <UIcon
-                                v-if="submitting"
-                                name="i-lucide-loader-circle"
-                                class="size-3.5 animate-spin"
+                    <form class="space-y-4" @submit.prevent="submit">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Crop
+                            </label>
+                            <USelectMenu
+                                v-model="form.crop"
+                                :items="cropOptions"
+                                :loading="cropsLoading"
+                                :disabled="submitting || cropsLoading"
+                                value-key="value"
+                                placeholder="Select a crop"
+                                class="w-full"
                             />
-                            {{ submitting ? 'Saving...' : 'Save Cycle' }}
-                        </button>
-                    </div>
-                </form>
+                            <p
+                                v-if="!cropsLoading && crops.length === 0"
+                                class="mt-1 text-[11px] text-gray-400"
+                            >
+                                No crops registered — name one below.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                …or name a new crop
+                            </label>
+                            <input
+                                v-model="form.newCropName"
+                                type="text"
+                                :disabled="submitting"
+                                placeholder="e.g. Mung Bean"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                            />
+                            <p class="mt-1 text-[11px] text-gray-400">
+                                Typing a name creates the crop and uses it for
+                                this cycle.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Variety
+                            </label>
+                            <input
+                                v-model="form.variety"
+                                type="text"
+                                :disabled="submitting"
+                                placeholder="e.g. NSIC Rc222"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                            />
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <label
+                                    class="mb-1 block text-xs font-medium text-gray-600"
+                                >
+                                    Planting date
+                                </label>
+                                <input
+                                    v-model="form.planting_date"
+                                    type="date"
+                                    :disabled="submitting"
+                                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                                />
+                            </div>
+                            <div>
+                                <label
+                                    class="mb-1 block text-xs font-medium text-gray-600"
+                                >
+                                    Expected harvest
+                                </label>
+                                <input
+                                    v-model="form.expected_harvest"
+                                    type="date"
+                                    :disabled="submitting"
+                                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                                />
+                            </div>
+                        </div>
+
+                        <p
+                            v-if="errorMessage"
+                            class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
+                        >
+                            {{ errorMessage }}
+                        </p>
+
+                        <div class="flex justify-end gap-2 pt-1">
+                            <button
+                                type="button"
+                                class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                                :disabled="submitting"
+                                @click="close"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524] disabled:cursor-not-allowed disabled:opacity-60"
+                                :disabled="!canSave"
+                            >
+                                <UIcon
+                                    v-if="submitting"
+                                    name="i-lucide-loader-circle"
+                                    class="size-3.5 animate-spin"
+                                />
+                                {{ submitting ? 'Saving...' : 'Save Cycle' }}
+                            </button>
+                        </div>
+                    </form>
+                </template>
             </div>
         </div>
     </Teleport>

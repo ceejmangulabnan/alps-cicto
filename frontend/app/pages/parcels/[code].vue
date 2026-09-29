@@ -10,11 +10,16 @@ import { avatarColor, initials } from '~/utils/initials'
 definePageMeta({ middleware: 'auth' })
 
 const route = useRoute()
-const { getHubById } = useFarmParcelApi()
+const { getHubByCode } = useFarmParcelApi()
 
-const parcelId = computed(() => {
-    const raw = route.params.id
-    return Array.isArray(raw) ? (raw[0] ?? '') : (raw ?? '')
+/**
+ * Parcel codes are uppercase in the data model (`PLC-2026-0001`); normalise
+ * whatever was typed so a lowercase or padded route still resolves.
+ */
+const parcelCode = computed(() => {
+    const raw = route.params.code
+    const value = Array.isArray(raw) ? (raw[0] ?? '') : (raw ?? '')
+    return value.trim().toUpperCase()
 })
 
 /**
@@ -27,22 +32,23 @@ const {
     pending,
     refresh,
 } = await useAsyncData(
-    () => `parcel-hub:${parcelId.value}`,
+    () => `parcel-hub:${parcelCode.value}`,
     async () => {
-        if (!parcelId.value) {
+        if (!parcelCode.value) {
             throw createError({
                 statusCode: 404,
                 statusMessage: 'Parcel not found',
             })
         }
 
-        let response
+        let found
         try {
-            response = await getHubById(parcelId.value)
+            found = await getHubByCode(parcelCode.value)
         } catch (cause) {
-            // Strapi answers an unknown documentId with 404, so that is the only
-            // case that means "no such parcel". Anything else is a real failure
-            // and must not be dressed up as a missing record.
+            // A code lookup never draws a 404 from Strapi (unknown codes answer
+            // with an empty list), but keep the branch uniform: any other
+            // failure is a real error and must not be dressed up as a missing
+            // record.
             throw createError({
                 statusCode: getErrorStatus(cause) === 404 ? 404 : 500,
                 statusMessage: 'Parcel not found',
@@ -50,14 +56,14 @@ const {
             })
         }
 
-        if (!response?.data) {
+        if (!found?.data) {
             throw createError({
                 statusCode: 404,
                 statusMessage: 'Parcel not found',
             })
         }
 
-        return response.data
+        return found.data
     },
     { server: false }
 )
@@ -84,10 +90,17 @@ const harvests = computed(() => cycle.value?.harvests ?? [])
 const inspections = computed(() => parcel.value?.inspections ?? [])
 const riskReports = computed(() => parcel.value?.risk_reports ?? [])
 
-const mapEditLink = computed(() => ({
-    path: '/map',
-    query: { 'edit-parcel': parcelId.value },
-}))
+/**
+ * The map's `edit-parcel` param resolves a documentId, not the route's code, so
+ * it reads the fetched parcel itself. The toolbar that uses this link only
+ * renders once the parcel has loaded, at which point documentId is present.
+ */
+const mapEditLink = computed(() => {
+    const documentId = parcel.value?.documentId
+    return documentId
+        ? { path: '/map', query: { 'edit-parcel': documentId } }
+        : { path: '/map' }
+})
 
 /**
  * Strapi `decimal` fields can arrive as a string, so coerce before formatting
@@ -159,7 +172,21 @@ const riskStatusClass = (value: unknown) =>
 
 const cardTitle =
     'text-[10px] font-semibold uppercase tracking-wider text-gray-400'
-const emptyText = 'text-xs text-gray-400'
+
+/**
+ * Quick-action tiles. Written out in full so Tailwind sees the literal strings.
+ * The map edit is the primary action (it changes the boundary), the rest are
+ * secondary record-writing actions.
+ */
+const tileClass =
+    'flex flex-col items-center justify-center gap-2 rounded-lg px-2 py-3 text-center transition-colors'
+const tileSecondary =
+    'border border-gray-200 bg-white text-gray-700 hover:border-green-200 hover:bg-[#f2f7f0]'
+const tilePrimary = 'bg-[#2d6a2d] text-white hover:bg-[#245524]'
+const tileIconClass = 'flex size-7 items-center justify-center rounded-md'
+const tileLabelClass = 'text-[11px] font-medium leading-tight'
+const chipClass =
+    'inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-gray-600 ring-1 ring-gray-200'
 </script>
 
 <template>
@@ -181,86 +208,159 @@ const emptyText = 'text-xs text-gray-400'
                 <div class="min-w-0">
                     <NuxtLink
                         to="/farms"
-                        class="mb-1 inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+                        class="mb-2 inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
                     >
                         <UIcon name="i-lucide-arrow-left" class="size-3" />
                         Back to registry
                     </NuxtLink>
-                    <h1 class="text-2xl font-bold text-gray-900 md:text-3xl">
-                        {{ parcel.parcel_code }}
-                    </h1>
-                    <p class="text-sm text-gray-500">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h1
+                            class="font-mono text-2xl font-bold tracking-tight text-gray-900 md:text-3xl"
+                        >
+                            {{ parcel.parcel_code }}
+                        </h1>
+                        <span
+                            :class="statusClass(parcel.land_status)"
+                            class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
+                        >
+                            <span
+                                class="size-1.5 rounded-full"
+                                :style="{
+                                    backgroundColor: statusDot(
+                                        parcel.land_status
+                                    ),
+                                }"
+                            />
+                            {{ parcel.land_status }}
+                        </span>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">
                         {{ farm?.name || farm?.farm_code || 'Unassigned farm' }}
                         <span v-if="barangay"> · {{ barangay.name }}</span>
                     </p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <span :class="chipClass">
+                            <UIcon
+                                name="i-lucide-ruler"
+                                class="size-3 text-gray-400"
+                            />
+                            {{ num(parcel.area_hectares) }} ha
+                        </span>
+                        <span :class="chipClass">
+                            <UIcon
+                                name="i-lucide-users"
+                                class="size-3 text-gray-400"
+                            />
+                            {{ farmers.length }}
+                            {{ farmers.length === 1 ? 'farmer' : 'farmers' }}
+                        </span>
+                        <span v-if="farm" :class="chipClass">
+                            <UIcon
+                                name="i-lucide-building"
+                                class="size-3 text-gray-400"
+                            />
+                            {{ farm.farm_code }}
+                        </span>
+                    </div>
                 </div>
-                <span
-                    :class="statusClass(parcel.land_status)"
-                    class="flex w-fit items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium"
-                >
-                    <span
-                        class="size-1.5 rounded-full"
-                        :style="{
-                            backgroundColor: statusDot(parcel.land_status),
-                        }"
-                    />
-                    {{ parcel.land_status }}
-                </span>
             </div>
 
             <!-- Quick Actions -->
             <div class="alps-card p-4 sm:p-5">
                 <div :class="cardTitle">Quick Actions</div>
-                <div class="mt-3 flex flex-wrap gap-2">
+                <div
+                    class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6"
+                >
                     <NuxtLink
                         :to="mapEditLink"
-                        class="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                        :class="[tileClass, tilePrimary]"
                     >
-                        <UIcon name="i-lucide-map" class="size-3.5" />
-                        Edit Plot on Map
+                        <span
+                            :class="[tileIconClass, 'bg-white/20 text-white']"
+                        >
+                            <UIcon name="i-lucide-map" class="size-4" />
+                        </span>
+                        <span :class="tileLabelClass">Edit Plot on Map</span>
                     </NuxtLink>
                     <button
                         type="button"
-                        class="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                        :class="[tileClass, tileSecondary]"
                         @click="showEditModal = true"
                     >
-                        <UIcon name="i-lucide-pencil" class="size-3.5" />
-                        Edit Parcel Details
+                        <span
+                            :class="[
+                                tileIconClass,
+                                'bg-[#e8f2e6] text-[#2d6a2d]',
+                            ]"
+                        >
+                            <UIcon name="i-lucide-pencil" class="size-4" />
+                        </span>
+                        <span :class="tileLabelClass">Edit Parcel Details</span>
                     </button>
                     <button
                         type="button"
-                        class="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                        :class="[tileClass, tileSecondary]"
                         @click="showFarmersModal = true"
                     >
-                        <UIcon name="i-lucide-users" class="size-3.5" />
-                        Update Tending Farmers
+                        <span
+                            :class="[
+                                tileIconClass,
+                                'bg-[#e8f2e6] text-[#2d6a2d]',
+                            ]"
+                        >
+                            <UIcon name="i-lucide-users" class="size-4" />
+                        </span>
+                        <span :class="tileLabelClass">
+                            Update Tending Farmers
+                        </span>
                     </button>
                     <button
                         type="button"
-                        class="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                        :class="[tileClass, tileSecondary]"
                         @click="showPlantingModal = true"
                     >
-                        <UIcon name="i-lucide-sprout" class="size-3.5" />
-                        Log Planting Cycle
+                        <span
+                            :class="[
+                                tileIconClass,
+                                'bg-[#e8f2e6] text-[#2d6a2d]',
+                            ]"
+                        >
+                            <UIcon name="i-lucide-sprout" class="size-4" />
+                        </span>
+                        <span :class="tileLabelClass">Log Planting Cycle</span>
                     </button>
                     <button
                         type="button"
-                        class="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                        :class="[tileClass, tileSecondary]"
                         @click="showRiskModal = true"
                     >
-                        <UIcon
-                            name="i-lucide-triangle-alert"
-                            class="size-3.5"
-                        />
-                        Report Risk
+                        <span
+                            :class="[
+                                tileIconClass,
+                                'bg-[#e8f2e6] text-[#2d6a2d]',
+                            ]"
+                        >
+                            <UIcon
+                                name="i-lucide-triangle-alert"
+                                class="size-4"
+                            />
+                        </span>
+                        <span :class="tileLabelClass">Report Risk</span>
                     </button>
                     <button
                         type="button"
-                        class="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                        :class="[tileClass, tileSecondary]"
                         @click="showHarvestModal = true"
                     >
-                        <UIcon name="i-lucide-wheat" class="size-3.5" />
-                        Record Harvest
+                        <span
+                            :class="[
+                                tileIconClass,
+                                'bg-[#e8f2e6] text-[#2d6a2d]',
+                            ]"
+                        >
+                            <UIcon name="i-lucide-wheat" class="size-4" />
+                        </span>
+                        <span :class="tileLabelClass">Record Harvest</span>
                     </button>
                 </div>
             </div>
@@ -268,7 +368,13 @@ const emptyText = 'text-xs text-gray-400'
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 <!-- Plot Summary -->
                 <div class="alps-card p-4 sm:p-5">
-                    <div :class="cardTitle">Plot Summary</div>
+                    <div class="flex items-center gap-1.5">
+                        <UIcon
+                            name="i-lucide-map-pin"
+                            class="size-3.5 text-gray-400"
+                        />
+                        <div :class="cardTitle">Plot Summary</div>
+                    </div>
                     <dl class="mt-3 space-y-2 text-xs">
                         <div class="flex justify-between gap-3">
                             <dt class="text-gray-500">Parcel code</dt>
@@ -290,7 +396,15 @@ const emptyText = 'text-xs text-gray-400'
                         </div>
                         <div class="flex justify-between gap-3">
                             <dt class="text-gray-500">Status</dt>
-                            <dd class="text-gray-800">
+                            <dd class="flex items-center gap-1.5 text-gray-800">
+                                <span
+                                    class="size-1.5 rounded-full"
+                                    :style="{
+                                        backgroundColor: statusDot(
+                                            parcel.land_status
+                                        ),
+                                    }"
+                                />
                                 {{ parcel.land_status }}
                             </dd>
                         </div>
@@ -299,7 +413,13 @@ const emptyText = 'text-xs text-gray-400'
 
                 <!-- Parent Farm & Barangay -->
                 <div class="alps-card p-4 sm:p-5">
-                    <div :class="cardTitle">Parent Farm &amp; Barangay</div>
+                    <div class="flex items-center gap-1.5">
+                        <UIcon
+                            name="i-lucide-building"
+                            class="size-3.5 text-gray-400"
+                        />
+                        <div :class="cardTitle">Parent Farm &amp; Barangay</div>
+                    </div>
                     <div v-if="farm" class="mt-3 space-y-2 text-xs">
                         <div class="flex justify-between gap-3">
                             <dt class="shrink-0 text-gray-500">Farm</dt>
@@ -328,15 +448,22 @@ const emptyText = 'text-xs text-gray-400'
                             </dd>
                         </div>
                     </div>
-                    <p v-else :class="[emptyText, 'mt-3']">
-                        This parcel is not linked to a farm yet.
-                    </p>
+                    <ParcelEmpty
+                        v-else
+                        message="This parcel is not linked to a farm yet."
+                    />
                 </div>
 
                 <!-- Tending Farmers -->
                 <div class="alps-card p-4 sm:p-5">
                     <div class="flex items-center justify-between">
-                        <div :class="cardTitle">Tending Farmers</div>
+                        <div class="flex items-center gap-1.5">
+                            <UIcon
+                                name="i-lucide-users"
+                                class="size-3.5 text-gray-400"
+                            />
+                            <div :class="cardTitle">Tending Farmers</div>
+                        </div>
                         <span
                             v-if="farmers.length"
                             class="text-xs text-gray-400"
@@ -372,14 +499,21 @@ const emptyText = 'text-xs text-gray-400'
                             </span>
                         </li>
                     </ul>
-                    <p v-else :class="[emptyText, 'mt-3']">
-                        No farmers assigned to this parcel.
-                    </p>
+                    <ParcelEmpty
+                        v-else
+                        message="No farmers assigned to this parcel."
+                    />
                 </div>
 
                 <!-- Current Planting Cycle -->
                 <div class="alps-card p-4 sm:p-5">
-                    <div :class="cardTitle">Current Planting Cycle</div>
+                    <div class="flex items-center gap-1.5">
+                        <UIcon
+                            name="i-lucide-sprout"
+                            class="size-3.5 text-gray-400"
+                        />
+                        <div :class="cardTitle">Current Planting Cycle</div>
+                    </div>
                     <dl v-if="cycle" class="mt-3 space-y-2 text-xs">
                         <div class="flex justify-between gap-3">
                             <dt class="text-gray-500">Crop</dt>
@@ -412,15 +546,23 @@ const emptyText = 'text-xs text-gray-400'
                             </dd>
                         </div>
                     </dl>
-                    <p v-else :class="[emptyText, 'mt-3']">
-                        No planting cycle logged yet.
-                    </p>
+                    <ParcelEmpty
+                        v-else
+                        icon="i-lucide-sprout"
+                        message="No planting cycle logged yet."
+                    />
                 </div>
 
                 <!-- Current Cycle Harvests -->
                 <div class="alps-card p-4 sm:p-5">
                     <div class="flex items-center justify-between">
-                        <div :class="cardTitle">Current Cycle Harvests</div>
+                        <div class="flex items-center gap-1.5">
+                            <UIcon
+                                name="i-lucide-wheat"
+                                class="size-3.5 text-gray-400"
+                            />
+                            <div :class="cardTitle">Current Cycle Harvests</div>
+                        </div>
                         <span
                             v-if="harvests.length"
                             class="text-xs text-gray-400"
@@ -456,19 +598,27 @@ const emptyText = 'text-xs text-gray-400'
                         there is nothing to have harvested yet. The copy names the
                         cycle rather than the parcel to match that.
                     -->
-                    <p v-else :class="[emptyText, 'mt-3']">
-                        {{
+                    <ParcelEmpty
+                        v-else
+                        icon="i-lucide-wheat"
+                        :message="
                             cycle
                                 ? 'No harvests recorded for this cycle yet.'
                                 : 'No planting cycle logged yet.'
-                        }}
-                    </p>
+                        "
+                    />
                 </div>
 
                 <!-- Inspections -->
                 <div class="alps-card p-4 sm:p-5">
                     <div class="flex items-center justify-between">
-                        <div :class="cardTitle">Field Inspections</div>
+                        <div class="flex items-center gap-1.5">
+                            <UIcon
+                                name="i-lucide-clipboard-check"
+                                class="size-3.5 text-gray-400"
+                            />
+                            <div :class="cardTitle">Field Inspections</div>
+                        </div>
                         <span
                             v-if="inspections.length"
                             class="text-xs text-gray-400"
@@ -506,15 +656,23 @@ const emptyText = 'text-xs text-gray-400'
                             </p>
                         </li>
                     </ul>
-                    <p v-else :class="[emptyText, 'mt-3']">
-                        No field inspections recorded yet.
-                    </p>
+                    <ParcelEmpty
+                        v-else
+                        icon="i-lucide-clipboard-check"
+                        message="No field inspections recorded yet."
+                    />
                 </div>
 
                 <!-- Risk Reports -->
                 <div class="alps-card p-4 sm:p-5 sm:col-span-2 xl:col-span-1">
                     <div class="flex items-center justify-between">
-                        <div :class="cardTitle">Risk Reports</div>
+                        <div class="flex items-center gap-1.5">
+                            <UIcon
+                                name="i-lucide-triangle-alert"
+                                class="size-3.5 text-gray-400"
+                            />
+                            <div :class="cardTitle">Risk Reports</div>
+                        </div>
                         <span
                             v-if="riskReports.length"
                             class="text-xs text-gray-400"
@@ -560,9 +718,11 @@ const emptyText = 'text-xs text-gray-400'
                             </div>
                         </li>
                     </ul>
-                    <p v-else :class="[emptyText, 'mt-3']">
-                        No risk reports filed for this parcel.
-                    </p>
+                    <ParcelEmpty
+                        v-else
+                        icon="i-lucide-triangle-alert"
+                        message="No risk reports filed for this parcel."
+                    />
                 </div>
             </div>
 

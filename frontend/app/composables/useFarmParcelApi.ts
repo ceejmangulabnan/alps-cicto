@@ -119,6 +119,8 @@ export interface UpdateParcelData {
     area_hectares?: number
     /** The farmers tending this parcel, as farmer documentIds. */
     farmers?: string[]
+    /** The parcel's current planting cycle, as a planting-cycle documentId. */
+    planting_cycle?: string | null
 }
 
 /**

@@ -29,10 +29,13 @@ const form = reactive<EditForm>({
 
 const submitting = ref(false)
 const errorMessage = ref<string | null>(null)
+const saved = ref(false)
+let closeTimer: ReturnType<typeof setTimeout> | null = null
 
 const subtitle = computed(
     () => `${props.parcel.parcel_code} · status, current use and area.`
 )
+const savedMessage = 'Parcel details updated.'
 
 function seedForm() {
     form.land_status = props.parcel.land_status
@@ -43,7 +46,22 @@ function seedForm() {
 
 function close() {
     if (submitting.value) return
+    if (closeTimer) {
+        clearTimeout(closeTimer)
+        closeTimer = null
+    }
+    saved.value = false
     emit('update:modelValue', false)
+}
+
+/** Briefly confirm, then close — a save that just vanishes reads as a failure. */
+function showSavedPanel() {
+    saved.value = true
+    closeTimer = setTimeout(() => {
+        closeTimer = null
+        saved.value = false
+        emit('update:modelValue', false)
+    }, 900)
 }
 
 // The component stays mounted for the parcel's lifetime; seed on every open so
@@ -51,7 +69,13 @@ function close() {
 watch(
     () => props.modelValue as boolean,
     (open) => {
-        if (open) seedForm()
+        if (!open) return
+        if (closeTimer) {
+            clearTimeout(closeTimer)
+            closeTimer = null
+        }
+        saved.value = false
+        seedForm()
     },
     { immediate: true }
 )
@@ -73,7 +97,7 @@ async function submit() {
             area_hectares: area,
         })
         emit('saved')
-        close()
+        showSavedPanel()
     } catch (value: unknown) {
         errorMessage.value = getErrorMessage(
             value,
@@ -112,7 +136,20 @@ async function submit() {
                     </button>
                 </div>
 
-                <form class="space-y-4" @submit.prevent="submit">
+                <div
+                    v-if="saved"
+                    class="flex flex-col items-center gap-2 py-10"
+                >
+                    <span
+                        class="flex size-10 items-center justify-center rounded-full bg-green-50 text-green-600"
+                    >
+                        <UIcon name="i-lucide-check" class="size-5" />
+                    </span>
+                    <p class="text-sm font-semibold text-gray-800">Saved</p>
+                    <p class="text-xs text-gray-500">{{ savedMessage }}</p>
+                </div>
+
+                <form v-else class="space-y-4" @submit.prevent="submit">
                     <div>
                         <label
                             class="mb-1 block text-xs font-medium text-gray-600"

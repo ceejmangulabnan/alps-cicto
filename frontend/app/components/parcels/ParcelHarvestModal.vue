@@ -47,6 +47,9 @@ const canSave = computed(
         Boolean(form.harvest_date) &&
         Number(form.production_kg) > 0
 )
+const saved = ref(false)
+let closeTimer: ReturnType<typeof setTimeout> | null = null
+const savedMessage = 'Harvest recorded.'
 
 const productionNumber = computed(() => Number(form.production_kg))
 
@@ -71,7 +74,22 @@ onMounted(() => {
 
 function close() {
     if (submitting.value) return
+    if (closeTimer) {
+        clearTimeout(closeTimer)
+        closeTimer = null
+    }
+    saved.value = false
     emit('update:modelValue', false)
+}
+
+/** Briefly confirm, then close — a save that just vanishes reads as a failure. */
+function showSavedPanel() {
+    saved.value = true
+    closeTimer = setTimeout(() => {
+        closeTimer = null
+        saved.value = false
+        emit('update:modelValue', false)
+    }, 900)
 }
 
 // The component stays mounted for the parcel's lifetime; reset on every open so
@@ -80,6 +98,11 @@ watch(
     () => props.modelValue as boolean,
     (open) => {
         if (!open) return
+        if (closeTimer) {
+            clearTimeout(closeTimer)
+            closeTimer = null
+        }
+        saved.value = false
         form.harvest_date = today()
         form.production_kg = ''
         form.yield_per_hectare = ''
@@ -105,7 +128,7 @@ async function submit() {
             yield_per_hectare: Number(form.yield_per_hectare) || null,
         })
         emit('saved')
-        close()
+        showSavedPanel()
     } catch (value: unknown) {
         errorMessage.value = getErrorMessage(
             value,
@@ -146,114 +169,132 @@ async function submit() {
                     </button>
                 </div>
 
-                <p
-                    v-if="!cycle"
-                    class="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                <div
+                    v-if="saved"
+                    class="flex flex-col items-center gap-2 py-10"
                 >
-                    No planting cycle is recorded for this parcel yet, so there
-                    is nothing to attach a harvest to. Log a planting cycle
-                    first.
-                </p>
-
-                <form class="space-y-4" @submit.prevent="submit">
-                    <div
-                        class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600"
+                    <span
+                        class="flex size-10 items-center justify-center rounded-full bg-green-50 text-green-600"
                     >
-                        <span class="font-medium text-gray-800">
-                            {{ cycle?.crop?.name || 'Current cycle' }}
-                            <template v-if="cycle?.variety">
-                                · {{ cycle.variety }}
-                            </template>
-                        </span>
-                    </div>
+                        <UIcon name="i-lucide-check" class="size-5" />
+                    </span>
+                    <p class="text-sm font-semibold text-gray-800">Saved</p>
+                    <p class="text-xs text-gray-500">{{ savedMessage }}</p>
+                </div>
 
-                    <div>
-                        <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
-                        >
-                            Harvest date <span class="text-red-500">*</span>
-                        </label>
-                        <input
-                            v-model="form.harvest_date"
-                            type="date"
-                            :disabled="submitting"
-                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
-                        />
-                    </div>
-
-                    <div>
-                        <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
-                        >
-                            Production (kg) <span class="text-red-500">*</span>
-                        </label>
-                        <input
-                            v-model="form.production_kg"
-                            type="number"
-                            step="0.1"
-                            min="0"
-                            :disabled="submitting || !cycle"
-                            placeholder="e.g. 12480.5"
-                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
-                        />
-                    </div>
-
-                    <div>
-                        <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
-                        >
-                            Yield (kg/ha)
-                        </label>
-                        <input
-                            v-model="form.yield_per_hectare"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            :disabled="submitting || !cycle"
-                            placeholder="Computed from production and area"
-                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
-                            @focus="yieldEdited = true"
-                        />
-                        <p class="mt-1 text-[11px] text-gray-400">
-                            Auto-filled from production ÷
-                            {{
-                                areaHectares
-                                    ? `${areaHectares.toFixed(2)} ha`
-                                    : 'area'
-                            }}. Type to override.
-                        </p>
-                    </div>
-
+                <template v-else>
                     <p
-                        v-if="errorMessage"
-                        class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
+                        v-if="!cycle"
+                        class="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800"
                     >
-                        {{ errorMessage }}
+                        No planting cycle is recorded for this parcel yet, so
+                        there is nothing to attach a harvest to. Log a planting
+                        cycle first.
                     </p>
 
-                    <div class="flex justify-end gap-2 pt-1">
-                        <button
-                            type="button"
-                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                            :disabled="submitting"
-                            @click="close"
+                    <form class="space-y-4" @submit.prevent="submit">
+                        <div
+                            class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600"
                         >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524] disabled:cursor-not-allowed disabled:opacity-60"
-                            :disabled="!canSave"
-                        >
-                            <UIcon
-                                v-if="submitting"
-                                name="i-lucide-loader-circle"
-                                class="size-3.5 animate-spin"
+                            <span class="font-medium text-gray-800">
+                                {{ cycle?.crop?.name || 'Current cycle' }}
+                                <template v-if="cycle?.variety">
+                                    · {{ cycle.variety }}
+                                </template>
+                            </span>
+                        </div>
+
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Harvest date <span class="text-red-500">*</span>
+                            </label>
+                            <input
+                                v-model="form.harvest_date"
+                                type="date"
+                                :disabled="submitting"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
                             />
-                            {{ submitting ? 'Saving...' : 'Record Harvest' }}
-                        </button>
-                    </div>
-                </form>
+                        </div>
+
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Production (kg)
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <input
+                                v-model="form.production_kg"
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                :disabled="submitting || !cycle"
+                                placeholder="e.g. 12480.5"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                            />
+                        </div>
+
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Yield (kg/ha)
+                            </label>
+                            <input
+                                v-model="form.yield_per_hectare"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                :disabled="submitting || !cycle"
+                                placeholder="Computed from production and area"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                                @focus="yieldEdited = true"
+                            />
+                            <p class="mt-1 text-[11px] text-gray-400">
+                                Auto-filled from production ÷
+                                {{
+                                    areaHectares
+                                        ? `${areaHectares.toFixed(2)} ha`
+                                        : 'area'
+                                }}. Type to override.
+                            </p>
+                        </div>
+
+                        <p
+                            v-if="errorMessage"
+                            class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
+                        >
+                            {{ errorMessage }}
+                        </p>
+
+                        <div class="flex justify-end gap-2 pt-1">
+                            <button
+                                type="button"
+                                class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                                :disabled="submitting"
+                                @click="close"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524] disabled:cursor-not-allowed disabled:opacity-60"
+                                :disabled="!canSave"
+                            >
+                                <UIcon
+                                    v-if="submitting"
+                                    name="i-lucide-loader-circle"
+                                    class="size-3.5 animate-spin"
+                                />
+                                {{
+                                    submitting ? 'Saving...' : 'Record Harvest'
+                                }}
+                            </button>
+                        </div>
+                    </form>
+                </template>
             </div>
         </div>
     </Teleport>

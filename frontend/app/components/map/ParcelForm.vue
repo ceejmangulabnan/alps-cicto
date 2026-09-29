@@ -250,6 +250,14 @@ const {
         </form>
 
         <div class="mt-6 border-t border-gray-100 pt-4">
+            <NuxtLink
+                v-if="isEditing && parcel"
+                :to="`/parcels/${parcel.parcel_code}`"
+                class="mb-3 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 py-2.5 text-xs font-medium text-gray-600 hover:border-green-200 hover:bg-[#f2f7f0]"
+            >
+                <UIcon name="i-lucide-external-link" class="size-3.5" />
+                View Parcel Details
+            </NuxtLink>
             <button
                 type="submit"
                 form="parcel-form"

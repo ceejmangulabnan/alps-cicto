@@ -167,20 +167,31 @@ const tenantNames = (farmers: Array<{ name: string }>) =>
                         Parcels
                     </div>
                     <div class="max-h-40 space-y-1 overflow-y-auto">
-                        <div
+                        <NuxtLink
                             v-for="parcel in parcels"
                             :key="parcel.documentId"
-                            class="rounded px-1 py-0.5 text-[11px] hover:bg-gray-50"
+                            :to="`/parcels/${parcel.parcel_code}`"
+                            class="block cursor-pointer rounded px-1 py-0.5 text-[11px] transition-colors hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none"
                         >
-                            <div class="flex items-center justify-between">
+                            <div
+                                class="flex items-center justify-between gap-2"
+                            >
                                 <span class="font-mono text-gray-700">
                                     {{ parcel.parcel_code }}
                                 </span>
-                                <span class="font-mono text-gray-500">
-                                    {{
-                                        Number(parcel.area_hectares).toFixed(2)
-                                    }}
-                                    ha
+                                <span class="flex items-center gap-1">
+                                    <span class="font-mono text-gray-500">
+                                        {{
+                                            Number(
+                                                parcel.area_hectares
+                                            ).toFixed(2)
+                                        }}
+                                        ha
+                                    </span>
+                                    <UIcon
+                                        name="i-lucide-chevron-right"
+                                        class="size-3 shrink-0 text-gray-300"
+                                    />
                                 </span>
                             </div>
                             <!--
@@ -200,7 +211,7 @@ const tenantNames = (farmers: Array<{ name: string }>) =>
                             >
                                 No farmer assigned
                             </div>
-                        </div>
+                        </NuxtLink>
                     </div>
                 </div>
 

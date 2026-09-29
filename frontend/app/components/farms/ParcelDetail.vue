@@ -131,6 +131,13 @@ const detailFields = computed(() => [
                         <UIcon name="i-lucide-pencil" class="size-3.5" />
                         Edit Parcel
                     </button>
+                    <NuxtLink
+                        :to="`/parcels/${parcel.parcel_code}`"
+                        class="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 py-2 text-xs font-medium text-gray-600 hover:border-green-200 hover:bg-[#f2f7f0]"
+                    >
+                        <UIcon name="i-lucide-external-link" class="size-3.5" />
+                        View Parcel Details
+                    </NuxtLink>
                     <button
                         v-if="parcel.farmDocumentId"
                         type="button"

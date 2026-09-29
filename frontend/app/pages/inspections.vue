@@ -529,6 +529,82 @@ async function confirmDelete() {
         deleting.value = false
     }
 }
+
+/* ------------------------------------------------------------------ */
+/* Inspection details                                                   */
+/* ------------------------------------------------------------------ */
+
+const showDetailModal = ref(false)
+const detailTarget = ref<InspectionRow | null>(null)
+
+const config = useRuntimeConfig()
+const strapiUrl = String(config.public.strapiUrl || '').replace(/\/$/, '')
+
+/** Small preview URL, preferring Strapi's generated thumbnail when present. */
+const thumbnailUrl = (photo: ParcelInspectionPhoto | null): string => {
+    const url = photo?.formats?.thumbnail?.url ?? photo?.url
+    return url ? `${strapiUrl}${url}` : ''
+}
+
+/** Full-size URL for the lightbox. */
+const photoUrl = (photo: ParcelInspectionPhoto | null): string =>
+    photo?.url ? `${strapiUrl}${photo.url}` : ''
+
+const detailPhotos = computed(() => detailTarget.value?.photos ?? [])
+
+/** Index of the photo shown in the lightbox; null while closed. */
+const lightboxIndex = ref<number | null>(null)
+const lightboxPhoto = computed(() =>
+    lightboxIndex.value === null
+        ? null
+        : (detailPhotos.value[lightboxIndex.value] ?? null)
+)
+
+function openDetail(row: InspectionRow) {
+    detailTarget.value = row
+    lightboxIndex.value = null
+    showDetailModal.value = true
+}
+
+function closeDetail() {
+    showDetailModal.value = false
+    lightboxIndex.value = null
+    detailTarget.value = null
+}
+
+function stepLightbox(direction: 1 | -1) {
+    const count = detailPhotos.value.length
+    if (count === 0) return
+    const current = lightboxIndex.value ?? 0
+    lightboxIndex.value = (current + direction + count) % count
+}
+
+function editFromDetail() {
+    const target = detailTarget.value
+    if (!target) return
+    closeDetail()
+    openEdit(target)
+}
+
+function onDetailKeydown(event: KeyboardEvent) {
+    if (!showDetailModal.value) return
+    if (event.key === 'Escape') {
+        if (lightboxIndex.value !== null) {
+            lightboxIndex.value = null
+        } else {
+            closeDetail()
+        }
+    } else if (lightboxIndex.value !== null && event.key === 'ArrowLeft') {
+        event.preventDefault()
+        stepLightbox(-1)
+    } else if (lightboxIndex.value !== null && event.key === 'ArrowRight') {
+        event.preventDefault()
+        stepLightbox(1)
+    }
+}
+
+onMounted(() => window.addEventListener('keydown', onDetailKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
 </script>
 
 <template>
@@ -883,6 +959,17 @@ async function confirmDelete() {
                                     <div
                                         class="flex items-center justify-end gap-1"
                                     >
+                                        <button
+                                            type="button"
+                                            title="View details"
+                                            class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                                            @click="openDetail(row)"
+                                        >
+                                            <UIcon
+                                                name="i-lucide-eye"
+                                                class="size-3.5"
+                                            />
+                                        </button>
                                         <button
                                             type="button"
                                             class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
@@ -1486,6 +1573,277 @@ async function confirmDelete() {
                     </button>
                 </div>
             </div>
+        </div>
+    </Teleport>
+
+    <!-- Inspection Detail Modal -->
+    <Teleport to="body">
+        <div
+            v-if="showDetailModal && detailTarget"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
+            @click.self="closeDetail"
+        >
+            <div
+                class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl"
+                style="font-family: 'DM Sans', sans-serif"
+            >
+                <div class="mb-5 flex items-start justify-between">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f0faf0]"
+                        >
+                            <UIcon
+                                name="i-lucide-clipboard-check"
+                                class="size-5 text-[#2d6a2d]"
+                            />
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">
+                                Inspection Details
+                            </h3>
+                            <p class="text-xs text-gray-500">
+                                {{ detailTarget?.inspection_type }} ·
+                                {{ shortId(detailTarget?.documentId ?? '') }}
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+                        @click="closeDetail"
+                    >
+                        <UIcon name="i-lucide-x" class="size-4" />
+                    </button>
+                </div>
+
+                <!-- Status + risk badges -->
+                <div class="mb-5 flex flex-wrap items-center gap-2">
+                    <span
+                        :class="STATUS_STYLE[detailTarget?.status ?? 'Pending']"
+                        class="flex w-fit items-center gap-1.5 rounded px-2.5 py-1 text-[11px] font-medium"
+                    >
+                        <span
+                            class="h-1.5 w-1.5 rounded-full"
+                            :style="{
+                                background:
+                                    STATUS_DOT[
+                                        detailTarget?.status ?? 'Pending'
+                                    ],
+                            }"
+                        />
+                        {{ detailTarget?.status }}
+                    </span>
+                    <span
+                        :class="RISK_STYLE[detailTarget?.riskLevel ?? 'None']"
+                        class="flex w-fit items-center gap-1.5 rounded px-2.5 py-1 text-[11px] font-semibold"
+                    >
+                        <span
+                            class="h-1.5 w-1.5 rounded-full"
+                            :style="{
+                                background:
+                                    RISK_DOT[detailTarget?.riskLevel ?? 'None'],
+                            }"
+                        />
+                        {{ detailTarget?.riskLevel }} risk
+                    </span>
+                    <span
+                        class="flex w-fit items-center gap-1 rounded bg-gray-100 px-2.5 py-1 text-[11px] font-medium text-gray-600"
+                    >
+                        <UIcon name="i-lucide-tags" class="size-3" />
+                        {{ detailTarget?.inspection_type }}
+                    </span>
+                </div>
+
+                <!-- Key facts -->
+                <div
+                    class="mb-5 grid grid-cols-2 gap-x-4 gap-y-4 rounded-xl border border-gray-100 bg-gray-50/60 p-4 sm:grid-cols-3"
+                >
+                    <div>
+                        <p
+                            class="text-[10px] font-semibold uppercase tracking-wide text-gray-400"
+                        >
+                            Parcel
+                        </p>
+                        <NuxtLink
+                            :to="`/parcels/${detailTarget?.parcel_code}`"
+                            class="font-mono text-xs font-semibold text-gray-800 underline-offset-2 hover:text-[#2d6a2d] hover:underline"
+                        >
+                            {{ detailTarget?.parcel_code }}
+                        </NuxtLink>
+                    </div>
+                    <div>
+                        <p
+                            class="text-[10px] font-semibold uppercase tracking-wide text-gray-400"
+                        >
+                            Barangay
+                        </p>
+                        <p class="text-xs text-gray-700">
+                            {{ detailTarget?.barangay || '—' }}
+                        </p>
+                    </div>
+                    <div>
+                        <p
+                            class="text-[10px] font-semibold uppercase tracking-wide text-gray-400"
+                        >
+                            Date
+                        </p>
+                        <p class="text-xs text-gray-700">
+                            {{ detailTarget?.date ?? '—' }}
+                        </p>
+                    </div>
+                    <div>
+                        <p
+                            class="text-[10px] font-semibold uppercase tracking-wide text-gray-400"
+                        >
+                            Inspector
+                        </p>
+                        <p class="text-xs text-gray-700">
+                            {{ detailTarget?.inspector || '—' }}
+                        </p>
+                    </div>
+                    <div>
+                        <p
+                            class="text-[10px] font-semibold uppercase tracking-wide text-gray-400"
+                        >
+                            GPS Coordinates
+                        </p>
+                        <p class="text-xs text-gray-700">
+                            {{ gpsLabel(detailTarget?.gps_point) || '—' }}
+                        </p>
+                    </div>
+                    <div>
+                        <p
+                            class="text-[10px] font-semibold uppercase tracking-wide text-gray-400"
+                        >
+                            Photos
+                        </p>
+                        <p class="text-xs text-gray-700">
+                            {{ detailPhotos.length }}
+                            {{ detailPhotos.length === 1 ? 'photo' : 'photos' }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Findings -->
+                <div class="mb-5">
+                    <p class="mb-1.5 text-xs font-semibold text-gray-700">
+                        Findings
+                    </p>
+                    <div
+                        class="rounded-xl border border-gray-100 bg-white px-4 py-3 text-xs leading-relaxed text-gray-600"
+                    >
+                        <p
+                            v-if="detailTarget?.notes?.trim()"
+                            class="whitespace-pre-wrap"
+                        >
+                            {{ detailTarget.notes }}
+                        </p>
+                        <p v-else class="italic text-gray-400">
+                            No findings recorded.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Field photos -->
+                <div v-if="detailPhotos.length > 0" class="mb-5">
+                    <p class="mb-1.5 text-xs font-semibold text-gray-700">
+                        Field Photos
+                    </p>
+                    <div class="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                        <button
+                            v-for="(photo, index) in detailPhotos"
+                            :key="photo.id ?? index"
+                            type="button"
+                            class="group relative aspect-square overflow-hidden rounded-lg border border-gray-200 bg-gray-100"
+                            @click="lightboxIndex = index"
+                        >
+                            <img
+                                v-if="thumbnailUrl(photo)"
+                                :src="thumbnailUrl(photo)"
+                                class="h-full w-full object-cover transition-transform group-hover:scale-105"
+                                :alt="`Field photo ${index + 1}`"
+                            />
+                            <div
+                                v-else
+                                class="flex h-full w-full items-center justify-center text-gray-300"
+                            >
+                                <UIcon name="i-lucide-image" class="size-5" />
+                            </div>
+                        </button>
+                    </div>
+                    <p class="mt-2 text-[11px] text-gray-400">
+                        Click a photo to view it full-size.
+                    </p>
+                </div>
+
+                <div
+                    class="flex justify-end gap-2 border-t border-gray-100 pt-4"
+                >
+                    <button
+                        type="button"
+                        class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                        @click="closeDetail"
+                    >
+                        Close
+                    </button>
+                    <button
+                        type="button"
+                        class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
+                        @click="editFromDetail"
+                    >
+                        <UIcon name="i-lucide-pencil" class="size-3.5" />
+                        Edit Inspection
+                    </button>
+                </div>
+            </div>
+        </div>
+    </Teleport>
+
+    <!-- Photo Lightbox -->
+    <Teleport to="body">
+        <div
+            v-if="lightboxIndex !== null && lightboxPhoto"
+            class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+            @click.self="lightboxIndex = null"
+        >
+            <button
+                v-if="detailPhotos.length > 1"
+                type="button"
+                class="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
+                aria-label="Previous photo"
+                @click="stepLightbox(-1)"
+            >
+                <UIcon name="i-lucide-chevron-left" class="size-5" />
+            </button>
+            <button
+                v-if="detailPhotos.length > 1"
+                type="button"
+                class="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
+                aria-label="Next photo"
+                @click="stepLightbox(1)"
+            >
+                <UIcon name="i-lucide-chevron-right" class="size-5" />
+            </button>
+            <button
+                type="button"
+                class="absolute right-4 top-4 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
+                aria-label="Close photo"
+                @click="lightboxIndex = null"
+            >
+                <UIcon name="i-lucide-x" class="size-5" />
+            </button>
+            <figure class="max-h-full max-w-full">
+                <img
+                    v-if="photoUrl(lightboxPhoto)"
+                    :src="photoUrl(lightboxPhoto)"
+                    class="max-h-[85vh] max-w-full rounded-lg object-contain shadow-2xl"
+                    :alt="`Field photo ${(lightboxIndex ?? 0) + 1}`"
+                />
+                <figcaption class="mt-2 text-center text-xs text-gray-300">
+                    Photo {{ (lightboxIndex ?? 0) + 1 }} of
+                    {{ detailPhotos.length }}
+                </figcaption>
+            </figure>
         </div>
     </Teleport>
 </template>

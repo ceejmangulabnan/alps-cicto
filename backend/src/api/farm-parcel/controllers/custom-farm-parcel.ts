@@ -79,7 +79,7 @@ export default factories.createCoreController(
                     populate: query.populate || [
                         'farm',
                         'farm.barangay',
-                        'farm.farmers',
+                        'farmers',
                     ],
                 }
 
@@ -237,15 +237,30 @@ export default factories.createCoreController(
                     boundary_geojson: body.boundary_geojson,
                     land_status: body.land_status,
                     current_use: body.current_use || '',
+                    // The farmers tending this parcel. The owning farm's farmer
+                    // list is a rollup over these, so it is not sent here.
+                    ...(body.farmers !== undefined && {
+                        farmers: body.farmers,
+                    }),
                     // area_hectares is optional - will be auto-calculated in lifecycle if not provided
-                    ...(body.area_hectares !== undefined && { area_hectares: body.area_hectares }),
+                    ...(body.area_hectares !== undefined && {
+                        area_hectares: body.area_hectares,
+                    }),
                 }
 
                 // Create parcel using Document Service (triggers lifecycle validation)
-                const parcel = await strapi.documents('api::farm-parcel.farm-parcel').create({
-                    data: parcelData as any,
-                    populate: ['farm', 'farm.barangay', 'farm.farmers', 'planting_cycle', 'inspections'],
-                })
+                const parcel = await strapi
+                    .documents('api::farm-parcel.farm-parcel')
+                    .create({
+                        data: parcelData as any,
+                        populate: [
+                            'farm',
+                            'farm.barangay',
+                            'farmers',
+                            'planting_cycle',
+                            'inspections',
+                        ],
+                    })
 
                 ctx.body = { data: parcel }
             } catch (err) {

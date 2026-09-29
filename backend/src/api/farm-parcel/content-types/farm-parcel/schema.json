@@ -23,14 +23,20 @@
             "inversedBy": "farm_parcels",
             "required": true
         },
+        "farmers": {
+            "type": "relation",
+            "relation": "manyToMany",
+            "target": "api::farmer.farmer",
+            "inversedBy": "parcels"
+        },
         "boundary_geojson": {
             "type": "json",
             "required": true
         },
-  "area_hectares": {
-    "type": "float",
-    "required": true
-  },
+        "area_hectares": {
+            "type": "float",
+            "required": true
+        },
         "land_status": {
             "type": "enumeration",
             "required": true,

@@ -22,7 +22,11 @@ export default factories.createCoreController(
                             fields: ['area_hectares', 'land_status'],
                         },
                         barangay: true,
-                        farmers: true,
+                        // farmer_status is included so the farm's status can be
+                        // derived from the rollup without a second request.
+                        farmers: {
+                            fields: ['name', 'farmer_code', 'farmer_status'],
+                        },
                     },
                 } as Record<string, unknown>
 
@@ -95,10 +99,22 @@ export default factories.createCoreController(
                                 'land_status',
                                 'parcel_code',
                             ],
-                            populate: ['planting_cycle'],
+                            populate: {
+                                planting_cycle: true,
+                                // Who tends each parcel, as opposed to the
+                                // farm-wide rollup populated below.
+                                farmers: {
+                                    fields: [
+                                        'name',
+                                        'farmer_code',
+                                        'farmer_status',
+                                    ],
+                                },
+                            },
                         },
-                        barangay: true,
-                        farmers: true,
+                        farmers: {
+                            fields: ['name', 'farmer_code', 'farmer_status'],
+                        },
                     },
                 } as Record<string, unknown>
 

@@ -33,8 +33,7 @@ export function validateGeoJSONPolygon(geojson: unknown): {
     if (gj.type === 'FeatureCollection') {
         return {
             valid: false,
-            error:
-                'boundary_geojson must be a single Polygon or Feature, not FeatureCollection',
+            error: 'boundary_geojson must be a single Polygon or Feature, not FeatureCollection',
         }
     }
 
@@ -53,8 +52,7 @@ export function validateGeoJSONPolygon(geojson: unknown): {
     } else {
         return {
             valid: false,
-            error:
-                'boundary_geojson must be a valid GeoJSON Polygon or Feature with Polygon geometry',
+            error: 'boundary_geojson must be a valid GeoJSON Polygon or Feature with Polygon geometry',
         }
     }
 
@@ -86,8 +84,7 @@ export function validateGeoJSONPolygon(geojson: unknown): {
     if (first[0] !== last[0] || first[1] !== last[1]) {
         return {
             valid: false,
-            error:
-                'Polygon exterior ring must be closed (first and last coordinates must match)',
+            error: 'Polygon exterior ring must be closed (first and last coordinates must match)',
         }
     }
 

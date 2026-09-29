@@ -24,10 +24,13 @@ function extraFarmerCount(row: FarmRow): number {
 </script>
 
 <template>
-    <div class="alps-card overflow-hidden">
-        <table class="w-full text-xs">
+    <div class="alps-card overflow-x-auto">
+        <table class="w-full min-w-[720px] text-xs">
             <thead class="border-b border-gray-100 bg-gray-50">
                 <tr>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-600">
+                        Farm
+                    </th>
                     <th class="px-4 py-3 text-left font-semibold text-gray-600">
                         Farm Code
                     </th>
@@ -66,6 +69,9 @@ function extraFarmerCount(row: FarmRow): number {
                     ]"
                     @click="emit('select', row)"
                 >
+                    <td class="px-4 py-2.5 font-medium text-gray-800">
+                        {{ row.name }}
+                    </td>
                     <td class="px-4 py-2.5 font-mono text-gray-700">
                         {{ row.farm_code }}
                     </td>

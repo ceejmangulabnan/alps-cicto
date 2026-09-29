@@ -218,8 +218,8 @@ function addUser() {
 </script>
 
 <template>
-    <div class="space-y-6 p-6">
-        <div class="flex items-center justify-between">
+    <div class="space-y-6 p-4 sm:p-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">Administration</h1>
                 <p class="mt-0.5 text-sm text-gray-500">
@@ -236,7 +236,7 @@ function addUser() {
             </button>
         </div>
 
-        <div class="grid grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <div
                 v-for="s in systemStats"
                 :key="s.label"
@@ -369,7 +369,7 @@ function addUser() {
                     </button>
                 </div>
                 <div v-if="filteredUsers.length" class="overflow-x-auto">
-                    <table class="w-full text-xs">
+                    <table class="w-full min-w-[640px] text-xs">
                         <thead class="border-b border-gray-100 bg-gray-50">
                             <tr>
                                 <th
@@ -513,7 +513,7 @@ function addUser() {
     <Teleport to="body">
         <div
             v-if="showAddModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
             @click.self="showAddModal = false"
         >
             <div
@@ -575,7 +575,7 @@ function addUser() {
                             class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
                         />
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"

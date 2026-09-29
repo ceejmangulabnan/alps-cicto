@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{ active: string }>()
 
-const collapsed = ref(false)
+const { drawerOpen, isRail, close, toggleCollapsed } = useSidebar()
 
 const auth = useAuth()
 
@@ -92,16 +92,22 @@ const navGroups = computed<NavGroup[]>(() => {
         { label: 'Analytics', items: analytics },
     ]
 })
-
-const toggle = () => {
-    collapsed.value = !collapsed.value
-}
 </script>
 
 <template>
+    <!--
+        Below `lg` this is an off-canvas drawer, hidden by default and sliding
+        in when opened. `lg:translate-x-0` makes it a normal flex child again
+        from `lg` up, so the same markup serves both without a duplicate mobile
+        menu. The closed state is the CSS default rather than a JS-computed one,
+        so it is correct on the very first paint.
+    -->
     <aside
-        class="relative flex-shrink-0 flex h-screen flex-col overflow-hidden border-r border-white/5 bg-gradient-to-b from-[#19331c] via-[#162c1a] to-[#122419] text-white shadow-2xl shadow-black/40 transition-all duration-300 z-20"
-        :class="collapsed ? 'w-16' : 'w-60'"
+        class="fixed inset-y-0 left-0 z-50 flex h-screen w-64 -translate-x-full flex-col overflow-hidden border-r border-white/5 bg-gradient-to-b from-[#19331c] via-[#162c1a] to-[#122419] text-white shadow-2xl shadow-black/40 transition-transform duration-300 ease-out lg:relative lg:inset-y-auto lg:z-20 lg:shrink-0 lg:translate-x-0 lg:transition-[width]"
+        :class="[
+            drawerOpen ? 'translate-x-0' : '',
+            isRail ? 'lg:w-16' : 'lg:w-60',
+        ]"
     >
         <!-- decorative glow -->
         <div
@@ -111,7 +117,7 @@ const toggle = () => {
         <!-- Brand -->
         <div
             class="relative border-b border-white/10 px-4 py-5"
-            :class="collapsed ? 'flex justify-center px-2' : ''"
+            :class="isRail ? 'flex justify-center px-2' : ''"
         >
             <div class="flex items-center gap-3">
                 <div
@@ -119,7 +125,7 @@ const toggle = () => {
                 >
                     <UIcon name="i-lucide-leaf" class="size-5 text-white" />
                     <span
-                        v-if="!collapsed"
+                        v-if="!isRail"
                         class="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5"
                     >
                         <span
@@ -130,7 +136,7 @@ const toggle = () => {
                         ></span>
                     </span>
                 </div>
-                <div v-if="!collapsed" class="min-w-0">
+                <div v-if="!isRail" class="min-w-0">
                     <div
                         class="text-sm font-bold tracking-[0.22em] leading-tight text-green-50"
                     >
@@ -148,6 +154,15 @@ const toggle = () => {
                         LGU San Fernando
                     </div>
                 </div>
+                <!-- Drawer only: the backdrop is the other way out. -->
+                <button
+                    type="button"
+                    class="ml-auto rounded-lg p-1.5 text-green-200/60 transition-colors hover:bg-white/10 hover:text-white lg:hidden"
+                    aria-label="Close navigation"
+                    @click="close"
+                >
+                    <UIcon name="i-lucide-x" class="size-4" />
+                </button>
             </div>
         </div>
 
@@ -155,7 +170,7 @@ const toggle = () => {
         <nav class="relative flex-1 space-y-4 overflow-y-auto px-2.5 py-4">
             <div v-for="group in navGroups" :key="group.label">
                 <div
-                    v-if="!collapsed"
+                    v-if="!isRail"
                     class="mb-1 px-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-green-300/40"
                 >
                     {{ group.label }}
@@ -166,19 +181,19 @@ const toggle = () => {
                         v-for="item in group.items"
                         :key="item.id"
                         :to="item.to"
-                        :title="collapsed ? item.label : undefined"
+                        :title="isRail ? item.label : undefined"
                         class="group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-150"
                         :class="[
                             active === item.id
-                                ? collapsed
+                                ? isRail
                                     ? 'bg-[#4a9d4a] text-white shadow-md shadow-black/30'
                                     : 'bg-gradient-to-r from-[#3f8f3f]/90 to-[#2c6e2c]/90 text-white shadow-md shadow-black/25'
                                 : 'text-green-100/60 hover:translate-x-0.5 hover:bg-white/5 hover:text-white',
-                            collapsed ? 'justify-center px-0' : '',
+                            isRail ? 'justify-center px-0' : '',
                         ]"
                     >
                         <span
-                            v-if="active === item.id && !collapsed"
+                            v-if="active === item.id && !isRail"
                             class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-[#8fe08f]"
                         ></span>
                         <span
@@ -195,7 +210,7 @@ const toggle = () => {
                             :name="item.icon"
                             class="size-[17px] flex-shrink-0 text-green-300/60 group-hover:text-white"
                         />
-                        <span v-if="!collapsed" class="truncate">{{
+                        <span v-if="!isRail" class="truncate">{{
                             item.label
                         }}</span>
                     </NuxtLink>
@@ -205,13 +220,20 @@ const toggle = () => {
 
         <!-- Footer -->
         <div class="relative border-t border-white/10 px-3 pb-3 pt-2">
+            <!--
+                Rail collapse is a desktop affordance; below `lg` the drawer is
+                dismissed with the backdrop or the close button instead.
+            -->
             <button
                 type="button"
-                class="flex w-full items-center justify-center rounded-lg py-2 text-xs text-green-200/60 transition-colors hover:bg-white/10 hover:text-white"
-                @click="toggle"
+                class="hidden w-full items-center justify-center rounded-lg py-2 text-xs text-green-200/60 transition-colors hover:bg-white/10 hover:text-white lg:flex"
+                :aria-label="
+                    isRail ? 'Expand navigation' : 'Collapse navigation'
+                "
+                @click="toggleCollapsed"
             >
                 <UIcon
-                    v-if="collapsed"
+                    v-if="isRail"
                     name="i-lucide-chevron-right"
                     class="size-4"
                 />
@@ -222,7 +244,7 @@ const toggle = () => {
             </button>
 
             <div
-                v-if="!collapsed"
+                v-if="!isRail"
                 class="mt-2 text-center text-[10px] text-green-400/35"
             >
                 City Agriculture Office

@@ -1,15 +1,21 @@
-import type { Farm, FarmerStatus } from '~/composables/useFarmsApi'
+import {
+    deriveFarmStatus,
+    type Farm,
+    type FarmStatus,
+} from '~/composables/useFarmsApi'
 import { toLoadError, type LoadError } from '~/utils/loadError'
 
-export type FarmStatusFilter = 'All' | FarmerStatus
+export type FarmStatusFilter = 'All' | FarmStatus
 
 const FARM_SUBJECT = { name: 'farms', contentType: 'farm' } as const
 
 /** A farm flattened for the management table. */
 export interface FarmRow {
     documentId: string
+    name: string
     farm_code: string
-    farmer_status: FarmerStatus
+    /** Derived from the farmers tending this farm's parcels, not stored. */
+    farmer_status: FarmStatus
     barangay: string
     farmers: string[]
     parcelCount: number
@@ -20,14 +26,33 @@ export interface FarmRow {
 
 const UNKNOWN = 'Unknown'
 
+/**
+ * Layers an incoming farm over the one already held. A write response omits
+ * whatever it was not asked for, and an absent key has to stay absent rather
+ * than be read as "cleared"; a relation that comes back as an empty array was
+ * genuinely emptied and does override.
+ */
+function mergeFarm(previous: Farm | null, incoming: Farm): Farm {
+    if (!previous) return incoming
+
+    return {
+        ...previous,
+        ...incoming,
+        barangay: incoming.barangay ?? previous.barangay,
+        farmers: incoming.farmers ?? previous.farmers,
+        farm_parcels: incoming.farm_parcels ?? previous.farm_parcels,
+    }
+}
+
 function toFarmRow(farm: Farm): FarmRow {
     const summary = farm.parcel_summary
     const parcels = farm.farm_parcels ?? []
 
     return {
         documentId: farm.documentId,
+        name: farm.name,
         farm_code: farm.farm_code,
-        farmer_status: farm.farmer_status ?? 'Inactive',
+        farmer_status: deriveFarmStatus(farm.farmers),
         barangay: farm.barangay?.name ?? `${UNKNOWN} barangay`,
         farmers: (farm.farmers ?? []).map((farmer) => farmer.name),
         parcelCount: summary?.parcel_count ?? parcels.length,
@@ -126,12 +151,20 @@ export const useFarmsData = () => {
         }
     }
 
-    /** Puts a created or edited farm back into the list without a refetch. */
+    /**
+     * Puts a created or edited farm back into the list without a refetch.
+     *
+     * The response is layered over the farm already in the list rather than
+     * replacing it, so a relation the write happened not to return survives. A
+     * lost `barangay` here would be invisible until the next edit of that farm
+     * failed to prefill, which is a confusing way to find out.
+     */
     function upsertFarm(farm: Farm) {
-        const row = toFarmRow(farm)
         const index = farms.value.findIndex(
-            (item) => item.documentId === row.documentId
+            (item) => item.documentId === farm.documentId
         )
+        const previous = index === -1 ? null : farms.value[index]!.farm
+        const row = toFarmRow(mergeFarm(previous, farm))
 
         if (index === -1) {
             farms.value = [...farms.value, row]

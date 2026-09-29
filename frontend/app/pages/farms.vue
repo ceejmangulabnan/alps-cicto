@@ -125,8 +125,8 @@ function goViewFarm(documentId: string) {
 </script>
 
 <template>
-    <div class="p-6">
-        <div class="mb-6 flex items-center justify-between">
+    <div class="p-4 sm:p-6">
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">
                     Farms &amp; Parcels
@@ -135,7 +135,7 @@ function goViewFarm(documentId: string) {
                     Farm registry and the parcels drawn against each farm
                 </p>
             </div>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
                 <UButton
                     class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
                     @click="openCreateFarm"
@@ -243,9 +243,14 @@ function goViewFarm(documentId: string) {
                 </div>
             </div>
 
-            <div class="flex gap-4">
+            <!--
+                The detail panel is a fixed-width sibling on wide screens; below
+                `xl` it stacks under the table, where side by side it would
+                squeeze the table's columns.
+            -->
+            <div class="flex flex-col gap-4 xl:flex-row">
                 <FarmsFarmTable
-                    class="flex-1"
+                    class="min-w-0 flex-1"
                     :farms="filteredFarms"
                     :selected-document-id="selectedFarm?.documentId ?? null"
                     :loading="farmsLoading"
@@ -253,6 +258,7 @@ function goViewFarm(documentId: string) {
                 />
                 <FarmsFarmDetail
                     v-if="selectedFarm"
+                    class="w-full shrink-0 xl:w-80"
                     :farm="selectedFarm"
                     :detail="selectedDetail"
                     :detail-loading="detailLoading"
@@ -283,8 +289,10 @@ function goViewFarm(documentId: string) {
             />
 
             <div class="mb-5 space-y-3">
-                <div class="flex items-center gap-3">
-                    <div class="relative max-w-xs flex-1">
+                <div
+                    class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3"
+                >
+                    <div class="relative w-full max-w-xs sm:flex-1">
                         <UIcon
                             name="i-lucide-search"
                             class="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-gray-400"
@@ -305,7 +313,7 @@ function goViewFarm(documentId: string) {
                         </button>
                     </div>
                     <div
-                        class="ml-auto flex items-center gap-1.5 text-xs text-gray-400"
+                        class="flex items-center gap-1.5 text-xs text-gray-400 sm:ml-auto"
                     >
                         <UIcon name="i-lucide-filter" class="size-3" />
                         {{ filteredParcels.length }} of {{ parcels.length }}
@@ -335,8 +343,9 @@ function goViewFarm(documentId: string) {
                 </div>
             </div>
 
-            <div class="flex gap-4">
+            <div class="flex flex-col gap-4 xl:flex-row">
                 <FarmsParcelTable
+                    class="min-w-0 flex-1"
                     :parcels="filteredParcels"
                     :selected-document-id="selectedParcel?.documentId ?? null"
                     :loading="parcelsLoading"
@@ -345,6 +354,7 @@ function goViewFarm(documentId: string) {
                 />
                 <FarmsParcelDetail
                     v-if="selectedParcel"
+                    class="w-full shrink-0 xl:w-80"
                     :parcel="selectedParcel"
                     @edit="goEditParcel(selectedParcel!.documentId)"
                     @view-farm="goViewFarm(selectedParcel!.farmDocumentId)"

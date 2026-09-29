@@ -353,7 +353,7 @@ function confirmDelete() {
 </script>
 
 <template>
-    <div class="p-6">
+    <div class="p-4 sm:p-6">
         <div class="mb-6 flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">
@@ -374,7 +374,7 @@ function confirmDelete() {
         </div>
 
         <!-- Stats -->
-        <div class="mb-5 grid grid-cols-4 gap-4">
+        <div class="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
             <div
                 v-for="s in stats"
                 :key="s.label"
@@ -786,7 +786,7 @@ function confirmDelete() {
     <Teleport to="body">
         <div
             v-if="showNewModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
             @click.self="showNewModal = false"
         >
             <div
@@ -822,7 +822,7 @@ function confirmDelete() {
                 </div>
 
                 <form class="space-y-4" @submit.prevent="showNewModal = false">
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -859,7 +859,7 @@ function confirmDelete() {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -902,7 +902,7 @@ function confirmDelete() {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -930,7 +930,7 @@ function confirmDelete() {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -975,7 +975,7 @@ function confirmDelete() {
                         ></textarea>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -1042,7 +1042,7 @@ function confirmDelete() {
     <Teleport to="body">
         <div
             v-if="showEditModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
             @click.self="showEditModal = false"
         >
             <div
@@ -1078,7 +1078,7 @@ function confirmDelete() {
                 </div>
 
                 <form class="space-y-4" @submit.prevent="saveEdit">
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -1115,7 +1115,7 @@ function confirmDelete() {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -1158,7 +1158,7 @@ function confirmDelete() {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -1186,7 +1186,7 @@ function confirmDelete() {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -1231,7 +1231,7 @@ function confirmDelete() {
                         ></textarea>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -1298,7 +1298,7 @@ function confirmDelete() {
     <Teleport to="body">
         <div
             v-if="showDeleteModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
             @click.self="showDeleteModal = false"
         >
             <div

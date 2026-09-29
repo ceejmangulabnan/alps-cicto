@@ -20,24 +20,24 @@
             "type": "string",
             "required": true
         },
-        "barangays": {
-            "type": "relation",
-            "relation": "manyToMany",
-            "target": "api::barangay.barangay",
-            "mappedBy": "farmers"
-        },
         "farms": {
             "type": "relation",
             "relation": "manyToMany",
             "target": "api::farm.farm",
             "mappedBy": "farmers"
         },
+        "parcels": {
+            "type": "relation",
+            "relation": "manyToMany",
+            "target": "api::farm-parcel.farm-parcel",
+            "mappedBy": "farmers"
+        },
         "contact": {
-            "type": "biginteger"
+            "type": "string"
         },
         "farmer_status": {
             "type": "enumeration",
-            "enum": ["Active", "Inactive"]
+            "enum": ["Active", "Inactive", "Departed"]
         }
     }
 }

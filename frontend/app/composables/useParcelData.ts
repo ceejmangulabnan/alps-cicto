@@ -13,7 +13,12 @@ export interface ParcelAlert {
     action: ParcelAlertAction
 }
 
-const PARCEL_POPULATE = ['farm', 'farm.barangay', 'farm.farmers']
+/**
+ * `farm.farmers` is the farm-wide rollup, so it cannot stand in for `farmers`:
+ * without the parcel's own tendees the sidebar's picker would come up empty for
+ * a parcel that has farmers, and saving would then wipe them.
+ */
+const PARCEL_POPULATE = ['farm', 'farm.barangay', 'farm.farmers', 'farmers']
 
 /**
  * Owns the fetched side of the map: farms and parcels, the single alert banner

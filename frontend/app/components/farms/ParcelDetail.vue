@@ -28,9 +28,11 @@ const detailFields = computed(() => [
                     backgroundImage: `linear-gradient(90deg, ${statusDot(parcel.land_status)}, transparent)`,
                 }"
             />
-            <div class="p-5">
-                <div class="flex items-start justify-between">
-                    <div>
+            <div class="p-4 sm:p-5">
+                <div
+                    class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+                >
+                    <div class="min-w-0">
                         <div class="font-mono text-xs text-gray-600">
                             {{ parcel.parcel_code }}
                         </div>
@@ -65,25 +67,45 @@ const detailFields = computed(() => [
                     </div>
                 </div>
 
-                <div class="mt-4 flex items-center gap-2.5">
-                    <span
-                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
-                        :style="{
-                            backgroundColor: avatarColor(parcel.farmerName),
-                        }"
+                <!--
+                    One entry per tendee, since a parcel may be shared and each
+                    needs their own initials and colour.
+                -->
+                <div class="mt-4 space-y-2.5">
+                    <div
+                        v-for="name in parcel.farmerNames"
+                        :key="name"
+                        class="flex items-center gap-2.5"
                     >
-                        {{ initials(parcel.farmerName) }}
-                    </span>
-                    <div>
-                        <div class="text-xs font-semibold text-gray-800">
-                            {{ parcel.farmerName }}
-                        </div>
-                        <div
-                            class="flex items-center gap-1 text-[11px] text-gray-400"
+                        <span
+                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+                            :style="{
+                                backgroundColor: avatarColor(name),
+                            }"
                         >
-                            <UIcon name="i-lucide-map-pin" class="size-2.5" />
-                            {{ parcel.barangay }}
+                            {{ initials(name) }}
+                        </span>
+                        <div>
+                            <div class="text-xs font-semibold text-gray-800">
+                                {{ name }}
+                            </div>
+                            <div
+                                v-if="parcel.farmerNames.length === 1"
+                                class="flex items-center gap-1 text-[11px] text-gray-400"
+                            >
+                                <UIcon
+                                    name="i-lucide-map-pin"
+                                    class="size-2.5"
+                                />
+                                {{ parcel.barangay }}
+                            </div>
                         </div>
+                    </div>
+                    <div
+                        v-if="parcel.farmerNames.length === 0"
+                        class="text-[11px] text-gray-400"
+                    >
+                        No farmer assigned to this parcel.
                     </div>
                 </div>
 

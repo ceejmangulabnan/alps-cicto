@@ -334,8 +334,8 @@ const barangayOptions = computed(() =>
 </script>
 
 <template>
-    <div class="space-y-6 p-6">
-        <div class="flex items-center justify-between">
+    <div class="space-y-6 p-4 sm:p-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">
                     Planting & Crops
@@ -356,7 +356,7 @@ const barangayOptions = computed(() =>
         </div>
 
         <!-- Summary Cards -->
-        <div class="grid grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <div
                 v-for="card in summaryCards"
                 :key="card.label"
@@ -504,7 +504,7 @@ const barangayOptions = computed(() =>
                     </h3>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-xs">
+                    <table class="w-full min-w-[720px] text-xs">
                         <thead class="border-b border-gray-100 bg-gray-50">
                             <tr>
                                 <th
@@ -692,7 +692,7 @@ const barangayOptions = computed(() =>
     <Teleport to="body">
         <div
             v-if="showRegisterModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
             @click.self="showRegisterModal = false"
         >
             <div
@@ -731,7 +731,7 @@ const barangayOptions = computed(() =>
                     class="space-y-4"
                     @submit.prevent="showRegisterModal = false"
                 >
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -790,7 +790,7 @@ const barangayOptions = computed(() =>
                         />
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -845,7 +845,7 @@ const barangayOptions = computed(() =>
                         />
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -914,7 +914,7 @@ const barangayOptions = computed(() =>
     <Teleport to="body">
         <div
             v-if="showEditModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
             @click.self="showEditModal = false"
         >
             <div
@@ -950,7 +950,7 @@ const barangayOptions = computed(() =>
                 </div>
 
                 <form class="space-y-4" @submit.prevent="saveEdit">
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -1009,7 +1009,7 @@ const barangayOptions = computed(() =>
                         />
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -1064,7 +1064,7 @@ const barangayOptions = computed(() =>
                         />
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1 block text-xs font-medium text-gray-600"
@@ -1133,7 +1133,7 @@ const barangayOptions = computed(() =>
     <Teleport to="body">
         <div
             v-if="showDeleteModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
             @click.self="showDeleteModal = false"
         >
             <div

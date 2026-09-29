@@ -512,7 +512,7 @@ const miniMapZoom = ref(13)
 </script>
 
 <template>
-    <div class="space-y-6 p-6">
+    <div class="space-y-6 p-4 sm:p-6">
         <!-- Header -->
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -968,81 +968,93 @@ const miniMapZoom = ref(13)
                         <UIcon name="i-lucide-arrow-right" class="size-2.5" />
                     </button>
                 </div>
-                <table class="w-full text-xs">
-                    <thead>
-                        <tr class="border-b border-gray-100 text-gray-400">
-                            <th class="pb-2 text-left font-medium">Farmer</th>
-                            <th class="pb-2 text-left font-medium">Crop</th>
-                            <th class="pb-2 text-left font-medium">Barangay</th>
-                            <th class="pb-2 text-right font-medium">Area</th>
-                            <th class="pb-2 pl-8 text-left font-medium">
-                                Est. Date
-                            </th>
-                            <th class="pb-2 text-left font-medium">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr
-                            v-for="(h, i) in upcomingHarvests"
-                            :key="i"
-                            class="border-b border-gray-50 transition-colors last:border-0 hover:bg-[#f0f7f0]/70"
-                        >
-                            <td class="py-2.5">
-                                <div class="flex items-center gap-2">
-                                    <span
-                                        class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
-                                        :style="{
-                                            backgroundColor: avatarColor(
-                                                h.farmer
-                                            ),
-                                        }"
-                                    >
-                                        {{ initials(h.farmer) }}
-                                    </span>
-                                    <span class="font-medium text-gray-800">
-                                        {{ h.farmer }}
-                                    </span>
-                                </div>
-                            </td>
-                            <td class="py-2.5 text-gray-600">{{ h.crop }}</td>
-                            <td class="py-2.5 text-gray-500">
-                                {{ h.barangay }}
-                            </td>
-                            <td
-                                class="py-2.5 text-right font-mono text-gray-600"
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[560px] text-xs">
+                        <thead>
+                            <tr class="border-b border-gray-100 text-gray-400">
+                                <th class="pb-2 text-left font-medium">
+                                    Farmer
+                                </th>
+                                <th class="pb-2 text-left font-medium">Crop</th>
+                                <th class="pb-2 text-left font-medium">
+                                    Barangay
+                                </th>
+                                <th class="pb-2 text-right font-medium">
+                                    Area
+                                </th>
+                                <th class="pb-2 pl-8 text-left font-medium">
+                                    Est. Date
+                                </th>
+                                <th class="pb-2 text-left font-medium">
+                                    Status
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                v-for="(h, i) in upcomingHarvests"
+                                :key="i"
+                                class="border-b border-gray-50 transition-colors last:border-0 hover:bg-[#f0f7f0]/70"
                             >
-                                {{ h.area }} ha
-                            </td>
-                            <td class="py-2.5 pl-8">
-                                <div class="text-gray-600">
-                                    {{ h.expectedDate }}
-                                </div>
-                                <div
-                                    class="text-[10px]"
-                                    :class="
-                                        daysUntil(h.expectedDate) <= 10
-                                            ? 'font-medium text-amber-600'
-                                            : 'text-gray-400'
-                                    "
+                                <td class="py-2.5">
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
+                                            :style="{
+                                                backgroundColor: avatarColor(
+                                                    h.farmer
+                                                ),
+                                            }"
+                                        >
+                                            {{ initials(h.farmer) }}
+                                        </span>
+                                        <span class="font-medium text-gray-800">
+                                            {{ h.farmer }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="py-2.5 text-gray-600">
+                                    {{ h.crop }}
+                                </td>
+                                <td class="py-2.5 text-gray-500">
+                                    {{ h.barangay }}
+                                </td>
+                                <td
+                                    class="py-2.5 text-right font-mono text-gray-600"
                                 >
-                                    in {{ daysUntil(h.expectedDate) }} days
-                                </div>
-                            </td>
-                            <td class="py-2.5">
-                                <span
-                                    :class="
-                                        h.status === 'At Risk'
-                                            ? 'status-atrisk'
-                                            : 'status-cultivated'
-                                    "
-                                    class="rounded px-2 py-0.5 text-[10px] font-medium"
-                                >
-                                    {{ h.status }}
-                                </span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                                    {{ h.area }} ha
+                                </td>
+                                <td class="py-2.5 pl-8">
+                                    <div class="text-gray-600">
+                                        {{ h.expectedDate }}
+                                    </div>
+                                    <div
+                                        class="text-[10px]"
+                                        :class="
+                                            daysUntil(h.expectedDate) <= 10
+                                                ? 'font-medium text-amber-600'
+                                                : 'text-gray-400'
+                                        "
+                                    >
+                                        in {{ daysUntil(h.expectedDate) }} days
+                                    </div>
+                                </td>
+                                <td class="py-2.5">
+                                    <span
+                                        :class="
+                                            h.status === 'At Risk'
+                                                ? 'status-atrisk'
+                                                : 'status-cultivated'
+                                        "
+                                        class="rounded px-2 py-0.5 text-[10px] font-medium"
+                                    >
+                                        {{ h.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Crop Distribution -->

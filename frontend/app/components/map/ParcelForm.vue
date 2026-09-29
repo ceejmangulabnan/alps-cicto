@@ -19,6 +19,9 @@ const emit = defineEmits<{
 const {
     form,
     loading,
+    farmers,
+    farmerOptions,
+    farmersLoading,
     error,
     success,
     areaHectares,
@@ -32,8 +35,12 @@ const {
 </script>
 
 <template>
+    <!--
+        A fixed side panel has no room below `sm`, where it would leave the map
+        as a sliver. There it becomes a full-height sheet instead.
+    -->
     <aside
-        class="w-80 shrink-0 overflow-y-auto border-l border-gray-200 bg-white p-5"
+        class="w-full shrink-0 overflow-y-auto border-l border-gray-200 bg-white p-4 sm:w-80 sm:p-5"
     >
         <div class="mb-5 flex items-start justify-between">
             <div>
@@ -81,8 +88,7 @@ const {
                             :key="farm.documentId"
                             :value="farm.documentId"
                         >
-                            {{ farm.farm_code }} ·
-                            {{ farm.barangay?.name ?? 'Unknown' }}
+                            {{ farm.name }} · {{ farm.farm_code }}
                         </option>
                     </select>
                     <p
@@ -111,6 +117,32 @@ const {
                         readonly
                         class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
                     />
+                </div>
+                <div class="mt-3">
+                    <label class="mb-1 block text-xs font-medium text-gray-600">
+                        Farmers tending this parcel
+                    </label>
+                    <!--
+                        `loading` matters: without it the menu briefly shows the
+                        raw documentIds held by the form before the farmer list
+                        arrives and can resolve them to names.
+                    -->
+                    <USelectMenu
+                        v-model="form.farmers"
+                        :items="farmerOptions"
+                        :disabled="loading || farmersLoading"
+                        :loading="farmersLoading"
+                        multiple
+                        value-key="value"
+                        placeholder="Optional - assign farmers"
+                        class="w-full"
+                    />
+                    <p
+                        v-if="!farmersLoading && farmers.length === 0"
+                        class="mt-1 text-[11px] text-gray-400"
+                    >
+                        No farmers registered yet.
+                    </p>
                 </div>
             </div>
 

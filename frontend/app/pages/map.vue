@@ -231,11 +231,15 @@ function onMapLoad(payload: { map: MaplibreMap }) {
     >
         <MapToolbar
             :parcel-count="parcelCount"
+            :parcels="parcelList"
+            :selected-parcel-id="selectedParcelId"
             @edit="startEditing"
             @add="openAddParcel"
+            @select-parcel="openParcelForEdit"
+            @fit-all="fitToAllParcels"
         />
 
-        <div class="flex flex-1 overflow-hidden">
+        <div class="relative flex flex-1 overflow-hidden">
             <div class="relative flex-1 overflow-hidden">
                 <ClientOnly>
                     <div class="absolute inset-0">
@@ -283,14 +287,6 @@ function onMapLoad(payload: { map: MaplibreMap }) {
                     :is-editing="isEditing"
                 />
 
-                <MapParcelList
-                    v-if="parcelList.length > 0"
-                    :parcels="parcelList"
-                    :selected-id="selectedParcelId"
-                    @select="openParcelForEdit"
-                    @fit-all="fitToAllParcels"
-                />
-
                 <MapStatusBar :coordinates="coordinatesText" :mode="modeMeta" />
 
                 <MapStatusLegend
@@ -299,9 +295,14 @@ function onMapLoad(payload: { map: MaplibreMap }) {
                 />
             </div>
 
+            <!--
+                Below `sm` the editor overlays the map instead of sitting beside
+                it: side by side, the map would be reduced to a few pixels.
+            -->
             <MapParcelForm
                 v-if="showSidebar"
                 :key="sidebarKey"
+                class="absolute inset-0 z-30 sm:relative sm:inset-auto sm:z-auto"
                 :parcel="selectedParcel"
                 :farms="farms"
                 :drawing="drawing"

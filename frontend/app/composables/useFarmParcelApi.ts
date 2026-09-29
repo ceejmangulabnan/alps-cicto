@@ -1,3 +1,5 @@
+import qs from 'qs'
+
 export const LAND_STATUS_OPTIONS = [
     'Cultivated',
     'Preparation',
@@ -14,6 +16,7 @@ export interface ParcelFarmer {
     documentId: string
     farmer_code: string
     name: string
+    farmer_status?: string
 }
 
 export interface ParcelFarm {
@@ -36,6 +39,8 @@ export interface FarmParcel {
     land_status: LandStatus
     current_use?: string | null
     farm?: ParcelFarm | null
+    /** The farmers tending this parcel. The owning farm's list is a rollup. */
+    farmers?: ParcelFarmer[]
     planting_cycle?: unknown
     inspections?: unknown[]
 }
@@ -51,6 +56,8 @@ export interface CreateFromMapData {
     land_status: LandStatus
     current_use?: string
     area_hectares?: number
+    /** The farmers tending this parcel, as farmer documentIds. */
+    farmers?: string[]
 }
 
 export interface UpdateParcelData {
@@ -59,7 +66,28 @@ export interface UpdateParcelData {
     land_status?: LandStatus
     current_use?: string | null
     area_hectares?: number
+    /** The farmers tending this parcel, as farmer documentIds. */
+    farmers?: string[]
 }
+
+/**
+ * `farm.farmers` is the farm-wide rollup; `farmers` is who tends this parcel
+ * specifically. Both are populated so the map and sidebar can show the parcel's
+ * own tendees without a second request.
+ */
+const PARCEL_POPULATE = [
+    'farm',
+    'farm.barangay',
+    'farm.farmers',
+    'farmers',
+    'planting_cycle',
+    'inspections',
+]
+
+const populateQuery = qs.stringify(
+    { populate: PARCEL_POPULATE },
+    { encodeValuesOnly: true }
+)
 
 export interface FarmParcelResponse {
     data: FarmParcel
@@ -169,36 +197,22 @@ export const useFarmParcelApi = () => {
     }
 
     const getById = async (documentId: string): Promise<FarmParcelResponse> => {
-        return await authFetch<FarmParcelResponse>(`${baseUrl}/${documentId}`, {
-            query: {
-                populate: [
-                    'farm',
-                    'farm.barangay',
-                    'farm.farmers',
-                    'planting_cycle',
-                    'inspections',
-                ],
-            },
-        })
+        return await authFetch<FarmParcelResponse>(
+            `${baseUrl}/${documentId}?${populateQuery}`
+        )
     }
 
     const update = async (
         documentId: string,
         data: UpdateParcelData
     ): Promise<FarmParcelResponse> => {
-        return await authFetch<FarmParcelResponse>(`${baseUrl}/${documentId}`, {
-            method: 'PUT',
-            body: { data },
-            query: {
-                populate: [
-                    'farm',
-                    'farm.barangay',
-                    'farm.farmers',
-                    'planting_cycle',
-                    'inspections',
-                ],
-            },
-        })
+        return await authFetch<FarmParcelResponse>(
+            `${baseUrl}/${documentId}?${populateQuery}`,
+            {
+                method: 'PUT',
+                body: { data },
+            }
+        )
     }
 
     return {

@@ -20,6 +20,7 @@
         "maplibre-gl": "^6.9.0",
         "nuxt": "^4.5.2",
         "nuxt-maplibre": "^1.2.2",
+        "qs": "^6.16.0",
         "tailwindcss": "^4.3.3",
         "terra-draw": "^1.34.0",
         "terra-draw-maplibre-gl-adapter": "^1.4.1",
@@ -29,6 +30,7 @@
     },
     "devDependencies": {
         "@iconify-json/lucide": "^1.2.135",
+        "@types/qs": "^6.15.1",
         "typescript": "^6.0.3",
         "vue-tsc": "^3.3.11"
     }

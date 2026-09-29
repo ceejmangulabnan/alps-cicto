@@ -14,7 +14,7 @@ defineProps<{
 </script>
 
 <template>
-    <div class="mb-5 grid grid-cols-4 gap-4">
+    <div class="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div
             v-for="card in cards"
             :key="card.label"

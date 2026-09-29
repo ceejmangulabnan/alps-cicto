@@ -104,6 +104,8 @@ export default {
                     'plugin::users-permissions.user.me',
                     'plugin::users-permissions.role.find',
                     'plugin::users-permissions.role.findOne',
+                    // Upload (field inspection photos)
+                    'plugin::upload.content-api.upload',
                     // Farm Parcel permissions (full CRUD + custom)
                     'api::farm-parcel.farm-parcel.find',
                     'api::farm-parcel.farm-parcel.findOne',
@@ -193,6 +195,8 @@ export default {
                     'plugin::users-permissions.user.find',
                     'plugin::users-permissions.user.findOne',
                     'plugin::users-permissions.user.count',
+                    // Upload (field inspection photos)
+                    'plugin::upload.content-api.upload',
                     // Farm Parcel permissions (full CRUD + custom)
                     'api::farm-parcel.farm-parcel.find',
                     'api::farm-parcel.farm-parcel.findOne',

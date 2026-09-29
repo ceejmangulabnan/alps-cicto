@@ -3,6 +3,7 @@ import type {
     ParcelCrop,
     ParcelHarvest,
     ParcelInspection,
+    ParcelInspectionPhoto,
     ParcelPlantingCycle,
     ParcelRiskReport,
     RiskInspectionLevel,
@@ -42,6 +43,8 @@ export interface CreateInspectionData {
     status: InspectionStatus
     gps_point?: unknown
     notes?: string | null
+    /** Uploaded media file ids to attach, in order. */
+    photos?: number[]
 }
 
 export interface UpdateInspectionData {
@@ -53,6 +56,11 @@ export interface UpdateInspectionData {
     status?: InspectionStatus
     gps_point?: unknown
     notes?: string | null
+    /**
+     * The full replacement list of media file ids (replace semantics, like the
+     * parcel farmers relation elsewhere). Empty array clears the photos.
+     */
+    photos?: number[]
 }
 
 /**
@@ -241,7 +249,8 @@ export const useFarmRecordsApi = () => {
 
     /**
      * Inspections are `draftAndPublish: false`, so unlike the histories above
-     * they are created directly without a publishedAt or status query.
+     * they are created directly without a publishedAt or status query. Photos
+     * arrive as already-uploaded file ids and are connected on create.
      */
     const createInspection = async (
         data: CreateInspectionData
@@ -260,6 +269,7 @@ export const useFarmRecordsApi = () => {
                         status: data.status,
                         gps_point: toGpsPoint(data.gps_point),
                         notes: data.notes || null,
+                        ...(data.photos?.length ? { photos: data.photos } : {}),
                     },
                 },
             }
@@ -285,11 +295,30 @@ export const useFarmRecordsApi = () => {
                         status: data.status,
                         gps_point: toGpsPoint(data.gps_point),
                         notes: data.notes || null,
+                        ...(data.photos !== undefined
+                            ? { photos: data.photos }
+                            : {}),
                     },
                 },
             }
         )
         return response.data
+    }
+
+    /**
+     * Uploads raw files to Strapi's media library and returns the created
+     * media records. The browser hands multipart form data to `authFetch`,
+     * which lets ofetch set the boundary itself; no JSON body is involved.
+     */
+    const uploadPhotos = async (
+        files: File[]
+    ): Promise<ParcelInspectionPhoto[]> => {
+        const formData = new FormData()
+        files.forEach((file) => formData.append('files', file))
+        return await authFetch<ParcelInspectionPhoto[]>(`${baseUrl}/upload`, {
+            method: 'POST',
+            body: formData,
+        })
     }
 
     const deleteInspection = async (documentId: string): Promise<void> => {
@@ -311,5 +340,6 @@ export const useFarmRecordsApi = () => {
         createInspection,
         updateInspection,
         deleteInspection,
+        uploadPhotos,
     }
 }

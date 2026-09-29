@@ -72,6 +72,7 @@ export type InspectionStatus = 'Pending' | 'In Progress' | 'Completed'
 
 /** A Strapi media file as returned on a populated inspection. */
 export interface ParcelInspectionPhoto {
+    id?: number
     url?: string
     formats?: { thumbnail?: { url?: string } }
 }

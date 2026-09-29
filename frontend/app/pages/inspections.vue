@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import type {
     InspectionStatus,
+    ParcelInspectionPhoto,
     RiskInspectionLevel,
 } from '~/composables/useFarmParcelApi'
-import { useInspectionRegistry } from '~/composables/useInspectionRegistry'
+import {
+    useInspectionRegistry,
+    type InspectionRow,
+} from '~/composables/useInspectionRegistry'
 import { useFarmRecordsApi } from '~/composables/useFarmRecordsApi'
 import { getErrorMessage } from '~/utils/apiError'
-import { avatarColor, initials } from '~/utils/initials'
 
 definePageMeta({ middleware: 'auth' })
 
 const { inspections, allParcels, loading, loadError, load } =
     useInspectionRegistry()
-const { createInspection, updateInspection, deleteInspection } =
+const { createInspection, updateInspection, deleteInspection, uploadPhotos } =
     useFarmRecordsApi()
 
 const RISK_STYLE: Record<RiskInspectionLevel, string> = {
@@ -44,12 +47,6 @@ const STATUS_DOT: Record<InspectionStatus, string> = {
 
 const shortId = (documentId: string): string =>
     `#${documentId.slice(-6).toUpperCase()}`
-
-const farmerLabel = (names: string[]): string => {
-    if (names.length === 0) return '—'
-    const visible = names.slice(0, 2).join(', ')
-    return names.length > 2 ? `${visible} +${names.length - 2}` : visible
-}
 
 function today(): string {
     return new Date().toISOString().slice(0, 10)
@@ -231,7 +228,6 @@ const search = ref('')
 const filtered = computed(() =>
     inspections.value.filter((row) => {
         const haystack = [
-            farmerLabel(row.farmerNames),
             row.inspection_type,
             row.parcel_code,
             row.barangay,
@@ -308,6 +304,8 @@ const newForm = reactive({
     risk_level: 'None' as RiskInspectionLevel,
     status: 'Pending' as InspectionStatus,
     notes: '',
+    savedPhotos: [] as ParcelInspectionPhoto[],
+    pendingPhotos: [] as File[],
 })
 
 const canSaveNew = computed(
@@ -327,6 +325,8 @@ function openNew() {
     newForm.risk_level = 'None'
     newForm.status = 'Pending'
     newForm.notes = ''
+    newForm.savedPhotos = []
+    newForm.pendingPhotos = []
     newError.value = null
     newSaved.value = false
     showNewModal.value = true
@@ -346,6 +346,15 @@ async function submitNew() {
     newError.value = null
     submittingNew.value = true
     try {
+        const photoIds: number[] = []
+        if (newForm.pendingPhotos.length > 0) {
+            const uploaded = await uploadPhotos(newForm.pendingPhotos)
+            photoIds.push(
+                ...uploaded
+                    .map((file) => file.id)
+                    .filter((id): id is number => id != null)
+            )
+        }
         await createInspection({
             parcel: newForm.parcelDocumentId,
             inspector: newForm.inspector.trim(),
@@ -355,6 +364,7 @@ async function submitNew() {
             status: newForm.status,
             gps_point: newForm.gps.trim() || null,
             notes: newForm.notes.trim() || null,
+            ...(photoIds.length > 0 ? { photos: photoIds } : {}),
         })
         newSaved.value = true
         newCloseTimer = setTimeout(() => {
@@ -394,6 +404,8 @@ const editForm = reactive({
     risk_level: 'None' as RiskInspectionLevel,
     status: 'Pending' as InspectionStatus,
     notes: '',
+    savedPhotos: [] as ParcelInspectionPhoto[],
+    pendingPhotos: [] as File[],
 })
 
 const canSaveEdit = computed(
@@ -415,6 +427,8 @@ function openEdit(row: InspectionRow) {
     editForm.risk_level = row.riskLevel
     editForm.status = row.status
     editForm.notes = row.notes
+    editForm.savedPhotos = [...row.photos]
+    editForm.pendingPhotos = []
     editError.value = null
     editSaved.value = false
     showEditModal.value = true
@@ -434,6 +448,19 @@ async function submitEdit() {
     editError.value = null
     submittingEdit.value = true
     try {
+        // The picker already filtered out any removed photos from
+        // `savedPhotos`, so this is the full replacement list.
+        const finalPhotoIds = editForm.savedPhotos
+            .map((photo) => photo.id)
+            .filter((id): id is number => id != null)
+        if (editForm.pendingPhotos.length > 0) {
+            const uploaded = await uploadPhotos(editForm.pendingPhotos)
+            finalPhotoIds.push(
+                ...uploaded
+                    .map((file) => file.id)
+                    .filter((id): id is number => id != null)
+            )
+        }
         await updateInspection(editForm.documentId, {
             parcel: editForm.parcelDocumentId,
             inspector: editForm.inspector.trim(),
@@ -443,6 +470,7 @@ async function submitEdit() {
             status: editForm.status,
             gps_point: editForm.gps.trim() || null,
             notes: editForm.notes.trim() || null,
+            photos: finalPhotoIds,
         })
         editSaved.value = true
         editCloseTimer = setTimeout(() => {
@@ -568,7 +596,7 @@ async function confirmDelete() {
                     <input
                         v-model="search"
                         type="text"
-                        placeholder="Search farmer, parcel or type..."
+                        placeholder="Search parcel, type or inspector..."
                         class="w-full rounded-full border border-gray-200 bg-white py-2 pl-8 pr-8 text-xs shadow-sm focus:border-[#2d6a2d] focus:outline-none focus:ring-1 focus:ring-green-500"
                     />
                     <button
@@ -665,18 +693,13 @@ async function confirmDelete() {
                     </h3>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="w-full min-w-[1080px] text-xs">
+                    <table class="w-full min-w-[960px] text-xs">
                         <thead class="border-b border-gray-100 bg-gray-50">
                             <tr>
                                 <th
                                     class="px-4 py-3 text-left font-semibold text-gray-600"
                                 >
                                     ID
-                                </th>
-                                <th
-                                    class="px-4 py-3 text-left font-semibold text-gray-600"
-                                >
-                                    Farmer
                                 </th>
                                 <th
                                     class="px-4 py-3 text-left font-semibold text-gray-600"
@@ -720,7 +743,7 @@ async function confirmDelete() {
                             <!-- Loading -->
                             <tr v-if="loading">
                                 <td
-                                    colspan="10"
+                                    colspan="9"
                                     class="px-4 py-10 text-center text-gray-400"
                                 >
                                     <span
@@ -736,7 +759,7 @@ async function confirmDelete() {
                             </tr>
                             <!-- Failed -->
                             <tr v-else-if="loadError">
-                                <td colspan="10" class="px-4 py-10 text-center">
+                                <td colspan="9" class="px-4 py-10 text-center">
                                     <p class="text-red-600">{{ loadError }}</p>
                                     <button
                                         type="button"
@@ -750,7 +773,7 @@ async function confirmDelete() {
                             <!-- Loaded but nothing to show -->
                             <tr v-else-if="inspections.length === 0">
                                 <td
-                                    colspan="10"
+                                    colspan="9"
                                     class="px-4 py-10 text-center text-gray-400"
                                 >
                                     <div
@@ -769,7 +792,7 @@ async function confirmDelete() {
                             </tr>
                             <tr v-else-if="filtered.length === 0">
                                 <td
-                                    colspan="10"
+                                    colspan="9"
                                     class="px-4 py-10 text-center text-gray-400"
                                 >
                                     No inspections match this search.
@@ -785,27 +808,6 @@ async function confirmDelete() {
                             >
                                 <td class="px-4 py-3 font-mono text-gray-400">
                                     {{ shortId(row.documentId) }}
-                                </td>
-                                <td class="px-4 py-3">
-                                    <div class="flex items-center gap-2.5">
-                                        <span
-                                            class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                                            :style="{
-                                                backgroundColor: avatarColor(
-                                                    row.farmerNames[0] ?? ''
-                                                ),
-                                            }"
-                                        >
-                                            {{
-                                                initials(
-                                                    row.farmerNames[0] ?? ''
-                                                )
-                                            }}
-                                        </span>
-                                        <span class="text-gray-800">
-                                            {{ farmerLabel(row.farmerNames) }}
-                                        </span>
-                                    </div>
                                 </td>
                                 <td class="px-4 py-3">
                                     <span
@@ -834,14 +836,14 @@ async function confirmDelete() {
                                         {{ row.date ?? '—' }}
                                     </div>
                                     <div
-                                        v-if="row.photoCount > 0"
+                                        v-if="row.photos.length > 0"
                                         class="flex items-center gap-1 text-[10px] text-gray-400"
                                     >
                                         <UIcon
                                             name="i-lucide-camera"
                                             class="size-2.5"
                                         />
-                                        {{ row.photoCount }}
+                                        {{ row.photos.length }}
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 text-gray-500">
@@ -1124,6 +1126,12 @@ async function confirmDelete() {
                         ></textarea>
                     </div>
 
+                    <InspectionsPhotoPicker
+                        v-model:saved="newForm.savedPhotos"
+                        v-model:pending="newForm.pendingPhotos"
+                        :disabled="submittingNew"
+                    />
+
                     <p
                         v-if="newError"
                         class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
@@ -1374,6 +1382,12 @@ async function confirmDelete() {
                             class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
                         ></textarea>
                     </div>
+
+                    <InspectionsPhotoPicker
+                        v-model:saved="editForm.savedPhotos"
+                        v-model:pending="editForm.pendingPhotos"
+                        :disabled="submittingEdit"
+                    />
 
                     <p
                         v-if="editError"

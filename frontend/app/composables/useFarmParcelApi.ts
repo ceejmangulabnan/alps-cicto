@@ -22,12 +22,57 @@ export interface ParcelFarmer {
 export interface ParcelFarm {
     documentId: string
     farm_code: string
+    name?: string | null
     barangay?: {
         documentId: string
         name: string
         code: string
-    }
+    } | null
     farmers?: ParcelFarmer[]
+}
+
+export interface ParcelCrop {
+    documentId: string
+    name: string
+    category?: string | null
+}
+
+export interface ParcelHarvest {
+    documentId: string
+    harvest_date?: string | null
+    /** Strapi `decimal`; loose so a string response cannot break a render. */
+    production_kg?: number | string | null
+    yield_per_hectare?: number | string | null
+}
+
+export interface ParcelPlantingCycle {
+    documentId: string
+    variety?: string | null
+    planting_date?: string | null
+    expected_harvest?: string | null
+    crop?: ParcelCrop | null
+    harvests?: ParcelHarvest[]
+}
+
+export type RiskSeverity = 'Low' | 'Medium' | 'High' | 'Critical'
+
+export type RiskParcelStatus = 'Active' | 'Monitoring' | 'Resolved'
+
+export interface ParcelRiskReport {
+    documentId: string
+    risk_type?: string | null
+    observed_at?: string | null
+    severity?: RiskSeverity | null
+    parcel_status?: RiskParcelStatus | null
+}
+
+export interface ParcelInspection {
+    documentId: string
+    inspector?: string | null
+    date?: string | null
+    /** Free text in the schema, not an enumeration. */
+    condition?: string | null
+    notes?: string | null
 }
 
 export interface FarmParcel {
@@ -41,8 +86,14 @@ export interface FarmParcel {
     farm?: ParcelFarm | null
     /** The farmers tending this parcel. The owning farm's list is a rollup. */
     farmers?: ParcelFarmer[]
-    planting_cycle?: unknown
-    inspections?: unknown[]
+    /**
+     * ManyToOne, so a parcel has at most one cycle. Harvests hang off that cycle
+     * rather than the parcel, which is why there is no `harvests` here: the hub
+     * reads them via `planting_cycle.harvests`.
+     */
+    planting_cycle?: ParcelPlantingCycle | null
+    inspections?: ParcelInspection[]
+    risk_reports?: ParcelRiskReport[]
 }
 
 export type FarmParcelQuery = Record<
@@ -86,6 +137,34 @@ const PARCEL_POPULATE = [
 
 const populateQuery = qs.stringify(
     { populate: PARCEL_POPULATE },
+    { encodeValuesOnly: true }
+)
+
+/**
+ * Everything the parcel hub renders in one request. Spelled out rather than
+ * built from `PARCEL_POPULATE`, for two reasons: that list also serves the map's
+ * edit path via `useParcelData.ensureParcel`, which needs only farm and farmers,
+ * so widening it would make the map fetch histories it never reads. And it
+ * populates `farm.farmers`, the farm-wide rollup, which this page must never
+ * read — the tending farmers come from the parcel's own `farmers`.
+ *
+ * `harvests` is reached through the planting cycle: it is two hops from the
+ * parcel, and since the cycle relation is manyToOne, these are the harvests of
+ * the parcel's single current cycle, not a multi-season record.
+ */
+const HUB_POPULATE = [
+    'farm',
+    'farm.barangay',
+    'farmers',
+    'planting_cycle',
+    'planting_cycle.crop',
+    'planting_cycle.harvests',
+    'inspections',
+    'risk_reports',
+]
+
+const hubPopulateQuery = qs.stringify(
+    { populate: HUB_POPULATE },
     { encodeValuesOnly: true }
 )
 
@@ -202,6 +281,15 @@ export const useFarmParcelApi = () => {
         )
     }
 
+    /** One parcel with every relation the hub shows, in a single request. */
+    const getHubById = async (
+        documentId: string
+    ): Promise<FarmParcelResponse> => {
+        return await authFetch<FarmParcelResponse>(
+            `${baseUrl}/${documentId}?${hubPopulateQuery}`
+        )
+    }
+
     const update = async (
         documentId: string,
         data: UpdateParcelData
@@ -219,6 +307,7 @@ export const useFarmParcelApi = () => {
         createFromMap,
         getAll,
         getById,
+        getHubById,
         update,
     }
 }

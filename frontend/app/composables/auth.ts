@@ -251,7 +251,13 @@ const isTokenExpiring = (token: string, skewSeconds: number): boolean => {
     return expiresAt - skewSeconds <= Math.floor(Date.now() / 1000)
 }
 
-const getErrorStatus = (error: unknown): number | null => {
+/**
+ * The HTTP status behind a fetch failure, or null when there isn't one. Reads
+ * the shapes `$fetch` and `ofetch` throw with, plus the normalised `statusCode`
+ * Nuxt's own errors carry. Exported so callers that need to branch on the cause
+ * — a 404 rendering an empty state, say — do not re-derive it.
+ */
+export const getErrorStatus = (error: unknown): number | null => {
     if (typeof error !== 'object' || error === null) return null
 
     const candidate = error as {

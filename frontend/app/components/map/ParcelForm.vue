@@ -126,12 +126,18 @@ const {
                         `loading` matters: without it the menu briefly shows the
                         raw documentIds held by the form before the farmer list
                         arrives and can resolve them to names.
+
+                        `ui.content` lifts the menu clear of this panel, which is
+                        `absolute ... z-30` below `sm`. The menu is portalled to
+                        <body> and Nuxt UI gives it no z-index, so it would be
+                        painted under the panel.
                     -->
                     <USelectMenu
                         v-model="form.farmers"
                         :items="farmerOptions"
                         :disabled="loading || farmersLoading"
                         :loading="farmersLoading"
+                        :ui="{ content: 'z-[70]' }"
                         multiple
                         value-key="value"
                         placeholder="Optional - assign farmers"

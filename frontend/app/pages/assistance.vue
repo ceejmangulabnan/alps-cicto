@@ -146,7 +146,8 @@ const newForm = reactive({
     farmerDocumentId: '',
     barangayDocumentId: '',
     items: '',
-    value: '',
+    /** v-model casts the number input, so this is a string only while blank. */
+    value: '' as string | number,
     date: today(),
     status: 'Pending' as AssistanceStatus,
 })
@@ -159,10 +160,17 @@ const canSaveNew = computed(
         Boolean(newForm.date)
 )
 
-/** The peso amount, or null when the field is left blank. */
-const parsedValue = (raw: string): number | null => {
+/**
+ * The peso amount, or null when the field is left blank.
+ *
+ * `raw` is typed `string | number` on purpose: v-model casts a `type="number"`
+ * input to a real number the moment the typed text parses, so a clean amount
+ * like `5000` arrives here as a number and only a blank field arrives as the
+ * empty string. Zero is a real peso amount, so only a blank field is nulled.
+ */
+const parsedValue = (raw: string | number): number | null => {
     const amount = Number(raw)
-    return raw.trim() !== '' && Number.isFinite(amount) ? amount : null
+    return String(raw).trim() !== '' && Number.isFinite(amount) ? amount : null
 }
 
 function openRecordModal() {
@@ -234,7 +242,8 @@ const editForm = reactive({
     farmerDocumentId: '',
     barangayDocumentId: '',
     items: '',
-    value: '',
+    /** v-model casts the number input, so this is a string only while blank. */
+    value: '' as string | number,
     date: '',
     status: 'Pending' as AssistanceStatus,
 })
@@ -601,16 +610,39 @@ async function confirmDelete() {
                                     >
                                         {{ initials(a.recipient) }}
                                     </span>
-                                    <span>
+                                    <span class="min-w-0">
                                         <span
                                             class="block font-medium text-gray-800"
                                         >
                                             {{ a.recipient }}
                                         </span>
-                                        <span
-                                            class="block font-mono text-[10px] text-gray-400"
+                                        <!--
+                                            The farmer, one hop away: their code
+                                            links into the farmer registry's
+                                            profile, mirroring the `?farm=` deep
+                                            link the parcel hub uses for a farm.
+                                            Falls back to plain text when the
+                                            relation is gone, so the link never
+                                            leads nowhere.
+                                        -->
+                                        <NuxtLink
+                                            v-if="a.farmerDocumentId"
+                                            :to="{
+                                                path: '/farmers',
+                                                query: {
+                                                    farmer: a.farmerDocumentId,
+                                                },
+                                            }"
+                                            class="block font-mono text-[10px] text-gray-400 underline-offset-2 hover:text-[#2d6a2d] hover:underline"
+                                            :title="`Open ${a.recipient}'s profile`"
                                         >
                                             {{ a.farmer_code }}
+                                        </NuxtLink>
+                                        <span
+                                            v-else
+                                            class="block font-mono text-[10px] text-gray-400"
+                                        >
+                                            {{ a.farmer_code || '—' }}
                                         </span>
                                     </span>
                                 </div>
@@ -755,6 +787,7 @@ async function confirmDelete() {
                                 class="mb-1 block text-xs font-medium text-gray-600"
                             >
                                 Program
+                                <span class="text-red-500">*</span>
                             </label>
                             <input
                                 v-model="newForm.program"
@@ -776,6 +809,7 @@ async function confirmDelete() {
                                 class="mb-1 block text-xs font-medium text-gray-600"
                             >
                                 Recipient
+                                <span class="text-red-500">*</span>
                             </label>
                             <select
                                 v-model="newForm.farmerDocumentId"
@@ -853,6 +887,7 @@ async function confirmDelete() {
                                 class="mb-1 block text-xs font-medium text-gray-600"
                             >
                                 Date
+                                <span class="text-red-500">*</span>
                             </label>
                             <input
                                 v-model="newForm.date"
@@ -979,6 +1014,7 @@ async function confirmDelete() {
                                 class="mb-1 block text-xs font-medium text-gray-600"
                             >
                                 Program
+                                <span class="text-red-500">*</span>
                             </label>
                             <input
                                 v-model="editForm.program"
@@ -999,6 +1035,7 @@ async function confirmDelete() {
                                 class="mb-1 block text-xs font-medium text-gray-600"
                             >
                                 Recipient
+                                <span class="text-red-500">*</span>
                             </label>
                             <select
                                 v-model="editForm.farmerDocumentId"
@@ -1073,6 +1110,7 @@ async function confirmDelete() {
                                 class="mb-1 block text-xs font-medium text-gray-600"
                             >
                                 Date
+                                <span class="text-red-500">*</span>
                             </label>
                             <input
                                 v-model="editForm.date"

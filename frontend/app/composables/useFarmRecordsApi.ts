@@ -1,8 +1,12 @@
 import type {
+    InspectionStatus,
     ParcelCrop,
     ParcelHarvest,
+    ParcelInspection,
+    ParcelInspectionPhoto,
     ParcelPlantingCycle,
     ParcelRiskReport,
+    RiskInspectionLevel,
     RiskParcelStatus,
     RiskSeverity,
 } from '~/composables/useFarmParcelApi'
@@ -27,6 +31,47 @@ export interface CreateRiskReportData {
     observed_at: string
     severity: RiskSeverity
     parcel_status: RiskParcelStatus
+}
+
+export interface CreateInspectionData {
+    /** The parcel documentId the visit was carried out on. */
+    parcel: string
+    inspector: string
+    date: string
+    inspection_type: string
+    risk_level: RiskInspectionLevel
+    status: InspectionStatus
+    gps_point?: unknown
+    notes?: string | null
+    /** Uploaded media file ids to attach, in order. */
+    photos?: number[]
+}
+
+export interface UpdateInspectionData {
+    parcel?: string
+    inspector?: string
+    date?: string
+    inspection_type?: string
+    risk_level?: RiskInspectionLevel
+    status?: InspectionStatus
+    gps_point?: unknown
+    notes?: string | null
+    /**
+     * The full replacement list of media file ids (replace semantics, like the
+     * parcel farmers relation elsewhere). Empty array clears the photos.
+     */
+    photos?: number[]
+}
+
+/**
+ * The `gps_point` attribute is a JSON column that usually holds the free-text
+ * coordinates an officer typed. A bare string is not valid JSON, so it has to
+ * be JSON-encoded before it reaches the database; reading it back yields the
+ * plain string again. Structured {lat, lng} objects pass through untouched.
+ */
+const toGpsPoint = (value: unknown): unknown => {
+    if (value === null || value === undefined) return null
+    return typeof value === 'string' ? JSON.stringify(value) : value
 }
 
 export interface UpdatePlantingCycleData {
@@ -202,6 +247,86 @@ export const useFarmRecordsApi = () => {
         return response.data
     }
 
+    /**
+     * Inspections are `draftAndPublish: false`, so unlike the histories above
+     * they are created directly without a publishedAt or status query. Photos
+     * arrive as already-uploaded file ids and are connected on create.
+     */
+    const createInspection = async (
+        data: CreateInspectionData
+    ): Promise<ParcelInspection> => {
+        const response = await authFetch<{ data: ParcelInspection }>(
+            `${baseUrl}/inspections`,
+            {
+                method: 'POST',
+                body: {
+                    data: {
+                        parcel: data.parcel,
+                        inspector: data.inspector,
+                        date: data.date,
+                        inspection_type: data.inspection_type,
+                        risk_level: data.risk_level,
+                        status: data.status,
+                        gps_point: toGpsPoint(data.gps_point),
+                        notes: data.notes || null,
+                        ...(data.photos?.length ? { photos: data.photos } : {}),
+                    },
+                },
+            }
+        )
+        return response.data
+    }
+
+    const updateInspection = async (
+        documentId: string,
+        data: UpdateInspectionData
+    ): Promise<ParcelInspection> => {
+        const response = await authFetch<{ data: ParcelInspection }>(
+            `${baseUrl}/inspections/${documentId}`,
+            {
+                method: 'PUT',
+                body: {
+                    data: {
+                        ...(data.parcel ? { parcel: data.parcel } : {}),
+                        inspector: data.inspector,
+                        date: data.date,
+                        inspection_type: data.inspection_type,
+                        risk_level: data.risk_level,
+                        status: data.status,
+                        gps_point: toGpsPoint(data.gps_point),
+                        notes: data.notes || null,
+                        ...(data.photos !== undefined
+                            ? { photos: data.photos }
+                            : {}),
+                    },
+                },
+            }
+        )
+        return response.data
+    }
+
+    /**
+     * Uploads raw files to Strapi's media library and returns the created
+     * media records. The browser hands multipart form data to `authFetch`,
+     * which lets ofetch set the boundary itself; no JSON body is involved.
+     */
+    const uploadPhotos = async (
+        files: File[]
+    ): Promise<ParcelInspectionPhoto[]> => {
+        const formData = new FormData()
+        files.forEach((file) => formData.append('files', file))
+        return await authFetch<ParcelInspectionPhoto[]>(`${baseUrl}/upload`, {
+            method: 'POST',
+            body: formData,
+        })
+    }
+
+    const deleteInspection = async (documentId: string): Promise<void> => {
+        await authFetch(`${baseUrl}/inspections/delete/${documentId}`, {
+            method: 'DELETE',
+        })
+    }
+
     return {
         getCrops,
         createCrop,
@@ -212,5 +337,9 @@ export const useFarmRecordsApi = () => {
         updateHarvest,
         deleteHarvest,
         createRiskReport,
+        createInspection,
+        updateInspection,
+        deleteInspection,
+        uploadPhotos,
     }
 }

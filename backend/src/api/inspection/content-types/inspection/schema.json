@@ -34,6 +34,20 @@
         "notes": {
             "type": "string"
         },
+        "inspection_type": {
+            "type": "string",
+            "default": "Pre-harvest Assessment"
+        },
+        "risk_level": {
+            "type": "enumeration",
+            "enum": ["None", "Low", "Medium", "High"],
+            "default": "None"
+        },
+        "status": {
+            "type": "enumeration",
+            "enum": ["Pending", "In Progress", "Completed"],
+            "default": "Pending"
+        },
         "photos": {
             "type": "media",
             "multiple": true,

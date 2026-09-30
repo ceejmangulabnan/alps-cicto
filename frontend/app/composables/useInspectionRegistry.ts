@@ -1,0 +1,91 @@
+import type {
+    FarmParcel,
+    InspectionStatus,
+    ParcelInspectionPhoto,
+    RiskInspectionLevel,
+} from '~/composables/useFarmParcelApi'
+import { getErrorMessage } from '~/utils/apiError'
+
+/**
+ * A field inspection as the inspections page needs it. Inspections hang off
+ * parcels (manyToOne, several per parcel), so each row carries the parcel
+ * context it happened on — the code and the barangay — exactly like the cycle
+ * registry does for cycles and harvests. A farmer is deliberately absent: an
+ * inspection is made on a parcel, not on a farmer.
+ */
+export interface InspectionRow {
+    documentId: string
+    parcelDocumentId: string
+    parcel_code: string
+    barangay: string
+    inspector: string
+    date: string | null
+    inspection_type: string
+    riskLevel: RiskInspectionLevel
+    status: InspectionStatus
+    /** Kept verbatim from the JSON column (usually a free-text GPS string). */
+    gps_point: unknown
+    notes: string
+    /** Real media files attached to the inspection, for previews and counts. */
+    photos: ParcelInspectionPhoto[]
+}
+
+const REGISTRY_POPULATE = [
+    'farm',
+    'farm.barangay',
+    'inspections',
+    'inspections.photos',
+]
+
+const barangayOf = (parcel: FarmParcel): string =>
+    parcel.farm?.barangay?.name ?? ''
+
+export const useInspectionRegistry = () => {
+    const parcels = ref<FarmParcel[]>([])
+    const loading = ref(false)
+    const loadError = ref<string | null>(null)
+
+    /** Re-reads the parcel list wholesale; cheap at dev data sizes. */
+    const load = async (): Promise<void> => {
+        loading.value = true
+        loadError.value = null
+        try {
+            const { getAll } = useFarmParcelApi()
+            const response = await getAll({ populate: REGISTRY_POPULATE })
+            parcels.value = response.data
+        } catch (cause) {
+            loadError.value = getErrorMessage(
+                cause,
+                'Could not load the inspection records. Please try again.'
+            )
+        } finally {
+            loading.value = false
+        }
+    }
+
+    /** One row per inspection across every parcel, grouped by parcel. */
+    const inspections = computed<InspectionRow[]>(() =>
+        parcels.value.flatMap((parcel) =>
+            (parcel.inspections ?? []).map((inspection) => ({
+                documentId: inspection.documentId,
+                parcelDocumentId: parcel.documentId,
+                parcel_code: parcel.parcel_code,
+                barangay: barangayOf(parcel),
+                inspector: inspection.inspector ?? '',
+                date: inspection.date ?? null,
+                inspection_type:
+                    inspection.inspection_type ?? 'Field Inspection',
+                riskLevel: inspection.risk_level ?? 'None',
+                status: inspection.status ?? 'Pending',
+                gps_point: inspection.gps_point,
+                notes: inspection.notes ?? '',
+                photos: inspection.photos ?? [],
+            }))
+        )
+    )
+
+    /** Every parcel, for the inspection form's parcel selector. */
+    const allParcels = computed<FarmParcel[]>(() => parcels.value)
+
+    return { inspections, allParcels, loading, loadError, load }
+}

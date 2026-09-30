@@ -715,6 +715,8 @@ export interface ApiInspectionInspection extends Struct.CollectionTypeSchema {
             Schema.Attribute.Private
         date: Schema.Attribute.Date & Schema.Attribute.Required
         gps_point: Schema.Attribute.JSON
+        inspection_type: Schema.Attribute.String &
+            Schema.Attribute.DefaultTo<'Pre-harvest Assessment'>
         inspector: Schema.Attribute.String & Schema.Attribute.Required
         locale: Schema.Attribute.String & Schema.Attribute.Private
         localizations: Schema.Attribute.Relation<
@@ -732,6 +734,14 @@ export interface ApiInspectionInspection extends Struct.CollectionTypeSchema {
             true
         >
         publishedAt: Schema.Attribute.DateTime
+        risk_level: Schema.Attribute.Enumeration<
+            ['None', 'Low', 'Medium', 'High']
+        > &
+            Schema.Attribute.DefaultTo<'None'>
+        status: Schema.Attribute.Enumeration<
+            ['Pending', 'In Progress', 'Completed']
+        > &
+            Schema.Attribute.DefaultTo<'Pending'>
         updatedAt: Schema.Attribute.DateTime
         updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
             Schema.Attribute.Private

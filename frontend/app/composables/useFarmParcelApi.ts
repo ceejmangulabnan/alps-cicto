@@ -66,6 +66,17 @@ export interface ParcelRiskReport {
     parcel_status?: RiskParcelStatus | null
 }
 
+export type RiskInspectionLevel = 'None' | 'Low' | 'Medium' | 'High'
+
+export type InspectionStatus = 'Pending' | 'In Progress' | 'Completed'
+
+/** A Strapi media file as returned on a populated inspection. */
+export interface ParcelInspectionPhoto {
+    id?: number
+    url?: string
+    formats?: { thumbnail?: { url?: string } }
+}
+
 export interface ParcelInspection {
     documentId: string
     inspector?: string | null
@@ -73,6 +84,12 @@ export interface ParcelInspection {
     /** Free text in the schema, not an enumeration. */
     condition?: string | null
     notes?: string | null
+    inspection_type?: string | null
+    risk_level?: RiskInspectionLevel | null
+    status?: InspectionStatus | null
+    /** Free text entered by the officer; kept verbatim in the JSON column. */
+    gps_point?: unknown
+    photos?: ParcelInspectionPhoto[]
 }
 
 export interface FarmParcel {

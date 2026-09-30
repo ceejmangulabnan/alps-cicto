@@ -164,12 +164,20 @@ async function submit() {
                             `loading` matters: without it the menu briefly shows
                             the raw documentIds the form holds before the farmer
                             list arrives and can resolve them to names.
+
+                            `ui.content` lifts the menu above this modal. The menu
+                            is portalled to <body>, and Nuxt UI's theme gives it no
+                            z-index, so Reka copies an `auto` onto the wrapper and
+                            this z-50 backdrop paints over it: the options show
+                            through, but every click lands on the backdrop instead
+                            of the option.
                         -->
                         <USelectMenu
                             v-model="selected"
                             :items="farmerOptions"
                             :disabled="submitting || farmersLoading"
                             :loading="farmersLoading"
+                            :ui="{ content: 'z-[70]' }"
                             multiple
                             value-key="value"
                             placeholder="Select farmers"

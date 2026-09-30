@@ -223,6 +223,7 @@ async function submit() {
                                 :items="cropOptions"
                                 :loading="cropsLoading"
                                 :disabled="submitting || cropsLoading"
+                                :ui="{ content: 'z-[70]' }"
                                 value-key="value"
                                 placeholder="Select a crop"
                                 class="w-full"

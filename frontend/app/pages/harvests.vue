@@ -902,8 +902,7 @@ async function confirmDelete() {
             @click.self="closeRecord"
         >
             <div
-                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
-                style="font-family: 'DM Sans', sans-serif"
+                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl font-sans"
             >
                 <div class="mb-5 flex items-start justify-between">
                     <div class="flex items-center gap-3">
@@ -1095,8 +1094,7 @@ async function confirmDelete() {
             @click.self="closeEdit"
         >
             <div
-                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
-                style="font-family: 'DM Sans', sans-serif"
+                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl font-sans"
             >
                 <div class="mb-5 flex items-start justify-between">
                     <div class="flex items-center gap-3">
@@ -1244,8 +1242,7 @@ async function confirmDelete() {
             @click.self="closeDelete"
         >
             <div
-                class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"
-                style="font-family: 'DM Sans', sans-serif"
+                class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl font-sans"
             >
                 <div
                     class="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-red-50"

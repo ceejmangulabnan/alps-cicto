@@ -4,11 +4,13 @@ import { errors } from '@strapi/utils'
 import { generateFarmCode } from './api/farm/services/farm-code'
 import { generateFarmerCode } from './api/farmer/services/farmer-code'
 import { generateParcelCode } from './api/farm-parcel/services/parcel-code'
+import { generateAssistanceReferenceCode } from './api/assistance-program/services/reference-code'
 import { validateGeoJSONPolygon } from './api/farm-parcel/utils/geo'
 
 const FARM_UID = 'api::farm.farm'
 const FARMER_UID = 'api::farmer.farmer'
 const FARM_PARCEL_UID = 'api::farm-parcel.farm-parcel'
+const ASSISTANCE_PROGRAM_UID = 'api::assistance-program.assistance-program'
 
 /**
  * Fills in server-generated fields before the Document Service validates them.
@@ -33,6 +35,10 @@ function registerGeneratedFields(strapi: Core.Strapi) {
 
         if (uid === FARMER_UID && !data.farmer_code) {
             data.farmer_code = await generateFarmerCode()
+        }
+
+        if (uid === ASSISTANCE_PROGRAM_UID && !data.reference_code) {
+            data.reference_code = await generateAssistanceReferenceCode()
         }
 
         if (uid === FARM_UID && !data.farm_code) {
@@ -180,6 +186,14 @@ export default {
                     'api::risk-report.risk-report.update',
                     'api::risk-report.risk-report.destroy',
                     'api::risk-report.risk-report.count',
+                    // Assistance Program permissions (full CRUD + custom)
+                    'api::assistance-program.assistance-program.find',
+                    'api::assistance-program.assistance-program.findOne',
+                    'api::assistance-program.assistance-program.create',
+                    'api::assistance-program.assistance-program.update',
+                    'api::assistance-program.assistance-program.destroy',
+                    'api::assistance-program.assistance-program.count',
+                    'api::assistance-program.custom-assistance-program.destroy',
                 ],
             },
             {
@@ -271,6 +285,14 @@ export default {
                     'api::risk-report.risk-report.update',
                     'api::risk-report.risk-report.destroy',
                     'api::risk-report.risk-report.count',
+                    // Assistance Program permissions (full CRUD + custom)
+                    'api::assistance-program.assistance-program.find',
+                    'api::assistance-program.assistance-program.findOne',
+                    'api::assistance-program.assistance-program.create',
+                    'api::assistance-program.assistance-program.update',
+                    'api::assistance-program.assistance-program.destroy',
+                    'api::assistance-program.assistance-program.count',
+                    'api::assistance-program.custom-assistance-program.destroy',
                 ],
             },
         ]

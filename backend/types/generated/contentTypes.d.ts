@@ -454,6 +454,51 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
     }
 }
 
+export interface ApiAssistanceProgramAssistanceProgram
+    extends Struct.CollectionTypeSchema {
+    collectionName: 'assistance_programs'
+    info: {
+        displayName: 'Assistance Program'
+        pluralName: 'assistance-programs'
+        singularName: 'assistance-program'
+    }
+    options: {
+        draftAndPublish: false
+    }
+    attributes: {
+        barangay: Schema.Attribute.Relation<
+            'manyToOne',
+            'api::barangay.barangay'
+        >
+        createdAt: Schema.Attribute.DateTime
+        createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+            Schema.Attribute.Private
+        date: Schema.Attribute.Date & Schema.Attribute.Required
+        farmer: Schema.Attribute.Relation<'manyToOne', 'api::farmer.farmer'> &
+            Schema.Attribute.Required
+        items: Schema.Attribute.Text
+        locale: Schema.Attribute.String & Schema.Attribute.Private
+        localizations: Schema.Attribute.Relation<
+            'oneToMany',
+            'api::assistance-program.assistance-program'
+        > &
+            Schema.Attribute.Private
+        program: Schema.Attribute.String & Schema.Attribute.Required
+        publishedAt: Schema.Attribute.DateTime
+        reference_code: Schema.Attribute.String &
+            Schema.Attribute.Required &
+            Schema.Attribute.Unique
+        status: Schema.Attribute.Enumeration<
+            ['Pending', 'For Release', 'Released', 'Scheduled']
+        > &
+            Schema.Attribute.DefaultTo<'Pending'>
+        updatedAt: Schema.Attribute.DateTime
+        updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+            Schema.Attribute.Private
+        value: Schema.Attribute.Decimal
+    }
+}
+
 export interface ApiBarangayBarangay extends Struct.CollectionTypeSchema {
     collectionName: 'barangays'
     info: {
@@ -465,6 +510,10 @@ export interface ApiBarangayBarangay extends Struct.CollectionTypeSchema {
         draftAndPublish: false
     }
     attributes: {
+        assistance_programs: Schema.Attribute.Relation<
+            'oneToMany',
+            'api::assistance-program.assistance-program'
+        >
         boundary: Schema.Attribute.JSON
         code: Schema.Attribute.String &
             Schema.Attribute.Required &
@@ -635,6 +684,10 @@ export interface ApiFarmerFarmer extends Struct.CollectionTypeSchema {
         draftAndPublish: false
     }
     attributes: {
+        assistance_programs: Schema.Attribute.Relation<
+            'oneToMany',
+            'api::assistance-program.assistance-program'
+        >
         contact: Schema.Attribute.String
         createdAt: Schema.Attribute.DateTime
         createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -1347,6 +1400,7 @@ declare module '@strapi/strapi' {
             'admin::transfer-token': AdminTransferToken
             'admin::transfer-token-permission': AdminTransferTokenPermission
             'admin::user': AdminUser
+            'api::assistance-program.assistance-program': ApiAssistanceProgramAssistanceProgram
             'api::barangay.barangay': ApiBarangayBarangay
             'api::crop.crop': ApiCropCrop
             'api::farm-parcel.farm-parcel': ApiFarmParcelFarmParcel

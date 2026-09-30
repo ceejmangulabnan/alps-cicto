@@ -57,6 +57,8 @@ const farmerBarangay = (f: Farmer) => {
 const { getAll, create } = useFarmersApi()
 const { getAll: getAllParcels } = useFarmParcelApi()
 
+const route = useRoute()
+
 const farmers = ref<FarmerRow[]>([])
 const loading = ref(true)
 const loadError = ref<string | null>(null)
@@ -356,7 +358,31 @@ const detailStats = computed(() => {
     ]
 })
 
-onMounted(loadFarmers)
+/**
+ * Leaves the profile, dropping the `?farmer=` deep link on the way out: the
+ * registry is the page's resting state, so a refresh there should show the
+ * registry rather than reopen the profile that was just dismissed.
+ */
+async function backToRegistry() {
+    selectedFarmer.value = null
+    await navigateTo({ path: '/farmers' }, { replace: true })
+}
+
+onMounted(async () => {
+    await loadFarmers()
+
+    // Deep link from a registry that links a farmer by id (the assistance page's
+    // recipient column does): open that farmer's profile straight away, the way
+    // `?farm=<documentId>` opens a farm card on /farms.
+    const farmerId =
+        typeof route.query.farmer === 'string' ? route.query.farmer : undefined
+    if (farmerId) {
+        const row = farmers.value.find(
+            (farmer) => farmer.documentId === farmerId
+        )
+        if (row) selectedFarmer.value = row
+    }
+})
 </script>
 
 <template>
@@ -366,7 +392,7 @@ onMounted(loadFarmers)
             <button
                 type="button"
                 class="mb-6 flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
-                @click="selectedFarmer = null"
+                @click="backToRegistry"
             >
                 <UIcon name="i-lucide-arrow-left" class="size-3.5" />
                 Back to Farmers Registry
@@ -926,8 +952,7 @@ onMounted(loadFarmers)
             @click.self="showEditModal = false"
         >
             <div
-                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
-                style="font-family: 'DM Sans', sans-serif"
+                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl font-sans"
             >
                 <div class="mb-5 flex items-start justify-between">
                     <div>

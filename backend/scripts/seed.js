@@ -8,6 +8,9 @@
  * also seeds one farm with a parcel and two farmers assigned to it. That gives
  * the farm's farmer rollup and its derived status something to resolve.
  *
+ * Finally it seeds a few assistance programs, so frontend/app/pages/assistance.vue
+ * opens on a populated registry rather than an empty one.
+ *
  * Idempotent: existing records are matched by name and left untouched, so
  * re-running only fills in what is missing.
  *
@@ -20,6 +23,7 @@ const BARANGAY_UID = 'api::barangay.barangay'
 const FARMER_UID = 'api::farmer.farmer'
 const FARM_UID = 'api::farm.farm'
 const PARCEL_UID = 'api::farm-parcel.farm-parcel'
+const ASSISTANCE_PROGRAM_UID = 'api::assistance-program.assistance-program'
 
 /**
  * A worked example of the linkage: two farmers sharing one parcel of a farm.
@@ -104,6 +108,86 @@ const FARMERS = [
     { name: 'Fe Domingo' },
     { name: 'Arturo Salazar' },
     { name: 'Corazon Lim' },
+]
+
+/**
+ * A worked set of released, queued and scheduled assistance, so the assistance
+ * registry has every status represented. Each entry names a farmer and a
+ * barangay that the lists above already create.
+ */
+const ASSISTANCE_PROGRAMS = [
+    {
+        program: 'Rice Seed Subsidy',
+        farmer: 'Rosa Dizon',
+        barangay: 'Sindalan',
+        items: '4 bags certified rice seed (40 kg), 1 bag fertilizer',
+        value: 5200,
+        date: '2024-11-05',
+        status: 'Released',
+    },
+    {
+        program: 'Rice Seed Subsidy',
+        farmer: 'Jose Mendoza',
+        barangay: 'Sto. Niño',
+        items: '5 bags certified rice seed (40 kg), 2 bags urea',
+        value: 7800,
+        date: '2024-11-05',
+        status: 'Released',
+    },
+    {
+        program: 'Corn Seed Assistance',
+        farmer: 'Arturo Salazar',
+        barangay: 'Pulung Bulu',
+        items: '3 bags hybrid corn seed, 1 bag complete fertilizer',
+        value: 6400,
+        date: '2024-11-12',
+        status: 'Released',
+    },
+    {
+        program: 'Veggie Growers Kit',
+        farmer: 'Ana Reyes',
+        barangay: 'Calulut',
+        items: 'Assorted vegetable seeds, organic fertilizers, drip hoses',
+        value: 3850,
+        date: '2024-11-18',
+        status: 'For Release',
+    },
+    {
+        program: 'Farm Machinery Access',
+        farmer: 'Carlos Garcia',
+        barangay: 'Pulung Bulu',
+        items: 'Tractor service (2 ha), 1 pump engine rental',
+        value: 9400,
+        date: '2024-11-22',
+        status: 'For Release',
+    },
+    {
+        program: 'Livelihood Starter Pack',
+        farmer: 'Liza Ramos',
+        barangay: 'Dolores',
+        items: 'Feeds, 10 native chickens, starter housing',
+        value: 15000,
+        date: '2024-11-28',
+        status: 'Pending',
+    },
+    {
+        program: 'Training - Rice Production',
+        farmer: 'Elena Bautista',
+        barangay: 'San Pedro Cutud',
+        items: 'Capacity building (3-day), training kits',
+        value: 2500,
+        date: '2024-12-05',
+        status: 'Scheduled',
+    },
+    {
+        program: 'Soil Amendment Support',
+        farmer: 'Fe Domingo',
+        barangay: 'Del Pilar',
+        items: '10 bags biochar, 5 bags lime',
+        value: 4600,
+        date: '2024-12-08',
+        status: 'Pending',
+    },
 ]
 
 async function seedBarangays(strapi) {
@@ -310,6 +394,87 @@ async function resyncFarmRollups(strapi) {
     }
 }
 
+/**
+ * Creates one assistance program, resolving its farmer and barangay by name. A
+ * missing one is fatal rather than skipped: silently dropping half a record
+ * would leave the registry quietly wrong.
+ */
+async function seedAssistanceProgram(strapi, entry) {
+    const farmer = await strapi
+        .documents(FARMER_UID)
+        .findFirst({ filters: { name: { $eq: entry.farmer } } })
+
+    if (!farmer) {
+        throw new Error(
+            `Cannot seed assistance: farmer "${entry.farmer}" does not exist`
+        )
+    }
+
+    const barangay = await strapi
+        .documents(BARANGAY_UID)
+        .findFirst({ filters: { name: { $eq: entry.barangay } } })
+
+    if (!barangay) {
+        throw new Error(
+            `Cannot seed assistance: barangay "${entry.barangay}" does not exist`
+        )
+    }
+
+    const existing = await strapi.documents(ASSISTANCE_PROGRAM_UID).findFirst({
+        filters: {
+            program: { $eq: entry.program },
+            farmer: { documentId: farmer.documentId },
+            date: entry.date,
+        },
+    })
+
+    if (existing) {
+        return {
+            created: false,
+            label: `${existing.reference_code} ${entry.program}`,
+        }
+    }
+
+    // The reference code is generated server-side by the document middleware in
+    // src/index.ts, which this create goes through, so it is not sent here.
+    const created = await strapi.documents(ASSISTANCE_PROGRAM_UID).create({
+        data: {
+            program: entry.program,
+            farmer: farmer.documentId,
+            barangay: barangay.documentId,
+            items: entry.items,
+            value: entry.value,
+            date: entry.date,
+            status: entry.status,
+        },
+    })
+
+    return {
+        created: true,
+        label: `${created.reference_code} ${entry.program}`,
+    }
+}
+
+async function seedAssistancePrograms(strapi) {
+    const created = []
+    const skipped = []
+
+    for (const entry of ASSISTANCE_PROGRAMS) {
+        const result = await seedAssistanceProgram(strapi, entry)
+        if (result.created) {
+            created.push(result.label)
+        } else {
+            skipped.push(result.label)
+        }
+    }
+
+    console.log(
+        `assistance programs: ${created.length} created, ${skipped.length} already present`
+    )
+    created.forEach((label) => console.log(`  + ${label}`))
+    skipped.forEach((label) => console.log(`  = ${label}`))
+}
+
 async function main() {
     const appContext = await core.compileStrapi()
     const app = await core.createStrapi(appContext).load()
@@ -319,6 +484,7 @@ async function main() {
         await seedFarmers(app)
         await seedWorkedExample(app)
         await resyncFarmRollups(app)
+        await seedAssistancePrograms(app)
     } finally {
         // Teardown can time out acquiring a pooled connection, especially when a
         // dev server is already connected. The data is already committed, so a

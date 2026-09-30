@@ -32,6 +32,12 @@
             "target": "api::farm-parcel.farm-parcel",
             "mappedBy": "farmers"
         },
+        "assistance_programs": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "api::assistance-program.assistance-program",
+            "mappedBy": "farmer"
+        },
         "contact": {
             "type": "string"
         },

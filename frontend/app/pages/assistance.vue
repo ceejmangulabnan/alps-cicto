@@ -1,102 +1,30 @@
 <script setup lang="ts">
+import {
+    ASSISTANCE_STATUS_OPTIONS,
+    useAssistanceApi,
+    type AssistanceStatus,
+} from '~/composables/useAssistanceApi'
+import {
+    useAssistanceRegistry,
+    type AssistanceRow,
+} from '~/composables/useAssistanceRegistry'
+import { getErrorMessage } from '~/utils/apiError'
+import { avatarColor, initials } from '~/utils/initials'
+
 definePageMeta({ middleware: 'auth' })
 
-type AssistanceStatus = 'Released' | 'For Release' | 'Pending' | 'Scheduled'
+const {
+    programs,
+    farmers,
+    barangays,
+    programOptions,
+    loading,
+    loadError,
+    load,
+} = useAssistanceRegistry()
+const { create, update, deleteProgram } = useAssistanceApi()
 
-type AssistanceProgram = {
-    id: string
-    program: string
-    recipient: string
-    barangay: string
-    items: string
-    value: number
-    date: string
-    status: AssistanceStatus
-}
-
-const assistancePrograms = reactive<AssistanceProgram[]>([
-    {
-        id: 'AST-001',
-        program: 'Rice Seed Subsidy',
-        recipient: 'Rosa Dizon',
-        barangay: 'Sindalan',
-        items: '4 bags certified rice seed (40 kg), 1 bag fertilizer',
-        value: 5200,
-        date: '2024-11-05',
-        status: 'Released',
-    },
-    {
-        id: 'AST-002',
-        program: 'Rice Seed Subsidy',
-        recipient: 'Jose Mendoza',
-        barangay: 'Sto. Niño',
-        items: '5 bags certified rice seed (40 kg), 2 bags urea',
-        value: 7800,
-        date: '2024-11-05',
-        status: 'Released',
-    },
-    {
-        id: 'AST-003',
-        program: 'Corn Seed Assistance',
-        recipient: 'Arturo Salazar',
-        barangay: 'Pulung Bulu',
-        items: '3 bags hybrid corn seed, 1 bag complete fertilizer',
-        value: 6400,
-        date: '2024-11-12',
-        status: 'Released',
-    },
-    {
-        id: 'AST-004',
-        program: 'Veggie Growers Kit',
-        recipient: 'Ana Reyes',
-        barangay: 'Calulut',
-        items: 'Assorted vegetable seeds, organic fertilizers, drip hoses',
-        value: 3850,
-        date: '2024-11-18',
-        status: 'For Release',
-    },
-    {
-        id: 'AST-005',
-        program: 'Farm Machinery Access',
-        recipient: 'Carlos Garcia',
-        barangay: 'Pulung Bulu',
-        items: 'Tractor service (2 ha), 1 pump engine rental',
-        value: 9400,
-        date: '2024-11-22',
-        status: 'For Release',
-    },
-    {
-        id: 'AST-006',
-        program: 'Livelihood Starter Pack',
-        recipient: 'Liza Ramos',
-        barangay: 'Dolores',
-        items: 'Feeds, 10 native chickens, starter housing',
-        value: 15000,
-        date: '2024-11-28',
-        status: 'Pending',
-    },
-    {
-        id: 'AST-007',
-        program: 'Training - Rice Production',
-        recipient: 'Elena Bautista',
-        barangay: 'San Pedro',
-        items: 'Capacity building (3-day), training kits',
-        value: 2500,
-        date: '2024-12-05',
-        status: 'Scheduled',
-    },
-    {
-        id: 'AST-008',
-        program: 'Soil Amendment Support',
-        recipient: 'Fe Domingo',
-        barangay: 'Del Pilar',
-        items: '10 bags biochar, 5 bags lime',
-        value: 4600,
-        date: '2024-12-08',
-        status: 'Pending',
-    },
-])
-
+/** Reuses the shared land-status pills, one shade per assistance status. */
 const STATUS_STYLE: Record<AssistanceStatus, string> = {
     Released: 'status-cultivated',
     'For Release': 'status-preparation',
@@ -111,6 +39,10 @@ const STATUS_DOT: Record<AssistanceStatus, string> = {
     Scheduled: '#4b5563',
 }
 
+/**
+ * Program colours, keyed by name. A program recorded outside this list still
+ * renders — it falls back to the neutral grey rather than losing its pill.
+ */
 const PROGRAM_COLORS: Record<string, string> = {
     'Rice Seed Subsidy': '#16a34a',
     'Corn Seed Assistance': '#ca8a04',
@@ -121,170 +53,293 @@ const PROGRAM_COLORS: Record<string, string> = {
     'Soil Amendment Support': '#d97706',
 }
 
-const AVATAR_COLORS = [
-    '#2d6a2d',
-    '#3b82f6',
-    '#7c3aed',
-    '#d97706',
-    '#dc2626',
-    '#0891b2',
-    '#db2777',
-    '#65a30d',
-]
+const programColor = (program: string) => PROGRAM_COLORS[program] ?? '#6b7280'
 
-function initials(name: string) {
-    return name
-        .split(' ')
-        .map((w) => w[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase()
+function today(): string {
+    return new Date().toISOString().slice(0, 10)
 }
 
-function avatarColor(name: string) {
-    let h = 0
-    for (const c of name) h = (h * 31 + c.charCodeAt(0)) % AVATAR_COLORS.length
-    return AVATAR_COLORS[h]
-}
+const peso = (value: number) => (value > 0 ? `₱${value.toLocaleString()}` : '—')
 
-const statusFilterOptions = [
-    'All',
-    'Released',
-    'For Release',
-    'Pending',
-    'Scheduled',
-] as string[]
-
-const search = ref('')
-const filterStatus = ref('All')
-
-const filtered = computed(() =>
-    assistancePrograms.filter((a) => {
-        const match =
-            !search.value ||
-            a.recipient.toLowerCase().includes(search.value.toLowerCase()) ||
-            a.program.toLowerCase().includes(search.value.toLowerCase()) ||
-            a.barangay.toLowerCase().includes(search.value.toLowerCase()) ||
-            a.items.toLowerCase().includes(search.value.toLowerCase())
-        const status =
-            filterStatus.value === 'All' || a.status === filterStatus.value
-        return match && status
-    })
-)
+/* ------------------------------------------------------------------ */
+/* KPIs                                                                */
+/* ------------------------------------------------------------------ */
 
 const kpis = computed(() => [
     {
         label: 'Total Programs',
-        val: assistancePrograms.length,
+        val: programs.value.length,
         icon: 'i-lucide-hand-heart',
         color: '#2d6a2d',
         bg: '#e8f5e8',
     },
     {
         label: 'Released',
-        val: assistancePrograms.filter((a) => a.status === 'Released').length,
+        val: programs.value.filter((row) => row.status === 'Released').length,
         icon: 'i-lucide-check-circle',
         color: '#16a34a',
         bg: '#dcfce7',
     },
     {
         label: 'Pending Release',
-        val: assistancePrograms.filter((a) => a.status !== 'Released').length,
+        val: programs.value.filter((row) => row.status !== 'Released').length,
         icon: 'i-lucide-clock',
         color: '#ca8a04',
         bg: '#fef3c7',
     },
     {
         label: 'Total Value (₱)',
-        val: `${assistancePrograms
-            .reduce((acc, a) => acc + a.value, 0)
-            .toLocaleString()}`,
+        val: programs.value
+            .reduce((acc, row) => acc + row.value, 0)
+            .toLocaleString(),
         icon: 'i-lucide-package',
         color: '#1d6fa4',
         bg: '#e0f0fb',
     },
 ])
 
-const showRecordModal = ref(false)
-const assistanceForm = reactive({
-    program: '',
-    recipient: '',
-    barangay: '',
-    items: '',
-    value: '',
-    date: '',
-    status: 'Pending',
+/* ------------------------------------------------------------------ */
+/* Filters                                                             */
+/* ------------------------------------------------------------------ */
+
+const statusFilterOptions = ['All', ...ASSISTANCE_STATUS_OPTIONS] as const
+type StatusFilter = (typeof statusFilterOptions)[number]
+const filterStatus = ref<StatusFilter>('All')
+const search = ref('')
+
+const filtered = computed(() =>
+    programs.value.filter((row) => {
+        const haystack = [
+            row.reference_code,
+            row.program,
+            row.recipient,
+            row.farmer_code,
+            row.barangay,
+            row.items,
+        ]
+            .join(' ')
+            .toLowerCase()
+        const match =
+            !search.value || haystack.includes(search.value.toLowerCase())
+        const status =
+            filterStatus.value === 'All' || row.status === filterStatus.value
+        return match && status
+    })
+)
+
+onMounted(() => {
+    load()
 })
 
-const programOptions = computed(() =>
-    [...new Set(assistancePrograms.map((a) => a.program))].sort()
+/* ------------------------------------------------------------------ */
+/* Record assistance                                                   */
+/* ------------------------------------------------------------------ */
+
+const showRecordModal = ref(false)
+const submittingNew = ref(false)
+const newError = ref<string | null>(null)
+const newSaved = ref(false)
+let newCloseTimer: ReturnType<typeof setTimeout> | null = null
+
+const newForm = reactive({
+    program: '',
+    farmerDocumentId: '',
+    barangayDocumentId: '',
+    items: '',
+    value: '',
+    date: today(),
+    status: 'Pending' as AssistanceStatus,
+})
+
+const canSaveNew = computed(
+    () =>
+        !submittingNew.value &&
+        Boolean(newForm.program.trim()) &&
+        Boolean(newForm.farmerDocumentId) &&
+        Boolean(newForm.date)
 )
-const recipientOptions = computed(() =>
-    [...new Set(assistancePrograms.map((a) => a.recipient))].sort()
-)
-const barangayOptions = computed(() =>
-    [...new Set(assistancePrograms.map((a) => a.barangay))].sort()
-)
-const assistStatusOptions: AssistanceStatus[] = [
-    'Released',
-    'For Release',
-    'Pending',
-    'Scheduled',
-]
+
+/** The peso amount, or null when the field is left blank. */
+const parsedValue = (raw: string): number | null => {
+    const amount = Number(raw)
+    return raw.trim() !== '' && Number.isFinite(amount) ? amount : null
+}
+
+function openRecordModal() {
+    newForm.program = ''
+    newForm.farmerDocumentId = ''
+    newForm.barangayDocumentId = ''
+    newForm.items = ''
+    newForm.value = ''
+    newForm.date = today()
+    newForm.status = 'Pending'
+    newError.value = null
+    newSaved.value = false
+    showRecordModal.value = true
+}
+
+function closeRecordModal() {
+    if (submittingNew.value) return
+    if (newCloseTimer) {
+        clearTimeout(newCloseTimer)
+        newCloseTimer = null
+    }
+    newSaved.value = false
+    showRecordModal.value = false
+}
+
+async function submitNew() {
+    newError.value = null
+    submittingNew.value = true
+    try {
+        await create({
+            program: newForm.program.trim(),
+            farmer: newForm.farmerDocumentId,
+            barangay: newForm.barangayDocumentId || null,
+            items: newForm.items.trim() || null,
+            value: parsedValue(newForm.value),
+            date: newForm.date,
+            status: newForm.status,
+        })
+        newSaved.value = true
+        newCloseTimer = setTimeout(() => {
+            newCloseTimer = null
+            newSaved.value = false
+            showRecordModal.value = false
+        }, 900)
+        await load()
+    } catch (cause) {
+        newError.value = getErrorMessage(
+            cause,
+            'Failed to record the assistance. Please try again.'
+        )
+    } finally {
+        submittingNew.value = false
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Edit assistance                                                     */
+/* ------------------------------------------------------------------ */
 
 const showEditModal = ref(false)
+const submittingEdit = ref(false)
+const editError = ref<string | null>(null)
+const editSaved = ref(false)
+let editCloseTimer: ReturnType<typeof setTimeout> | null = null
+
 const editForm = reactive({
-    id: '',
+    documentId: '',
     program: '',
-    recipient: '',
-    barangay: '',
+    farmerDocumentId: '',
+    barangayDocumentId: '',
     items: '',
     value: '',
     date: '',
-    status: 'Pending',
+    status: 'Pending' as AssistanceStatus,
 })
 
-function openEditModal(a: AssistanceProgram) {
-    editForm.id = a.id
-    editForm.program = a.program
-    editForm.recipient = a.recipient
-    editForm.barangay = a.barangay
-    editForm.items = a.items
-    editForm.value = String(a.value)
-    editForm.date = a.date
-    editForm.status = a.status
+const canSaveEdit = computed(
+    () =>
+        !submittingEdit.value &&
+        Boolean(editForm.program.trim()) &&
+        Boolean(editForm.farmerDocumentId) &&
+        Boolean(editForm.date)
+)
+
+function openEditModal(row: AssistanceRow) {
+    editForm.documentId = row.documentId
+    editForm.program = row.program
+    editForm.farmerDocumentId = row.farmerDocumentId
+    editForm.barangayDocumentId = row.barangayDocumentId
+    editForm.items = row.items
+    editForm.value = row.value > 0 ? String(row.value) : ''
+    editForm.date = row.date ?? ''
+    editForm.status = row.status
+    editError.value = null
+    editSaved.value = false
     showEditModal.value = true
 }
 
-function saveEdit() {
-    const idx = assistancePrograms.findIndex((r) => r.id === editForm.id)
-    if (idx === -1) return
-    const a = assistancePrograms[idx]
-    a.program = editForm.program
-    a.recipient = editForm.recipient
-    a.barangay = editForm.barangay
-    a.items = editForm.items
-    a.value = Number(editForm.value)
-    a.date = editForm.date
-    a.status = editForm.status as AssistanceStatus
+function closeEditModal() {
+    if (submittingEdit.value) return
+    if (editCloseTimer) {
+        clearTimeout(editCloseTimer)
+        editCloseTimer = null
+    }
+    editSaved.value = false
     showEditModal.value = false
 }
 
-const showDeleteModal = ref(false)
-const deleteTarget = ref<AssistanceProgram | null>(null)
+async function submitEdit() {
+    editError.value = null
+    submittingEdit.value = true
+    try {
+        await update(editForm.documentId, {
+            program: editForm.program.trim(),
+            farmer: editForm.farmerDocumentId,
+            barangay: editForm.barangayDocumentId || null,
+            items: editForm.items.trim() || null,
+            value: parsedValue(editForm.value),
+            date: editForm.date,
+            status: editForm.status,
+        })
+        editSaved.value = true
+        editCloseTimer = setTimeout(() => {
+            editCloseTimer = null
+            editSaved.value = false
+            showEditModal.value = false
+        }, 900)
+        await load()
+    } catch (cause) {
+        editError.value = getErrorMessage(
+            cause,
+            'Failed to update the assistance. Please try again.'
+        )
+    } finally {
+        submittingEdit.value = false
+    }
+}
 
-function askDelete(a: AssistanceProgram) {
-    deleteTarget.value = a
+/* ------------------------------------------------------------------ */
+/* Delete assistance                                                   */
+/* ------------------------------------------------------------------ */
+
+const showDeleteModal = ref(false)
+const deleteTarget = ref<AssistanceRow | null>(null)
+const deleting = ref(false)
+const deleteError = ref<string | null>(null)
+
+function askDelete(row: AssistanceRow) {
+    deleteTarget.value = row
+    deleteError.value = null
     showDeleteModal.value = true
 }
 
-function confirmDelete() {
-    const t = deleteTarget.value
-    if (!t) return
-    const idx = assistancePrograms.findIndex((r) => r.id === t.id)
-    if (idx !== -1) assistancePrograms.splice(idx, 1)
+function closeDeleteModal() {
+    if (deleting.value) return
     deleteTarget.value = null
     showDeleteModal.value = false
+}
+
+async function confirmDelete() {
+    const target = deleteTarget.value
+    if (!target) return
+    deleting.value = true
+    deleteError.value = null
+    try {
+        await deleteProgram(target.documentId)
+        deleteTarget.value = null
+        showDeleteModal.value = false
+        await load()
+    } catch (cause) {
+        deleteError.value = getErrorMessage(
+            cause,
+            'Failed to delete the assistance. Please try again.'
+        )
+    } finally {
+        deleting.value = false
+    }
 }
 </script>
 
@@ -302,7 +357,7 @@ function confirmDelete() {
             <button
                 type="button"
                 class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
-                @click="showRecordModal = true"
+                @click="openRecordModal"
             >
                 <UIcon name="i-lucide-hand-heart" class="size-3.5" />
                 Record Assistance
@@ -402,8 +457,7 @@ function confirmDelete() {
                     {{ s }}
                 </button>
                 <span class="ml-auto text-[11px] text-gray-400">
-                    {{ filtered.length }} of
-                    {{ assistancePrograms.length }} shown
+                    {{ filtered.length }} of {{ programs.length }} shown
                 </span>
             </div>
             <div class="overflow-x-auto">
@@ -413,7 +467,7 @@ function confirmDelete() {
                             <th
                                 class="px-5 py-3 text-left font-semibold text-gray-600"
                             >
-                                ID
+                                Ref
                             </th>
                             <th
                                 class="px-4 py-3 text-left font-semibold text-gray-600"
@@ -454,34 +508,82 @@ function confirmDelete() {
                         </tr>
                     </thead>
                     <tbody>
+                        <!-- Loading -->
+                        <tr v-if="loading">
+                            <td
+                                colspan="9"
+                                class="px-4 py-10 text-center text-gray-400"
+                            >
+                                <span class="inline-flex items-center gap-2">
+                                    <UIcon
+                                        name="i-lucide-loader-circle"
+                                        class="size-4 animate-spin"
+                                    />
+                                    Loading assistance records...
+                                </span>
+                            </td>
+                        </tr>
+                        <!-- Failed -->
+                        <tr v-else-if="loadError">
+                            <td colspan="9" class="px-4 py-10 text-center">
+                                <p class="text-red-600">{{ loadError }}</p>
+                                <button
+                                    type="button"
+                                    class="mt-2 text-xs font-medium text-green-700 underline"
+                                    @click="load"
+                                >
+                                    Try again
+                                </button>
+                            </td>
+                        </tr>
+                        <!-- Loaded but nothing to show -->
+                        <tr v-else-if="programs.length === 0">
+                            <td
+                                colspan="9"
+                                class="px-4 py-10 text-center text-gray-400"
+                            >
+                                <div class="flex flex-col items-center gap-2">
+                                    <UIcon
+                                        name="i-lucide-hand-heart"
+                                        class="size-6 text-gray-300"
+                                    />
+                                    <p>
+                                        No assistance recorded yet. Log the
+                                        first release against a farmer.
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr v-else-if="filtered.length === 0">
+                            <td
+                                colspan="9"
+                                class="px-4 py-10 text-center text-gray-400"
+                            >
+                                No assistance records match this search.
+                            </td>
+                        </tr>
                         <tr
                             v-for="(a, i) in filtered"
-                            :key="a.id"
+                            v-else
+                            :key="a.documentId"
                             class="border-b border-gray-50 last:border-0 transition-colors hover:bg-green-50/30"
                             :class="i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'"
                         >
                             <td class="px-5 py-3 font-mono text-gray-400">
-                                {{ a.id }}
+                                {{ a.reference_code }}
                             </td>
                             <td class="px-4 py-3">
                                 <span
                                     class="flex items-center gap-1.5 rounded-full px-2 py-0.5 font-medium"
                                     :style="{
-                                        background: `${
-                                            PROGRAM_COLORS[a.program] ??
-                                            '#6b7280'
-                                        }1a`,
-                                        color:
-                                            PROGRAM_COLORS[a.program] ??
-                                            '#6b7280',
+                                        background: `${programColor(a.program)}1a`,
+                                        color: programColor(a.program),
                                     }"
                                 >
                                     <span
                                         class="h-1.5 w-1.5 rounded-full"
                                         :style="{
-                                            background:
-                                                PROGRAM_COLORS[a.program] ??
-                                                '#6b7280',
+                                            background: programColor(a.program),
                                         }"
                                     />
                                     {{ a.program }}
@@ -499,27 +601,33 @@ function confirmDelete() {
                                     >
                                         {{ initials(a.recipient) }}
                                     </span>
-                                    <span class="font-medium text-gray-800">
-                                        {{ a.recipient }}
+                                    <span>
+                                        <span
+                                            class="block font-medium text-gray-800"
+                                        >
+                                            {{ a.recipient }}
+                                        </span>
+                                        <span
+                                            class="block font-mono text-[10px] text-gray-400"
+                                        >
+                                            {{ a.farmer_code }}
+                                        </span>
                                     </span>
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-gray-500">
-                                {{ a.barangay }}
+                                {{ a.barangay || '—' }}
                             </td>
                             <td
                                 class="max-w-xs truncate px-4 py-3 text-gray-600"
+                                :title="a.items"
                             >
-                                {{ a.items }}
+                                {{ a.items || '—' }}
                             </td>
                             <td
                                 class="px-4 py-3 text-right font-mono font-medium text-green-700"
                             >
-                                {{
-                                    a.value > 0
-                                        ? `₱${a.value.toLocaleString()}`
-                                        : '—'
-                                }}
+                                {{ peso(a.value) }}
                             </td>
                             <td class="px-4 py-3 text-gray-500">
                                 <span class="flex items-center gap-1">
@@ -527,7 +635,7 @@ function confirmDelete() {
                                         name="i-lucide-calendar"
                                         class="size-[10px] text-gray-400"
                                     />
-                                    {{ a.date }}
+                                    {{ a.date ?? '—' }}
                                 </span>
                             </td>
                             <td class="px-4 py-3">
@@ -552,6 +660,7 @@ function confirmDelete() {
                                 >
                                     <button
                                         type="button"
+                                        title="Edit assistance"
                                         class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
                                         @click="openEditModal(a)"
                                     >
@@ -562,6 +671,7 @@ function confirmDelete() {
                                     </button>
                                     <button
                                         type="button"
+                                        title="Delete assistance"
                                         class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                                         @click="askDelete(a)"
                                     >
@@ -584,7 +694,7 @@ function confirmDelete() {
         <div
             v-if="showRecordModal"
             class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
-            @click.self="showRecordModal = false"
+            @click.self="closeRecordModal"
         >
             <div
                 class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
@@ -612,16 +722,34 @@ function confirmDelete() {
                     <button
                         type="button"
                         class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
-                        @click="showRecordModal = false"
+                        @click="closeRecordModal"
                     >
                         <UIcon name="i-lucide-x" class="size-4" />
                     </button>
                 </div>
 
-                <form
-                    class="space-y-4"
-                    @submit.prevent="showRecordModal = false"
+                <div
+                    v-if="newSaved"
+                    class="flex flex-col items-center gap-2 py-10"
                 >
+                    <span
+                        class="flex size-10 items-center justify-center rounded-full bg-green-50 text-green-600"
+                    >
+                        <UIcon name="i-lucide-check" class="size-5" />
+                    </span>
+                    <p class="text-sm font-semibold text-gray-800">Saved</p>
+                    <p class="text-xs text-gray-500">Assistance recorded.</p>
+                </div>
+
+                <form v-else class="space-y-4" @submit.prevent="submitNew">
+                    <p
+                        v-if="farmers.length === 0"
+                        class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                    >
+                        No farmers registered yet. Register a farmer first, then
+                        log the assistance here.
+                    </p>
+
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
@@ -629,21 +757,20 @@ function confirmDelete() {
                             >
                                 Program
                             </label>
-                            <select
-                                v-model="assistanceForm.program"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            >
-                                <option value="" disabled>
-                                    Select a program...
-                                </option>
+                            <input
+                                v-model="newForm.program"
+                                type="text"
+                                list="assist-program-options"
+                                placeholder="e.g. Rice Seed Subsidy"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                            <datalist id="assist-program-options">
                                 <option
                                     v-for="p in programOptions"
                                     :key="p"
                                     :value="p"
-                                >
-                                    {{ p }}
-                                </option>
-                            </select>
+                                />
+                            </datalist>
                         </div>
                         <div>
                             <label
@@ -651,20 +778,21 @@ function confirmDelete() {
                             >
                                 Recipient
                             </label>
-                            <input
-                                v-model="assistanceForm.recipient"
-                                type="text"
-                                list="assist-recipient-options"
-                                placeholder="e.g. Rosa Dizon"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            />
-                            <datalist id="assist-recipient-options">
+                            <select
+                                v-model="newForm.farmerDocumentId"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option value="" disabled>
+                                    Select a farmer...
+                                </option>
                                 <option
-                                    v-for="r in recipientOptions"
-                                    :key="r"
-                                    :value="r"
-                                />
-                            </datalist>
+                                    v-for="f in farmers"
+                                    :key="f.value"
+                                    :value="f.value"
+                                >
+                                    {{ f.label }}
+                                </option>
+                            </select>
                         </div>
                     </div>
 
@@ -675,20 +803,19 @@ function confirmDelete() {
                             >
                                 Barangay
                             </label>
-                            <input
-                                v-model="assistanceForm.barangay"
-                                type="text"
-                                list="assist-barangay-options"
-                                placeholder="Select barangay"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            />
-                            <datalist id="assist-barangay-options">
+                            <select
+                                v-model="newForm.barangayDocumentId"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option value="">Not specified</option>
                                 <option
-                                    v-for="b in barangayOptions"
-                                    :key="b"
-                                    :value="b"
-                                />
-                            </datalist>
+                                    v-for="b in barangays"
+                                    :key="b.value"
+                                    :value="b.value"
+                                >
+                                    {{ b.label }}
+                                </option>
+                            </select>
                         </div>
                         <div>
                             <label
@@ -697,7 +824,7 @@ function confirmDelete() {
                                 Value (₱)
                             </label>
                             <input
-                                v-model="assistanceForm.value"
+                                v-model="newForm.value"
                                 type="number"
                                 step="1"
                                 min="0"
@@ -714,7 +841,7 @@ function confirmDelete() {
                             Items
                         </label>
                         <textarea
-                            v-model="assistanceForm.items"
+                            v-model="newForm.items"
                             rows="2"
                             placeholder="e.g. 4 bags certified rice seed (40 kg), 1 bag fertilizer"
                             class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
@@ -729,7 +856,7 @@ function confirmDelete() {
                                 Date
                             </label>
                             <input
-                                v-model="assistanceForm.date"
+                                v-model="newForm.date"
                                 type="date"
                                 class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
                             />
@@ -741,11 +868,11 @@ function confirmDelete() {
                                 Status
                             </label>
                             <select
-                                v-model="assistanceForm.status"
+                                v-model="newForm.status"
                                 class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
                             >
                                 <option
-                                    v-for="s in assistStatusOptions"
+                                    v-for="s in ASSISTANCE_STATUS_OPTIONS"
                                     :key="s"
                                     :value="s"
                                 >
@@ -755,21 +882,39 @@ function confirmDelete() {
                         </div>
                     </div>
 
+                    <p
+                        v-if="newError"
+                        class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
+                    >
+                        {{ newError }}
+                    </p>
+
                     <div
                         class="flex justify-end gap-2 border-t border-gray-100 pt-4"
                     >
                         <button
                             type="button"
                             class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                            @click="showRecordModal = false"
+                            :disabled="submittingNew"
+                            @click="closeRecordModal"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
+                            class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524] disabled:cursor-not-allowed disabled:opacity-60"
+                            :disabled="!canSaveNew"
                         >
-                            Record Assistance
+                            <UIcon
+                                v-if="submittingNew"
+                                name="i-lucide-loader-circle"
+                                class="size-3.5 animate-spin"
+                            />
+                            {{
+                                submittingNew
+                                    ? 'Saving...'
+                                    : 'Record Assistance'
+                            }}
                         </button>
                     </div>
                 </form>
@@ -782,7 +927,7 @@ function confirmDelete() {
         <div
             v-if="showEditModal"
             class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
-            @click.self="showEditModal = false"
+            @click.self="closeEditModal"
         >
             <div
                 class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
@@ -810,13 +955,26 @@ function confirmDelete() {
                     <button
                         type="button"
                         class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
-                        @click="showEditModal = false"
+                        @click="closeEditModal"
                     >
                         <UIcon name="i-lucide-x" class="size-4" />
                     </button>
                 </div>
 
-                <form class="space-y-4" @submit.prevent="saveEdit">
+                <div
+                    v-if="editSaved"
+                    class="flex flex-col items-center gap-2 py-10"
+                >
+                    <span
+                        class="flex size-10 items-center justify-center rounded-full bg-green-50 text-green-600"
+                    >
+                        <UIcon name="i-lucide-check" class="size-5" />
+                    </span>
+                    <p class="text-sm font-semibold text-gray-800">Saved</p>
+                    <p class="text-xs text-gray-500">Assistance updated.</p>
+                </div>
+
+                <form v-else class="space-y-4" @submit.prevent="submitEdit">
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
@@ -824,18 +982,19 @@ function confirmDelete() {
                             >
                                 Program
                             </label>
-                            <select
+                            <input
                                 v-model="editForm.program"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            >
+                                type="text"
+                                list="assist-program-options-edit"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                            <datalist id="assist-program-options-edit">
                                 <option
                                     v-for="p in programOptions"
                                     :key="p"
                                     :value="p"
-                                >
-                                    {{ p }}
-                                </option>
-                            </select>
+                                />
+                            </datalist>
                         </div>
                         <div>
                             <label
@@ -843,20 +1002,18 @@ function confirmDelete() {
                             >
                                 Recipient
                             </label>
-                            <input
-                                v-model="editForm.recipient"
-                                type="text"
-                                list="assist-recipient-options-edit"
-                                placeholder="e.g. Rosa Dizon"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            />
-                            <datalist id="assist-recipient-options-edit">
+                            <select
+                                v-model="editForm.farmerDocumentId"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
                                 <option
-                                    v-for="r in recipientOptions"
-                                    :key="r"
-                                    :value="r"
-                                />
-                            </datalist>
+                                    v-for="f in farmers"
+                                    :key="f.value"
+                                    :value="f.value"
+                                >
+                                    {{ f.label }}
+                                </option>
+                            </select>
                         </div>
                     </div>
 
@@ -867,20 +1024,19 @@ function confirmDelete() {
                             >
                                 Barangay
                             </label>
-                            <input
-                                v-model="editForm.barangay"
-                                type="text"
-                                list="assist-barangay-options-edit"
-                                placeholder="Select barangay"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                            />
-                            <datalist id="assist-barangay-options-edit">
+                            <select
+                                v-model="editForm.barangayDocumentId"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option value="">Not specified</option>
                                 <option
-                                    v-for="b in barangayOptions"
-                                    :key="b"
-                                    :value="b"
-                                />
-                            </datalist>
+                                    v-for="b in barangays"
+                                    :key="b.value"
+                                    :value="b.value"
+                                >
+                                    {{ b.label }}
+                                </option>
+                            </select>
                         </div>
                         <div>
                             <label
@@ -937,7 +1093,7 @@ function confirmDelete() {
                                 class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
                             >
                                 <option
-                                    v-for="s in assistStatusOptions"
+                                    v-for="s in ASSISTANCE_STATUS_OPTIONS"
                                     :key="s"
                                     :value="s"
                                 >
@@ -947,21 +1103,35 @@ function confirmDelete() {
                         </div>
                     </div>
 
+                    <p
+                        v-if="editError"
+                        class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
+                    >
+                        {{ editError }}
+                    </p>
+
                     <div
                         class="flex justify-end gap-2 border-t border-gray-100 pt-4"
                     >
                         <button
                             type="button"
                             class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                            @click="showEditModal = false"
+                            :disabled="submittingEdit"
+                            @click="closeEditModal"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
+                            class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524] disabled:cursor-not-allowed disabled:opacity-60"
+                            :disabled="!canSaveEdit"
                         >
-                            Save Changes
+                            <UIcon
+                                v-if="submittingEdit"
+                                name="i-lucide-loader-circle"
+                                class="size-3.5 animate-spin"
+                            />
+                            {{ submittingEdit ? 'Saving...' : 'Save Changes' }}
                         </button>
                     </div>
                 </form>
@@ -974,7 +1144,7 @@ function confirmDelete() {
         <div
             v-if="showDeleteModal"
             class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
-            @click.self="showDeleteModal = false"
+            @click.self="closeDeleteModal"
         >
             <div
                 class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"
@@ -994,25 +1164,38 @@ function confirmDelete() {
                 <p class="mt-1 text-xs text-gray-500">
                     Remove
                     <span class="font-mono text-gray-700">
-                        {{ deleteTarget?.id }}
+                        {{ deleteTarget?.reference_code }}
                     </span>
                     ({{ deleteTarget?.program }}) for
                     {{ deleteTarget?.recipient }}? This action cannot be undone.
+                </p>
+                <p
+                    v-if="deleteError"
+                    class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
+                >
+                    {{ deleteError }}
                 </p>
                 <div class="mt-6 flex justify-end gap-2">
                     <button
                         type="button"
                         class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                        @click="showDeleteModal = false"
+                        :disabled="deleting"
+                        @click="closeDeleteModal"
                     >
                         Cancel
                     </button>
                     <button
                         type="button"
-                        class="rounded-lg bg-red-600 px-4 py-2 text-xs font-medium text-white hover:bg-red-700"
+                        class="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-xs font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        :disabled="deleting"
                         @click="confirmDelete"
                     >
-                        Delete
+                        <UIcon
+                            v-if="deleting"
+                            name="i-lucide-loader-circle"
+                            class="size-3.5 animate-spin"
+                        />
+                        {{ deleting ? 'Deleting...' : 'Delete' }}
                     </button>
                 </div>
             </div>

@@ -1,0 +1,52 @@
+{
+    "kind": "collectionType",
+    "collectionName": "assistance_programs",
+    "info": {
+        "singularName": "assistance-program",
+        "pluralName": "assistance-programs",
+        "displayName": "Assistance Program"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "reference_code": {
+            "type": "string",
+            "required": true,
+            "unique": true
+        },
+        "program": {
+            "type": "string",
+            "required": true
+        },
+        "farmer": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::farmer.farmer",
+            "inversedBy": "assistance_programs",
+            "required": true
+        },
+        "barangay": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::barangay.barangay",
+            "inversedBy": "assistance_programs"
+        },
+        "items": {
+            "type": "text"
+        },
+        "value": {
+            "type": "decimal"
+        },
+        "date": {
+            "type": "date",
+            "required": true
+        },
+        "status": {
+            "type": "enumeration",
+            "enum": ["Pending", "For Release", "Released", "Scheduled"],
+            "default": "Pending"
+        }
+    }
+}

@@ -33,6 +33,15 @@ export interface CreateRiskReportData {
     parcel_status: RiskParcelStatus
 }
 
+export interface UpdateRiskReportData {
+    /** The parcel the risk sits on, as a farm-parcel documentId. */
+    farm_parcel?: string
+    risk_type?: string
+    observed_at?: string
+    severity?: RiskSeverity
+    parcel_status?: RiskParcelStatus
+}
+
 export interface CreateInspectionData {
     /** The parcel documentId the visit was carried out on. */
     parcel: string
@@ -248,6 +257,38 @@ export const useFarmRecordsApi = () => {
     }
 
     /**
+     * `risk-report` is draftAndPublish and this page only ever reads the
+     * published version, so the write is aimed at it explicitly rather than
+     * left to whatever the default status happens to be. Mirrors the publish on
+     * create above, which is what keeps an edit from stranding itself on a
+     * version the risk page would never show.
+     */
+    const updateRiskReport = async (
+        documentId: string,
+        data: UpdateRiskReportData
+    ): Promise<ParcelRiskReport> => {
+        const response = await authFetch<{ data: ParcelRiskReport }>(
+            `${baseUrl}/risk-reports/${documentId}?status=published`,
+            {
+                method: 'PUT',
+                body: {
+                    data: {
+                        ...data,
+                        publishedAt: new Date().toISOString(),
+                    },
+                },
+            }
+        )
+        return response.data
+    }
+
+    const deleteRiskReport = async (documentId: string): Promise<void> => {
+        await authFetch(`${baseUrl}/risk-reports/delete/${documentId}`, {
+            method: 'DELETE',
+        })
+    }
+
+    /**
      * Inspections are `draftAndPublish: false`, so unlike the histories above
      * they are created directly without a publishedAt or status query. Photos
      * arrive as already-uploaded file ids and are connected on create.
@@ -337,6 +378,8 @@ export const useFarmRecordsApi = () => {
         updateHarvest,
         deleteHarvest,
         createRiskReport,
+        updateRiskReport,
+        deleteRiskReport,
         createInspection,
         updateInspection,
         deleteInspection,

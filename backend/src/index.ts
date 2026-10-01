@@ -186,6 +186,7 @@ export default {
                     'api::risk-report.risk-report.update',
                     'api::risk-report.risk-report.destroy',
                     'api::risk-report.risk-report.count',
+                    'api::risk-report.custom-risk-report.destroy',
                     // Assistance Program permissions (full CRUD + custom)
                     'api::assistance-program.assistance-program.find',
                     'api::assistance-program.assistance-program.findOne',
@@ -285,6 +286,7 @@ export default {
                     'api::risk-report.risk-report.update',
                     'api::risk-report.risk-report.destroy',
                     'api::risk-report.risk-report.count',
+                    'api::risk-report.custom-risk-report.destroy',
                     // Assistance Program permissions (full CRUD + custom)
                     'api::assistance-program.assistance-program.find',
                     'api::assistance-program.assistance-program.findOne',

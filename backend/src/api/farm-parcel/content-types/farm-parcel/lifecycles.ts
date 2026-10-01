@@ -108,8 +108,21 @@ export default {
         }
     },
 
-    async afterCreate(event: { result?: Record<string, unknown> }) {
-        await syncFarmFarmers(await findFarmIdByInternalId(event.result?.id))
+    async afterCreate(event: { result?: Record<string, unknown>; params?: any }) {
+        // 1. Extract farm directly from the created result or request params
+        const farmData = event.result?.farm || event.params?.data?.farm
+        const farmId = extractDocumentId(farmData)
+
+        // 2. If present, sync directly without running a broken document lookup mid-transaction
+        if (farmId) {
+            await syncFarmFarmers(farmId)
+        } else if (event.result?.id) {
+            // Fallback only if farm wasn't populated/passed directly
+            const resolvedFarmId = await findFarmIdByInternalId(event.result.id)
+            if (resolvedFarmId) {
+                await syncFarmFarmers(resolvedFarmId)
+            }
+        }
     },
 
     async afterUpdate(event: {
@@ -170,8 +183,8 @@ async function findFarmIdByInternalId(
     const row = (await strapi.db
         .query(FARM_PARCEL_UID)
         .findOne({ where: { id: parcelId } })) as {
-        documentId?: unknown
-    } | null
+            documentId?: unknown
+        } | null
 
     const documentId = row?.documentId
     if (typeof documentId !== 'string' || documentId === '') {

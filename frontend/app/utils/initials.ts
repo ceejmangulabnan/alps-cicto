@@ -30,5 +30,8 @@ export function avatarColor(name: string): string {
     for (const character of name) {
         hash = (hash * 31 + character.charCodeAt(0)) % AVATAR_COLORS.length
     }
-    return AVATAR_COLORS[hash]
+    // The modulo above keeps the index inside the palette, but the index
+    // signature is still read as possibly-undefined under
+    // noUncheckedIndexedAccess, so fall back rather than return undefined.
+    return AVATAR_COLORS[hash] ?? '#2d6a2d'
 }

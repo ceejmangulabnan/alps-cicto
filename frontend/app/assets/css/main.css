@@ -66,3 +66,45 @@ h3,
     background: #ccfbf1;
     color: #0f766e;
 }
+
+/* KPI tile accents on the dashboard. Tints reused from the status palette
+   above so a KPI does not introduce a third set of colours. */
+.kpi-icon-green {
+    background: #e8f5e8;
+    color: #2d6a2d;
+}
+
+.kpi-icon-blue {
+    background: #e0f0fb;
+    color: #1d6fa4;
+}
+
+.kpi-icon-amber {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.kpi-icon-slate {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.kpi-icon-red {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.kpi-badge-green {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.kpi-badge-amber {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.kpi-badge-red {
+    background: #fee2e2;
+    color: #b91c1c;
+}

@@ -12,6 +12,14 @@ export interface Farmer {
 
 export interface FarmerListResponse {
     data: Farmer[]
+    meta?: {
+        pagination: {
+            page: number
+            pageSize: number
+            pageCount: number
+            total: number
+        }
+    }
 }
 
 export interface FarmerResponse {
@@ -39,17 +47,54 @@ export const useFarmersApi = () => {
     const { authFetch } = useAuth()
     const baseUrl = `${String(config.public.strapiUrl || '').replace(/\/$/, '')}/api/farmers`
 
+    /**
+     * Walks every page so callers never silently cap the roster at the first
+     * 100 names. Strapi caps `pagination[pageSize]` at 100, so one request can
+     * only ever return a page — the dashboard's "active farmers" figure counts
+     * the whole registry and would otherwise understate it.
+     */
     const getAll = async (): Promise<FarmerListResponse> => {
-        return await authFetch<FarmerListResponse>(baseUrl, {
-            query: {
-                'fields[0]': FARMER_FIELDS[0],
-                'fields[1]': FARMER_FIELDS[1],
-                'fields[2]': FARMER_FIELDS[2],
-                'fields[3]': FARMER_FIELDS[3],
-                sort: 'name:asc',
-                'pagination[pageSize]': MAX_PAGE_SIZE,
+        const fetchPage = async (page: number): Promise<FarmerListResponse> =>
+            await authFetch<FarmerListResponse>(baseUrl, {
+                query: {
+                    'fields[0]': FARMER_FIELDS[0],
+                    'fields[1]': FARMER_FIELDS[1],
+                    'fields[2]': FARMER_FIELDS[2],
+                    'fields[3]': FARMER_FIELDS[3],
+                    sort: 'name:asc',
+                    'pagination[pageSize]': MAX_PAGE_SIZE,
+                    'pagination[page]': page,
+                },
+            })
+
+        const firstPage = await fetchPage(1)
+        const pagination = firstPage.meta?.pagination
+
+        // Narrowed explicitly rather than via `pageCount ?? 1`, so the spread
+        // below keeps its full pagination shape.
+        if (!pagination || pagination.pageCount <= 1) return firstPage
+
+        const pageCount = pagination.pageCount
+        const remainingPages = await Promise.all(
+            Array.from({ length: pageCount - 1 }, (_, index) =>
+                fetchPage(index + 2)
+            )
+        )
+        const data = [
+            ...firstPage.data,
+            ...remainingPages.flatMap((response) => response.data),
+        ]
+
+        return {
+            data,
+            meta: {
+                pagination: {
+                    ...pagination,
+                    page: 1,
+                    pageCount: 1,
+                },
             },
-        })
+        }
     }
 
     const getAllForSelect = async (): Promise<Farmer[]> => {

@@ -30,11 +30,11 @@ const OSM_STYLE: StyleSpecification = {
 
 const mapStyle = computed<StyleSpecification | string>(() =>
     maptilerKey
-        ? `https://api.maptiler.com/maps/streets/style.json?key=${maptilerKey}`
+        ? `https://api.maptiler.com/maps/hybrid-v4/style.json?key=${maptilerKey}`
         : OSM_STYLE
 )
 
-// San Fernando, Pampanga
+// San Fernando, Pampanga Coordinates
 const mapCenter = ref({ lng: 120.6896, lat: 15.0282 })
 const mapZoom = ref(14)
 

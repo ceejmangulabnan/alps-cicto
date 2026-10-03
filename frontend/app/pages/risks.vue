@@ -5,7 +5,11 @@ import type {
 } from '~/composables/useFarmParcelApi'
 import { useRiskRegistry } from '~/composables/useRiskRegistry'
 import { useFarmRecordsApi } from '~/composables/useFarmRecordsApi'
-import type { RiskRow } from '~/composables/useRiskRegistry'
+import type {
+    InsightType,
+    RiskPriority,
+    RiskRow,
+} from '~/utils/riskInsights'
 import { getErrorMessage } from '~/utils/apiError'
 import { avatarColor, initials } from '~/utils/initials'
 
@@ -28,9 +32,6 @@ const { createRiskReport, updateRiskReport, deleteRiskReport } =
 /* ------------------------------------------------------------------ */
 /* Presentation maps                                                    */
 /* ------------------------------------------------------------------ */
-
-type RiskPriority = 'High' | 'Medium' | 'Low'
-type InsightType = 'risk' | 'warning' | 'opportunity'
 
 const PRIORITY_STYLE: Record<
     RiskPriority,

@@ -3,8 +3,10 @@ import type { DrawMode } from '~/composables/useParcelDrawing'
 
 const props = defineProps<{
     mode: DrawMode
-    /** A parcel is selected in edit mode (side panel open). */
+    /** A parcel is being edited in the side panel (the form is open). */
     isEditing: boolean
+    /** A parcel is selected in view mode (read-only details open). */
+    isInspecting: boolean
 }>()
 
 /**
@@ -22,9 +24,21 @@ watch(
 const title = computed(() =>
     props.mode === 'plot'
         ? 'Plotting Guide'
-        : props.isEditing
-          ? 'Editing Parcel'
-          : 'Edit Mode'
+        : props.isInspecting
+          ? 'Parcel Details'
+          : props.isEditing
+            ? 'Editing Parcel'
+            : props.mode === 'edit'
+              ? 'Edit Mode'
+              : 'View Mode'
+)
+
+const icon = computed(() =>
+    props.mode === 'plot'
+        ? 'i-lucide-pen-tool'
+        : props.isInspecting
+          ? 'i-lucide-map-pin'
+          : 'i-lucide-pencil'
 )
 
 const hintColor = computed(() =>
@@ -39,6 +53,13 @@ const hints = computed<string[]>(() => {
             'Press Esc to cancel the draft',
         ]
     }
+    if (props.isInspecting) {
+        return [
+            'These details are read-only',
+            'Farmers and the farm link to their records',
+            'Press Esc or close the panel to dismiss',
+        ]
+    }
     if (props.isEditing) {
         return [
             'Drag the outline or its dots to reshape the parcel',
@@ -46,9 +67,15 @@ const hints = computed<string[]>(() => {
             'Done Editing in the toolbar (or Esc) to exit',
         ]
     }
+    if (props.mode === 'edit') {
+        return [
+            'Click a parcel on the map to edit it',
+            'Done Editing in the toolbar (or Esc) to exit',
+        ]
+    }
     return [
-        'Click a parcel on the map to edit it',
-        'Done Editing in the toolbar (or Esc) to exit',
+        'Click a parcel on the map to see its details',
+        'Use Edit in the toolbar to change a parcel',
     ]
 })
 </script>
@@ -63,14 +90,7 @@ const hints = computed<string[]>(() => {
                 class="flex h-6 w-6 items-center justify-center rounded-md"
                 :class="mode === 'edit' ? 'bg-amber-500' : 'bg-[#2d6a2d]'"
             >
-                <UIcon
-                    :name="
-                        mode === 'edit'
-                            ? 'i-lucide-pencil'
-                            : 'i-lucide-pen-tool'
-                    "
-                    class="size-3 text-white"
-                />
+                <UIcon :name="icon" class="size-3 text-white" />
             </span>
             <span class="text-xs font-semibold text-gray-800">
                 {{ title }}

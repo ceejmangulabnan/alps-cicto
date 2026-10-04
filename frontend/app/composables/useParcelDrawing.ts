@@ -2,7 +2,6 @@ import type { Map as MaplibreMap } from 'maplibre-gl'
 import {
     TerraDraw,
     TerraDrawPolygonMode,
-    TerraDrawRenderMode,
     TerraDrawSelectMode,
 } from 'terra-draw'
 import { TerraDrawMapLibreGLAdapter } from 'terra-draw-maplibre-gl-adapter'
@@ -45,13 +44,10 @@ const MODE_META: Record<DrawMode, DrawModeMeta> = {
 const PARCEL_MODE_NAME = 'polygon'
 const SELECT_MODE_NAME = 'select'
 /**
- * View mode runs the terra-draw instance in its read-only render mode, whose
- * interaction handlers are no-ops, so clicking a parcel does nothing until the
- * user enters edit or plot mode. Parcels keep their own colours either way:
- * feature styling dispatches on the feature's declared mode, not the active
- * instance mode.
+ * View mode selects parcels without letting anything be moved, which is what
+ * makes a map click a way of looking a parcel up rather than of editing it.
  */
-const RENDER_MODE_NAME = 'render'
+const INSPECT_MODE_NAME = 'inspect'
 
 /**
  * Terra Draw validates feature ids against its id strategy, which defaults to
@@ -60,6 +56,19 @@ const RENDER_MODE_NAME = 'render'
 const PARCEL_ID_STRATEGY = {
     getId: () => crypto.randomUUID(),
     isValidId: () => true,
+}
+
+/**
+ * terra-draw hands styling of a *selected* feature to the select mode, which
+ * otherwise repaints it in its own default blue and drops the land_status
+ * colour. Both select modes resolve through the same function so a selected
+ * parcel still matches the legend; the heavier outline signals the selection.
+ */
+const SELECTED_PARCEL_STYLES = {
+    selectedPolygonColor: parcelFeatureColor,
+    selectedPolygonOutlineColor: parcelFeatureColor,
+    selectedPolygonOutlineWidth: 3,
+    selectedPolygonFillOpacity: 0.35,
 }
 
 export interface ParcelFeatureRejection {
@@ -134,23 +143,6 @@ export const useParcelDrawing = () => {
             adapter: new TerraDrawMapLibreGLAdapter({ map }),
             idStrategy: PARCEL_ID_STRATEGY,
             modes: [
-                // Mostly for explicit mode-switching bookkeeping: a freshly
-                // started TerraDraw instance is already passive, and every
-                // parcel declares `properties.mode` = 'polygon', so its
-                // styling comes from the polygon mode below whichever instance
-                // mode is active.
-                new TerraDrawRenderMode({
-                    modeName: RENDER_MODE_NAME,
-                    // Matching parcel colours, in case anything declares
-                    // mode 'render'; saved parcels always resolve to the
-                    // polygon styling below.
-                    styles: {
-                        polygonFillColor: parcelFeatureColor,
-                        polygonOutlineColor: parcelFeatureColor,
-                        polygonFillOpacity: 0.3,
-                        polygonOutlineWidth: 2,
-                    },
-                }),
                 new TerraDrawPolygonMode({
                     modeName: PARCEL_MODE_NAME,
                     styles: {
@@ -162,17 +154,7 @@ export const useParcelDrawing = () => {
                 }),
                 new TerraDrawSelectMode({
                     modeName: SELECT_MODE_NAME,
-                    // terra-draw hands styling of a *selected* feature to the
-                    // select mode, which otherwise repaints it in its own
-                    // default blue and drops the land_status colour. Reuse the
-                    // same resolver so a selected parcel still matches the
-                    // legend; the heavier outline signals the selection.
-                    styles: {
-                        selectedPolygonColor: parcelFeatureColor,
-                        selectedPolygonOutlineColor: parcelFeatureColor,
-                        selectedPolygonOutlineWidth: 3,
-                        selectedPolygonFillOpacity: 0.35,
-                    },
+                    styles: SELECTED_PARCEL_STYLES,
                     // Default binds Delete to removing the whole feature, which
                     // would drop the polygon from the map with no way to
                     // restore it (there is no delete endpoint wired up).
@@ -194,6 +176,32 @@ export const useParcelDrawing = () => {
                                     midpoints: { draggable: true },
                                     deletable: true,
                                 },
+                            },
+                        },
+                    },
+                }),
+                new TerraDrawSelectMode({
+                    modeName: INSPECT_MODE_NAME,
+                    styles: SELECTED_PARCEL_STYLES,
+                    keyEvents: {
+                        deselect: 'Escape',
+                        delete: null,
+                        rotate: null,
+                        scale: null,
+                    },
+                    // View mode's select mode: it reports the click and
+                    // highlights the parcel, but nothing on the map can be
+                    // moved, since the sidebar showing it is read-only.
+                    // Declaring `feature.coordinates` is what makes a select
+                    // mode draw draggable vertex handles, so it is left out
+                    // rather than switched off — a read-only parcel should not
+                    // look reshapable.
+                    flags: {
+                        polygon: {
+                            feature: {
+                                draggable: false,
+                                rotateable: false,
+                                scaleable: false,
                             },
                         },
                     },
@@ -220,15 +228,29 @@ export const useParcelDrawing = () => {
         draw.value = instance
     }
 
+    /** The terra-draw mode backing each of the three draw modes. */
+    function terraModeFor(mode: DrawMode): string {
+        return mode === 'plot'
+            ? PARCEL_MODE_NAME
+            : mode === 'edit'
+              ? SELECT_MODE_NAME
+              : INSPECT_MODE_NAME
+    }
+
     function setDrawMode(mode: DrawMode) {
-        if (drawMode.value === mode) return
-        draw.value?.setMode(
-            mode === 'plot'
-                ? PARCEL_MODE_NAME
-                : mode === 'edit'
-                  ? SELECT_MODE_NAME
-                  : RENDER_MODE_NAME
-        )
+        const instance = draw.value
+        if (!instance) return
+
+        const terraMode = terraModeFor(mode)
+        // Compared against the instance's own mode as well as the ref: drawMode
+        // already starts at 'view', so on load the ref alone would read as a
+        // no-op and leave the instance in its passive default mode, where a
+        // parcel click selects nothing.
+        if (drawMode.value === mode && instance.getMode() === terraMode) return
+
+        // Switching modes makes the mode being left deselect whatever it had
+        // selected, so callers must not have already opened a panel for it.
+        instance.setMode(terraMode)
         drawMode.value = mode
     }
 

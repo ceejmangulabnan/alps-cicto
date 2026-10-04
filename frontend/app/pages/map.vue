@@ -92,6 +92,19 @@ const sidebarKey = ref(0)
 
 const isEditing = computed(() => selectedParcelId.value !== null)
 
+/**
+ * What the side panel is currently showing. A selected parcel is only shown as
+ * the editable form while edit mode is active: view mode's panel is the
+ * read-only details, which is the whole point of selecting in view mode.
+ */
+type MapPanel = 'none' | 'add' | 'edit' | 'details'
+
+const sidebarPanel = computed<MapPanel>(() => {
+    if (!showSidebar.value) return 'none'
+    if (!isEditing.value) return 'add'
+    return drawMode.value === 'edit' ? 'edit' : 'details'
+})
+
 // ---------------------------------------------------------------------------
 // Deep links
 // ---------------------------------------------------------------------------
@@ -110,6 +123,14 @@ const isAddingParcel = computed(() => route.query['add-parcel'] !== undefined)
 // Sidebar flow
 // ---------------------------------------------------------------------------
 function startEditing() {
+    // A parcel can already be open read-only, picked or clicked in view mode.
+    // Carrying that selection into edit mode beats closing the panel and making
+    // the user find the parcel on the map again.
+    if (selectedParcelId.value) {
+        void openParcelForEdit(selectedParcelId.value)
+        return
+    }
+
     enterEditMode()
 }
 
@@ -144,16 +165,57 @@ async function openParcelForEdit(documentId: string) {
     try {
         const parcel = await ensureParcel(documentId)
         discardDraft()
+        // Before the panel is opened: switching modes deselects whatever the
+        // previous mode had selected, and that deselection closes the panel
+        // again through onParcelDeselect.
+        enterEditMode()
         selectedParcelId.value = parcel.documentId
         selectedParcel.value = parcel
         showSidebar.value = true
         sidebarKey.value += 1
-        enterEditMode()
         selectParcel(parcel)
         fitToParcel(parcel)
     } catch (value: unknown) {
         setAlert(getErrorMessage(value, 'Unable to open parcel.'))
     }
+}
+
+/**
+ * View mode's counterpart to `openParcelForEdit`: the panel is opened on the
+ * parcel's details and the map stays in view mode, so nothing on the map can be
+ * reshaped while it is up.
+ */
+async function openParcelDetails(documentId: string) {
+    try {
+        const parcel = await ensureParcel(documentId)
+        discardDraft()
+        selectedParcelId.value = parcel.documentId
+        selectedParcel.value = parcel
+        showSidebar.value = true
+        selectParcel(parcel)
+        fitToParcel(parcel)
+    } catch (value: unknown) {
+        setAlert(getErrorMessage(value, 'Unable to open parcel.'))
+    }
+}
+
+/**
+ * The toolbar picker follows the map's mode: in view mode it is a way of
+ * looking a parcel up, so it opens the read-only panel, while edit mode keeps
+ * the existing behaviour of dropping straight into the form.
+ */
+function openParcelFromPicker(documentId: string) {
+    if (drawMode.value === 'view') {
+        void openParcelDetails(documentId)
+        return
+    }
+
+    void openParcelForEdit(documentId)
+}
+
+/** The read-only panel's Edit button: the one gesture that starts an edit. */
+function editSelectedParcel() {
+    if (selectedParcelId.value) void openParcelForEdit(selectedParcelId.value)
 }
 
 async function focusParcel(documentId: string) {
@@ -193,6 +255,11 @@ function onParcelSelect(id: string | number) {
     selectedParcelId.value = parcel.documentId
     selectedParcel.value = parcel
     showSidebar.value = true
+
+    // A click in view mode is a look, not an edit: the panel opens on the
+    // parcel's details and only becomes the form once edit mode is entered.
+    if (drawMode.value === 'view') return
+
     enterEditMode()
 }
 
@@ -264,7 +331,7 @@ function onMapLoad(payload: { map: MaplibreMap }) {
             @edit="startEditing"
             @done="exitEditMode"
             @add="openAddParcel"
-            @select-parcel="openParcelForEdit"
+            @select-parcel="openParcelFromPicker"
             @fit-all="fitToAllParcels"
         />
 
@@ -307,14 +374,15 @@ function onMapLoad(payload: { map: MaplibreMap }) {
                     @sign-in="signInAgain"
                 />
 
+                <!--
+                    Always up: it is the only thing on the map that says what
+                    each mode's interactions do, and view mode's — click a
+                    parcel to read it — is not otherwise discoverable.
+                -->
                 <MapPlottingGuide
-                    v-if="
-                        showSidebar ||
-                        drawMode === 'plot' ||
-                        drawMode === 'edit'
-                    "
                     :mode="drawMode"
-                    :is-editing="isEditing"
+                    :is-editing="sidebarPanel === 'edit'"
+                    :is-inspecting="sidebarPanel === 'details'"
                 />
 
                 <MapStatusBar :coordinates="coordinatesText" :mode="modeMeta" />
@@ -326,11 +394,20 @@ function onMapLoad(payload: { map: MaplibreMap }) {
             </div>
 
             <!--
-                Below `sm` the editor overlays the map instead of sitting beside
-                it: side by side, the map would be reduced to a few pixels.
+                Below `sm` the panel overlays the map instead of sitting beside
+                it: side by side, the map would be reduced to a few pixels. Both
+                panels share those classes, and the editor's own geometry, so the
+                map does not jump when a read-only panel turns into the form.
             -->
+            <MapParcelDetails
+                v-if="sidebarPanel === 'details' && selectedParcel"
+                class="absolute inset-0 z-30 sm:relative sm:inset-auto sm:z-auto"
+                :parcel="selectedParcel"
+                @close="closeSidebar"
+                @edit="editSelectedParcel"
+            />
             <MapParcelForm
-                v-if="showSidebar"
+                v-else-if="sidebarPanel === 'add' || sidebarPanel === 'edit'"
                 :key="sidebarKey"
                 class="absolute inset-0 z-30 sm:relative sm:inset-auto sm:z-auto"
                 :parcel="selectedParcel"

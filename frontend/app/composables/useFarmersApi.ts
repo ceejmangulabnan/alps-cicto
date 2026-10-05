@@ -8,6 +8,11 @@ export interface Farmer {
     /** Free text, so a number may be written any way the farmer prefers. */
     contact: string | null
     farmer_status: FarmerStatus
+    residence_barangay?: {
+        documentId: string
+        name: string
+        code?: string
+    } | null
 }
 
 export interface FarmerListResponse {
@@ -31,12 +36,14 @@ export interface CreateFarmerData {
     name: string
     contact?: string
     farmer_status: FarmerStatus
+    residence_barangay?: string | null
 }
 
 export interface UpdateFarmerData {
     name?: string
     contact?: string | null
     farmer_status?: FarmerStatus
+    residence_barangay?: string | null
 }
 
 const MAX_PAGE_SIZE = 100
@@ -67,6 +74,8 @@ export const useFarmersApi = () => {
                     'fields[1]': FARMER_FIELDS[1],
                     'fields[2]': FARMER_FIELDS[2],
                     'fields[3]': FARMER_FIELDS[3],
+                    'populate[residence_barangay][fields][0]': 'name',
+                    'populate[residence_barangay][fields][1]': 'code',
                     sort: 'name:asc',
                     'pagination[pageSize]': MAX_PAGE_SIZE,
                     'pagination[page]': page,
@@ -116,6 +125,7 @@ export const useFarmersApi = () => {
                     name: data.name,
                     contact: data.contact || null,
                     farmer_status: data.farmer_status,
+                    residence_barangay: data.residence_barangay || null,
                 },
             },
         })
@@ -138,6 +148,9 @@ export const useFarmersApi = () => {
                             : {}),
                         ...(data.farmer_status !== undefined
                             ? { farmer_status: data.farmer_status }
+                            : {}),
+                        ...(data.residence_barangay !== undefined
+                            ? { residence_barangay: data.residence_barangay }
                             : {}),
                     },
                 },

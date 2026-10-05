@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import type { Farmer, FarmerStatus } from '~/composables/useFarmersApi'
 import type { FarmParcel } from '~/composables/useFarmParcelApi'
+import {
+    ASSISTANCE_STATUS_OPTIONS,
+    type AssistanceStatus,
+} from '~/composables/useAssistanceApi'
+import { useBarangayApi } from '~/composables/useBarangayApi'
 
 definePageMeta({ middleware: 'auth' })
 type LandStatus =
@@ -50,12 +55,16 @@ const farmerBarangays = (f: Farmer): string[] => [
 ]
 
 const farmerBarangay = (f: Farmer) => {
+    const residence = f.residence_barangay?.name
+    if (residence) return residence
     const names = farmerBarangays(f)
     return names.length > 0 ? names.join(', ') : 'No parcel assigned'
 }
 
 const { getAll, create, update } = useFarmersApi()
 const { getAll: getAllParcels } = useFarmParcelApi()
+const { getAllForSelect: getAllBarangays } = useBarangayApi()
+const { create: createAssistance } = useAssistanceApi()
 
 const route = useRoute()
 
@@ -101,7 +110,11 @@ async function loadFarmers() {
     loading.value = true
     loadError.value = null
     try {
-        await loadParcels()
+        await Promise.all([
+            loadParcels(),
+            loadBarangays(),
+            loadAssistancePrograms(),
+        ])
         const response = await getAll()
         farmers.value = response.data.map((farmer) => ({
             ...farmer,
@@ -231,6 +244,7 @@ const editForm = reactive({
     name: '',
     contact: '',
     status: 'Active' as FarmerStatus,
+    residence_barangay: '' as string,
 })
 
 function openEditModal(farmer: Farmer) {
@@ -239,6 +253,7 @@ function openEditModal(farmer: Farmer) {
     editForm.name = farmer.name
     editForm.contact = farmer.contact ?? ''
     editForm.status = farmer.farmer_status
+    editForm.residence_barangay = farmer.residence_barangay?.documentId ?? ''
     editError.value = null
     editing.value = false
     showEditModal.value = true
@@ -254,11 +269,6 @@ async function submitEdit() {
     editing.value = true
     editError.value = null
     try {
-        await update(selectedFarmerForEdit.value.documentId, {
-            name: editForm.name.trim(),
-            contact: editForm.contact.trim() || null,
-            farmer_status: editForm.status,
-        })
         showEditModal.value = false
         const updatedFarmer = await update(
             selectedFarmerForEdit.value.documentId,
@@ -266,6 +276,7 @@ async function submitEdit() {
                 name: editForm.name.trim(),
                 contact: editForm.contact.trim() || null,
                 farmer_status: editForm.status,
+                residence_barangay: editForm.residence_barangay || null,
             }
         )
         const updated = updatedFarmer as Farmer
@@ -314,9 +325,23 @@ const filtered = computed(() =>
     })
 )
 
-const barangays = computed(() =>
+const barangaysByParcels = computed(() =>
     [...new Set(parcels.value.map((p) => p.barangay))].sort()
 )
+
+const barangays = ref<{ value: string; label: string }[]>([])
+
+async function loadBarangays() {
+    try {
+        const rows = await getAllBarangays()
+        barangays.value = rows.map((b) => ({
+            value: b.documentId,
+            label: b.name,
+        }))
+    } catch (error) {
+        barangays.value = []
+    }
+}
 
 const summaryCards = computed(() => [
     {
@@ -328,7 +353,7 @@ const summaryCards = computed(() => [
     },
     {
         label: 'Barangays Covered',
-        val: barangays.value.length,
+        val: barangaysByParcels.value.length,
         color: '#1d6fa4',
         bg: '#e0f0fb',
         icon: 'i-lucide-map-pin',
@@ -376,6 +401,104 @@ const profileFields = computed(() =>
           ]
         : []
 )
+
+/* ------------------------------------------------------------------ */
+/* Record assistance                                                   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The same record-assistance form the assistance page uses, opened from a
+ * farmer's profile. The recipient is the farmer being viewed, so it is fixed
+ * rather than chosen, and the barangay starts at their residence — the release
+ * is handed to the person, not to one of their parcels — but stays editable,
+ * since a release can still be picked up in another barangay.
+ */
+const showAssistModal = ref(false)
+const recordingAssist = ref(false)
+const assistError = ref<string | null>(null)
+
+const assistForm = reactive({
+    program: '',
+    barangayDocumentId: '',
+    items: '',
+    /** v-model casts the number input, so this is a string only while blank. */
+    value: '' as string | number,
+    date: new Date().toISOString().slice(0, 10),
+    status: 'Pending' as AssistanceStatus,
+})
+
+const parsedValue = (raw: string | number): number | null => {
+    const amount = Number(raw)
+    return String(raw).trim() !== '' && Number.isFinite(amount) ? amount : null
+}
+
+/** Program names already in use, offered as suggestions on the free-text field. */
+const assistanceProgramOptions = ref<string[]>([])
+
+async function loadAssistancePrograms() {
+    try {
+        const { getAll } = useAssistanceApi()
+        const response = await getAll({ sort: 'date:desc' })
+        assistanceProgramOptions.value = [
+            ...new Set(
+                response.data.map((row) => row.program).filter(Boolean)
+            ),
+        ].sort()
+    } catch {
+        assistanceProgramOptions.value = []
+    }
+}
+
+const canRecordAssist = computed(
+    () =>
+        !recordingAssist.value &&
+        Boolean(assistForm.program.trim()) &&
+        Boolean(assistForm.date)
+)
+
+function openAssistModal(farmer: Farmer) {
+    assistForm.program = ''
+    assistForm.barangayDocumentId = farmer.residence_barangay?.documentId ?? ''
+    assistForm.items = ''
+    assistForm.value = ''
+    assistForm.date = new Date().toISOString().slice(0, 10)
+    assistForm.status = 'Pending'
+    assistError.value = null
+    showAssistModal.value = true
+}
+
+function closeAssistModal() {
+    if (recordingAssist.value) return
+    assistError.value = null
+    showAssistModal.value = false
+}
+
+async function submitAssist() {
+    const farmer = selectedFarmer.value
+    if (!farmer) return
+
+    recordingAssist.value = true
+    assistError.value = null
+    try {
+        await createAssistance({
+            program: assistForm.program.trim(),
+            farmer: farmer.documentId,
+            barangay: assistForm.barangayDocumentId || null,
+            items: assistForm.items.trim() || null,
+            value: parsedValue(assistForm.value),
+            date: assistForm.date,
+            status: assistForm.status,
+        })
+        showAssistModal.value = false
+    } catch (error) {
+        assistError.value =
+            error instanceof Error
+                ? error.message
+                : 'Could not record the assistance.'
+    } finally {
+        recordingAssist.value = false
+    }
+}
 
 const detailStats = computed(() => {
     const fp = selectedFarmerParcels.value
@@ -513,6 +636,7 @@ onMounted(async () => {
                                 <button
                                     type="button"
                                     class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
+                                    @click="openAssistModal(selectedFarmer)"
                                 >
                                     Add Assistance
                                 </button>
@@ -729,7 +853,7 @@ onMounted(async () => {
             </div>
             <div class="flex flex-wrap items-center gap-1.5">
                 <button
-                    v-for="b in ['All', ...barangays]"
+                    v-for="b in ['All', ...barangaysByParcels]"
                     :key="b"
                     type="button"
                     class="rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors"
@@ -1066,6 +1190,7 @@ onMounted(async () => {
                             >
                                 <option value="Active">Active</option>
                                 <option value="Inactive">Inactive</option>
+                                <option value="Departed">Departed</option>
                             </select>
                         </div>
                     </div>
@@ -1084,18 +1209,40 @@ onMounted(async () => {
                         />
                     </div>
 
-                    <div>
-                        <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
-                        >
-                            Contact Number
-                        </label>
-                        <input
-                            v-model="editForm.contact"
-                            type="text"
-                            placeholder="09XX XXX XXXX"
-                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
-                        />
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Contact Number
+                            </label>
+                            <input
+                                v-model="editForm.contact"
+                                type="text"
+                                placeholder="09XX XXX XXXX"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Barangay of Residence
+                            </label>
+                            <select
+                                v-model="editForm.residence_barangay"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option value="">Not specified</option>
+                                <option
+                                    v-for="b in barangays"
+                                    :key="b.value"
+                                    :value="b.value"
+                                >
+                                    {{ b.label }}
+                                </option>
+                            </select>
+                        </div>
                     </div>
 
                     <p v-if="editError" class="text-xs text-red-600">
@@ -1119,6 +1266,198 @@ onMounted(async () => {
                         >
                             <span v-if="editing">Saving...</span>
                             <span v-else>Save Changes</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </Teleport>
+
+    <!-- Record Assistance Modal -->
+    <Teleport to="body">
+        <div
+            v-if="showAssistModal"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
+            @click.self="closeAssistModal"
+        >
+            <div
+                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl font-sans"
+            >
+                <div class="mb-5 flex items-start justify-between">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8f5e8]"
+                        >
+                            <UIcon
+                                name="i-lucide-hand-heart"
+                                class="size-5 text-[#2d6a2d]"
+                            />
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">
+                                Record Assistance
+                            </h3>
+                            <p class="text-xs text-gray-500">
+                                For
+                                {{ selectedFarmer?.name }}
+                                ({{ selectedFarmer?.farmer_code }})
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+                        @click="closeAssistModal"
+                    >
+                        <UIcon name="i-lucide-x" class="size-4" />
+                    </button>
+                </div>
+
+                <form class="space-y-4" @submit.prevent="submitAssist">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Program
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <input
+                                v-model="assistForm.program"
+                                type="text"
+                                list="assist-program-options-farmer"
+                                placeholder="e.g. Rice Seed Subsidy"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                            <datalist id="assist-program-options-farmer">
+                                <option
+                                    v-for="p in assistanceProgramOptions"
+                                    :key="p"
+                                    :value="p"
+                                />
+                            </datalist>
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Barangay
+                            </label>
+                            <select
+                                v-model="assistForm.barangayDocumentId"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option value="">Not specified</option>
+                                <option
+                                    v-for="b in barangays"
+                                    :key="b.value"
+                                    :value="b.value"
+                                >
+                                    {{ b.label }}
+                                </option>
+                            </select>
+                            <p
+                                v-if="selectedFarmer?.residence_barangay"
+                                class="mt-1 text-[10px] text-gray-400"
+                            >
+                                Defaults to {{ selectedFarmer.residence_barangay.name }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label
+                            class="mb-1 block text-xs font-medium text-gray-600"
+                        >
+                            Items
+                        </label>
+                        <textarea
+                            v-model="assistForm.items"
+                            rows="2"
+                            placeholder="e.g. 4 bags certified rice seed (40 kg), 1 bag fertilizer"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                        ></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Value (₱)
+                            </label>
+                            <input
+                                v-model="assistForm.value"
+                                type="number"
+                                step="1"
+                                min="0"
+                                placeholder="0.00"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Date
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <input
+                                v-model="assistForm.date"
+                                type="date"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                                Status
+                            </label>
+                            <select
+                                v-model="assistForm.status"
+                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            >
+                                <option
+                                    v-for="s in ASSISTANCE_STATUS_OPTIONS"
+                                    :key="s"
+                                    :value="s"
+                                >
+                                    {{ s }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <p
+                        v-if="assistError"
+                        class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
+                    >
+                        {{ assistError }}
+                    </p>
+
+                    <div
+                        class="flex justify-end gap-2 border-t border-gray-100 pt-4"
+                    >
+                        <button
+                            type="button"
+                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            :disabled="recordingAssist"
+                            @click="closeAssistModal"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524] disabled:cursor-not-allowed disabled:opacity-60"
+                            :disabled="!canRecordAssist"
+                        >
+                            <UIcon
+                                v-if="recordingAssist"
+                                name="i-lucide-loader-circle"
+                                class="size-3.5 animate-spin"
+                            />
+                            {{ recordingAssist ? 'Saving...' : 'Record Assistance' }}
                         </button>
                     </div>
                 </form>

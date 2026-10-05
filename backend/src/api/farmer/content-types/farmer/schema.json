@@ -44,6 +44,12 @@
         "farmer_status": {
             "type": "enumeration",
             "enum": ["Active", "Inactive", "Departed"]
+        },
+        "residence_barangay": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::barangay.barangay",
+            "inversedBy": "farmers"
         }
     }
 }

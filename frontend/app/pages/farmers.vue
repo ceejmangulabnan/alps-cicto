@@ -260,7 +260,27 @@ async function submitEdit() {
             farmer_status: editForm.status,
         })
         showEditModal.value = false
-        await loadFarmers()
+        const updatedFarmer = await update(
+            selectedFarmerForEdit.value.documentId,
+            {
+                name: editForm.name.trim(),
+                contact: editForm.contact.trim() || null,
+                farmer_status: editForm.status,
+            }
+        )
+        const updated = updatedFarmer as Farmer
+        selectedFarmerForEdit.value = updated
+        const farmerInList = farmers.value.find(
+            (f) => f.documentId === updated.documentId
+        )
+        if (farmerInList) {
+            Object.assign(farmerInList, updated, {
+                parcelCount: parcelsOf(updated).length,
+            })
+        }
+        if (selectedFarmer.value?.documentId === updated.documentId) {
+            Object.assign(selectedFarmer.value, updated)
+        }
     } catch (error) {
         editError.value =
             error instanceof Error
@@ -449,12 +469,26 @@ onMounted(async () => {
                                         {{ selectedFarmer.name }}
                                     </h2>
                                     <span
-                                        class="flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-700 ring-1 ring-green-100"
+                                        class="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1"
+                                        :class="
+                                            selectedFarmer.farmer_status === 'Active'
+                                                ? 'bg-green-50 text-green-700 ring-green-100'
+                                                : selectedFarmer.farmer_status === 'Inactive'
+                                                  ? 'bg-gray-50 text-gray-600 ring-gray-200'
+                                                  : 'bg-amber-50 text-amber-700 ring-amber-100'
+                                        "
                                     >
                                         <span
-                                            class="h-1.5 w-1.5 rounded-full bg-green-500"
+                                            class="h-1.5 w-1.5 rounded-full"
+                                            :class="
+                                                selectedFarmer.farmer_status === 'Active'
+                                                    ? 'bg-green-500'
+                                                    : selectedFarmer.farmer_status === 'Inactive'
+                                                      ? 'bg-gray-400'
+                                                      : 'bg-amber-500'
+                                            "
                                         ></span>
-                                        Active
+                                        {{ selectedFarmer.farmer_status }}
                                     </span>
                                 </div>
                                 <div class="mt-1 flex items-center gap-3">

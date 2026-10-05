@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { TableColumn, TableRow } from '@nuxt/ui'
+import type { TableMeta } from '@tanstack/vue-table'
 import type { Farmer, FarmerStatus } from '~/composables/useFarmersApi'
 import type { FarmParcel } from '~/composables/useFarmParcelApi'
 import {
@@ -324,6 +326,84 @@ const filtered = computed(() =>
         return matchSearch && matchBarangay
     })
 )
+
+/**
+ * The registry table's columns.
+ *
+ * Barangay and Area are not fields on a farmer: one is derived from the parcels
+ * they tend and the other from a tally over those same parcels, so both use
+ * `accessorFn` to give TanStack something to sort on. The remaining columns
+ * sort off their own fields, and their numbers need no comparator because
+ * TanStack's default `basic` function compares numerically.
+ *
+ * `sortDescFirst: false` on the two numeric columns is not a style choice. Left
+ * unset, TanStack peeks at the first row and sorts columns descending-first
+ * whenever the value is not a string, so Area and Parcels would start on
+ * descending while Name and Barangay started on ascending — the same click
+ * doing opposite things depending on the column.
+ */
+const columns: TableColumn<FarmerRow>[] = [
+    {
+        accessorKey: 'farmer_code',
+        header: sortHeader('Farmer Code'),
+        cell: ({ row }) => row.getValue('farmer_code'),
+        meta: { class: { td: 'font-mono text-gray-700' } },
+    },
+    {
+        accessorKey: 'name',
+        header: sortHeader('Name'),
+    },
+    {
+        id: 'barangay',
+        accessorFn: (row) => farmerBarangay(row),
+        header: sortHeader('Barangay'),
+        cell: ({ row }) => farmerBarangay(row.original),
+        meta: { class: { td: 'text-gray-600' } },
+    },
+    {
+        accessorKey: 'parcelCount',
+        header: sortHeader('Parcels', { align: 'right' }),
+        sortDescFirst: false,
+        meta: {
+            class: { th: 'text-right', td: 'text-right font-mono text-gray-900' },
+        },
+    },
+    {
+        id: 'area',
+        accessorFn: (row) => areaByFarmer.value.get(row.documentId) ?? 0,
+        header: sortHeader('Area (ha)', { align: 'right' }),
+        sortDescFirst: false,
+        cell: ({ row }) => Number(row.getValue('area')).toFixed(1),
+        meta: {
+            class: {
+                th: 'text-right',
+                td: 'text-right font-mono font-semibold text-gray-900',
+            },
+        },
+    },
+    {
+        // The chevron that only appears on hover. Not a value, so not sortable.
+        id: 'view',
+        enableSorting: false,
+        enableHiding: false,
+        meta: { class: { td: 'text-right' } },
+    },
+]
+
+/**
+ * Row pointer and the `group` the chevron reveals into. The zebra stripe is not
+ * here but in the app-wide table theme, because it has to follow the visible
+ * row order and rows are reordered by sorting.
+ */
+const farmerTableMeta: TableMeta<FarmerRow> = {
+    class: {
+        tr: 'group cursor-pointer transition-colors',
+    },
+}
+
+function onFarmerSelect(_event: Event, row: TableRow<FarmerRow>) {
+    selectedFarmer.value = row.original
+}
 
 const barangaysByParcels = computed(() =>
     [...new Set(parcels.value.map((p) => p.barangay))].sort()
@@ -870,151 +950,90 @@ onMounted(async () => {
         </div>
 
         <!-- Table -->
-        <div class="alps-card overflow-x-auto">
-            <table class="w-full min-w-[880px] text-xs">
-                <thead class="border-b border-gray-100 bg-gray-50">
-                    <tr>
-                        <th
-                            class="px-4 py-3 text-left font-semibold text-gray-600"
-                        >
-                            Farmer Code
-                        </th>
-                        <th
-                            class="px-4 py-3 text-left font-semibold text-gray-600"
-                        >
-                            Name
-                        </th>
-                        <th
-                            class="px-4 py-3 text-left font-semibold text-gray-600"
-                        >
-                            Barangay
-                        </th>
-                        <th
-                            class="px-4 py-3 text-right font-semibold text-gray-600"
-                        >
-                            Parcels
-                        </th>
-                        <th
-                            class="px-4 py-3 text-right font-semibold text-gray-600"
-                        >
-                            Area (ha)
-                        </th>
-                        <th class="px-4 py-3"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Loading -->
-                    <tr v-if="loading">
-                        <td
-                            colspan="6"
-                            class="px-4 py-10 text-center text-gray-400"
-                        >
-                            <span class="inline-flex items-center gap-2">
-                                <UIcon
-                                    name="i-lucide-loader-circle"
-                                    class="size-4 animate-spin"
-                                />
-                                Loading farmers...
-                            </span>
-                        </td>
-                    </tr>
-                    <!-- Failed -->
-                    <tr v-else-if="loadError">
-                        <td colspan="6" class="px-4 py-10 text-center">
-                            <p class="text-red-600">{{ loadError }}</p>
-                            <button
-                                type="button"
-                                class="mt-2 text-xs font-medium text-green-700 underline"
-                                @click="loadFarmers"
-                            >
-                                Try again
-                            </button>
-                        </td>
-                    </tr>
-                    <!-- Loaded but filtered down to nothing -->
-                    <tr v-else-if="filtered.length === 0">
-                        <td
-                            colspan="6"
-                            class="px-4 py-10 text-center text-gray-400"
-                        >
-                            No farmers match this search.
-                        </td>
-                    </tr>
-                    <tr
-                        v-for="(f, i) in filtered"
-                        v-else
-                        :key="f.farmer_code"
-                        class="group cursor-pointer border-b border-gray-50 transition-colors last:border-0 hover:bg-green-50/40"
-                        :class="i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'"
-                        @click="selectedFarmer = f"
-                    >
-                        <td class="px-4 py-3 font-mono text-gray-700">
-                            {{ f.farmer_code }}
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center gap-2.5">
-                                <span
-                                    class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                                    :style="{
-                                        backgroundColor: avatarColor(f.name),
-                                    }"
-                                >
-                                    {{ initials(f.name) }}
-                                </span>
-                                <span class="font-medium text-gray-800">
-                                    {{ f.name }}
-                                </span>
-                            </div>
-                        </td>
-                        <td class="px-4 py-3 text-gray-600">
-                            <span class="flex items-center gap-1">
-                                <UIcon
-                                    name="i-lucide-map-pin"
-                                    class="size-2.5 text-gray-400"
-                                />
-                                {{ farmerBarangay(f) }}
-                            </span>
-                        </td>
-                        <td
-                            class="px-4 py-3 text-right font-mono font-medium text-gray-900"
-                        >
-                            {{ f.parcelCount }}
-                        </td>
-                        <td
-                            class="px-4 py-3 text-right font-mono font-semibold text-gray-900"
-                        >
-                            {{
-                                (areaByFarmer.get(f.documentId) ?? 0).toFixed(1)
-                            }}
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center justify-end gap-1.5">
-                                <span
-                                    class="text-[10px] font-semibold text-[#2d6a2d] opacity-0 transition-opacity group-hover:opacity-100"
-                                >
-                                    View
-                                </span>
-                                <UIcon
-                                    name="i-lucide-chevron-right"
-                                    class="size-3.5 text-gray-400 transition-all group-hover:translate-x-0.5 group-hover:text-[#2d6a2d]"
-                                />
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <div
-                v-if="filtered.length === 0"
-                class="py-12 text-center text-gray-400"
+        <div class="alps-card">
+            <UTable
+                :data="filtered"
+                :columns="columns"
+                :meta="farmerTableMeta"
+                :loading="loading"
+                :get-row-id="(row: FarmerRow) => row.documentId"
+                @select="onFarmerSelect"
             >
-                <UIcon
-                    name="i-lucide-user"
-                    class="mx-auto mb-3 size-8 opacity-30"
-                />
-                <div class="text-sm">
-                    No farmers found matching your filters.
-                </div>
-            </div>
+                <template #name-cell="{ row }">
+                    <div class="flex items-center gap-2.5">
+                        <span
+                            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                            :style="{
+                                backgroundColor: avatarColor(row.original.name),
+                            }"
+                        >
+                            {{ initials(row.original.name) }}
+                        </span>
+                        <span class="font-medium text-gray-800">
+                            {{ row.original.name }}
+                        </span>
+                    </div>
+                </template>
+                <template #barangay-cell="{ row }">
+                    <span class="flex items-center gap-1">
+                        <UIcon
+                            name="i-lucide-map-pin"
+                            class="size-2.5 text-gray-400"
+                        />
+                        {{ row.getValue('barangay') }}
+                    </span>
+                </template>
+                <template #view-cell>
+                    <div
+                        class="flex items-center justify-end gap-1.5 opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                        <span
+                            class="text-[10px] font-semibold text-[#2d6a2d]"
+                        >
+                            View
+                        </span>
+                        <UIcon
+                            name="i-lucide-chevron-right"
+                            class="size-3.5 text-gray-400 transition-all group-hover:translate-x-0.5 group-hover:text-[#2d6a2d]"
+                        />
+                    </div>
+                </template>
+                <template #loading>
+                    <span class="inline-flex items-center gap-2">
+                        <UIcon
+                            name="i-lucide-loader-circle"
+                            class="size-4 animate-spin"
+                        />
+                        Loading farmers...
+                    </span>
+                </template>
+                <template #empty>
+                    <!-- Failed: UTable has no error state, so it rides here. -->
+                    <div v-if="loadError">
+                        <p class="text-red-600">{{ loadError }}</p>
+                        <button
+                            type="button"
+                            class="mt-2 text-xs font-medium text-green-700 underline"
+                            @click="loadFarmers"
+                        >
+                            Try again
+                        </button>
+                    </div>
+                    <div v-else class="flex flex-col items-center gap-2">
+                        <UIcon
+                            name="i-lucide-user"
+                            class="size-6 text-gray-300"
+                        />
+                        <p class="text-sm">
+                            {{
+                                farmers.length === 0
+                                    ? 'No farmers registered yet.'
+                                    : 'No farmers match your filters.'
+                            }}
+                        </p>
+                    </div>
+                </template>
+            </UTable>
         </div>
     </div>
 

@@ -33,6 +33,12 @@ export interface CreateFarmerData {
     farmer_status: FarmerStatus
 }
 
+export interface UpdateFarmerData {
+    name?: string
+    contact?: string | null
+    farmer_status?: FarmerStatus
+}
+
 const MAX_PAGE_SIZE = 100
 
 const FARMER_FIELDS = [
@@ -116,5 +122,29 @@ export const useFarmersApi = () => {
         return response.data
     }
 
-    return { getAll, getAllForSelect, create }
+    const update = async (
+        documentId: string,
+        data: UpdateFarmerData
+    ): Promise<Farmer> => {
+        const response = await authFetch<FarmerResponse>(
+            `${baseUrl}/${documentId}`,
+            {
+                method: 'PUT',
+                body: {
+                    data: {
+                        ...(data.name !== undefined ? { name: data.name } : {}),
+                        ...(data.contact !== undefined
+                            ? { contact: data.contact }
+                            : {}),
+                        ...(data.farmer_status !== undefined
+                            ? { farmer_status: data.farmer_status }
+                            : {}),
+                    },
+                },
+            }
+        )
+        return response.data
+    }
+
+    return { getAll, getAllForSelect, create, update }
 }

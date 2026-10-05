@@ -54,7 +54,7 @@ const farmerBarangay = (f: Farmer) => {
     return names.length > 0 ? names.join(', ') : 'No parcel assigned'
 }
 
-const { getAll, create } = useFarmersApi()
+const { getAll, create, update } = useFarmersApi()
 const { getAll: getAllParcels } = useFarmParcelApi()
 
 const route = useRoute()
@@ -223,19 +223,52 @@ async function submitRegister() {
 }
 
 const showEditModal = ref(false)
+const editing = ref(false)
+const editError = ref<string | null>(null)
+const selectedFarmerForEdit = ref<Farmer | null>(null)
 const editForm = reactive({
     farmer_code: '',
     name: '',
     contact: '',
-    status: 'Active',
+    status: 'Active' as FarmerStatus,
 })
 
 function openEditModal(farmer: Farmer) {
+    selectedFarmerForEdit.value = farmer
     editForm.farmer_code = farmer.farmer_code
     editForm.name = farmer.name
     editForm.contact = farmer.contact ?? ''
     editForm.status = farmer.farmer_status
+    editError.value = null
+    editing.value = false
     showEditModal.value = true
+}
+
+async function submitEdit() {
+    if (!selectedFarmerForEdit.value?.documentId) return
+    if (!editForm.name.trim()) {
+        editError.value = 'A name is required.'
+        return
+    }
+
+    editing.value = true
+    editError.value = null
+    try {
+        await update(selectedFarmerForEdit.value.documentId, {
+            name: editForm.name.trim(),
+            contact: editForm.contact.trim() || null,
+            farmer_status: editForm.status,
+        })
+        showEditModal.value = false
+        await loadFarmers()
+    } catch (error) {
+        editError.value =
+            error instanceof Error
+                ? error.message
+                : 'Could not update the farmer.'
+    } finally {
+        editing.value = false
+    }
 }
 
 // Closing the modal by any route — cancel, the X, or the backdrop — clears what
@@ -972,7 +1005,7 @@ onMounted(async () => {
                     </button>
                 </div>
 
-                <form class="space-y-4" @submit.prevent="showEditModal = false">
+                <form class="space-y-4" @submit.prevent="submitEdit">
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
@@ -1031,21 +1064,27 @@ onMounted(async () => {
                         />
                     </div>
 
+                    <p v-if="editError" class="text-xs text-red-600">
+                        {{ editError }}
+                    </p>
                     <div
                         class="flex justify-end gap-2 border-t border-gray-100 pt-4"
                     >
                         <button
                             type="button"
-                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                            :disabled="editing"
                             @click="showEditModal = false"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
+                            class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524] disabled:opacity-50"
+                            :disabled="editing"
                         >
-                            Save Changes
+                            <span v-if="editing">Saving...</span>
+                            <span v-else>Save Changes</span>
                         </button>
                     </div>
                 </form>

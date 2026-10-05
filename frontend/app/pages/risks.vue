@@ -5,11 +5,7 @@ import type {
 } from '~/composables/useFarmParcelApi'
 import { useRiskRegistry } from '~/composables/useRiskRegistry'
 import { useFarmRecordsApi } from '~/composables/useFarmRecordsApi'
-import type {
-    InsightType,
-    RiskPriority,
-    RiskRow,
-} from '~/utils/riskInsights'
+import type { InsightType, RiskPriority, RiskRow } from '~/utils/riskInsights'
 import { getErrorMessage } from '~/utils/apiError'
 import { avatarColor, initials } from '~/utils/initials'
 
@@ -228,7 +224,14 @@ const riskBarOption = computed(() => ({
             color: riskBarColor[priority],
             // Round only the top segment of the stack.
             ...(index === PRIORITY_STACK.length - 1
-                ? { borderRadius: [3, 3, 0, 0] as [number, number, number, number] }
+                ? {
+                      borderRadius: [3, 3, 0, 0] as [
+                          number,
+                          number,
+                          number,
+                          number,
+                      ],
+                  }
                 : {}),
         },
         data: riskBarData.value.map((d) => d[priority]),
@@ -245,7 +248,8 @@ const atRiskTotals = computed(() => {
         avg:
             atRiskParcels.value.length === 0
                 ? 0
-                : Math.round((area / 10 / atRiskParcels.value.length) * 10) / 10,
+                : Math.round((area / 10 / atRiskParcels.value.length) * 10) /
+                  10,
     }
 })
 
@@ -268,7 +272,8 @@ const filterType = ref<InsightFilter>('All')
 
 const filteredInsights = computed(() =>
     insights.value.filter(
-        (insight) => filterType.value === 'All' || insight.type === filterType.value
+        (insight) =>
+            filterType.value === 'All' || insight.type === filterType.value
     )
 )
 
@@ -291,13 +296,19 @@ const search = ref('')
 
 const filteredReports = computed(() =>
     riskReports.value.filter((row) => {
-        const haystack = [row.riskType, row.parcel_code, row.barangay, row.farmerName]
+        const haystack = [
+            row.riskType,
+            row.parcel_code,
+            row.barangay,
+            row.farmerName,
+        ]
             .join(' ')
             .toLowerCase()
         const matchesSearch =
             !search.value || haystack.includes(search.value.toLowerCase())
         const matchesStatus =
-            filterStatus.value === 'All' || row.parcelStatus === filterStatus.value
+            filterStatus.value === 'All' ||
+            row.parcelStatus === filterStatus.value
         return matchesSearch && matchesStatus
     })
 )
@@ -338,11 +349,7 @@ const parcelOptions = computed(() =>
         const farmer = parcel.farmers?.[0]?.name
         return {
             value: parcel.documentId,
-            label: [
-                parcel.parcel_code,
-                farmer,
-                parcel.farm?.barangay?.name,
-            ]
+            label: [parcel.parcel_code, farmer, parcel.farm?.barangay?.name]
                 .filter(Boolean)
                 .join(' · '),
         }
@@ -705,7 +712,9 @@ async function confirmDelete() {
                         borderLeftColor: PRIORITY_STYLE[insight.priority].dot,
                     }"
                 >
-                    <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div
+                        class="flex flex-wrap items-start justify-between gap-4"
+                    >
                         <div class="flex min-w-0 flex-1 items-start gap-3">
                             <div
                                 class="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg"
@@ -718,7 +727,9 @@ async function confirmDelete() {
                                 />
                             </div>
                             <div class="min-w-0 flex-1">
-                                <div class="mb-1 flex flex-wrap items-center gap-2">
+                                <div
+                                    class="mb-1 flex flex-wrap items-center gap-2"
+                                >
                                     <span
                                         class="font-sans text-sm font-semibold text-gray-800"
                                     >
@@ -753,7 +764,9 @@ async function confirmDelete() {
                                 </p>
 
                                 <!-- Detection Rule -->
-                                <div class="mb-3 rounded-lg bg-gray-50 px-3 py-2">
+                                <div
+                                    class="mb-3 rounded-lg bg-gray-50 px-3 py-2"
+                                >
                                     <div
                                         class="mb-1 flex items-center gap-1 text-[10px] font-semibold text-gray-400"
                                     >
@@ -790,7 +803,8 @@ async function confirmDelete() {
                                             name="i-lucide-trending-up"
                                             class="size-3 text-green-600"
                                         />
-                                        Impact score {{ insight.potentialScore }}
+                                        Impact score
+                                        {{ insight.potentialScore }}
                                     </span>
                                 </div>
 
@@ -815,14 +829,20 @@ async function confirmDelete() {
                                 class="flex items-center gap-1 rounded-lg bg-[#2d6a2d] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#245524]"
                                 @click="openReportModal(insight.title)"
                             >
-                                <UIcon name="i-lucide-plus" class="size-[11px]" />
+                                <UIcon
+                                    name="i-lucide-plus"
+                                    class="size-[11px]"
+                                />
                                 Create Action
                             </button>
                             <NuxtLink
                                 :to="`/map?parcel=${insight.rows[0]?.parcelDocumentId ?? ''}`"
                                 class="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
                             >
-                                <UIcon name="i-lucide-eye" class="size-[11px]" />
+                                <UIcon
+                                    name="i-lucide-eye"
+                                    class="size-[11px]"
+                                />
                                 View Parcels
                             </NuxtLink>
                             <div
@@ -942,7 +962,10 @@ async function confirmDelete() {
                     </p>
                 </div>
 
-                <div v-else class="max-h-[300px] space-y-2 overflow-y-auto pr-1">
+                <div
+                    v-else
+                    class="max-h-[300px] space-y-2 overflow-y-auto pr-1"
+                >
                     <div
                         v-for="p in atRiskParcels"
                         :key="p.parcelDocumentId"
@@ -966,17 +989,20 @@ async function confirmDelete() {
                                 </div>
                                 <div class="truncate text-gray-400">
                                     {{ p.parcel_code }}
-                                <template v-if="p.barangay">
-                                    · {{ p.barangay }}
-                                </template>
+                                    <template v-if="p.barangay">
+                                        · {{ p.barangay }}
+                                    </template>
                                 </div>
                             </div>
                         </NuxtLink>
                         <div class="flex flex-shrink-0 items-center gap-2">
-                            <span class="font-mono text-gray-500">{{ p.area }} ha</span
+                            <span class="font-mono text-gray-500"
+                                >{{ p.area }} ha</span
                             >
                             <span
-                                :style="{ background: SEVERITY_DOT[p.severity] }"
+                                :style="{
+                                    background: SEVERITY_DOT[p.severity],
+                                }"
                                 class="h-1.5 w-1.5 rounded-full"
                             />
                             <span
@@ -1030,7 +1056,9 @@ async function confirmDelete() {
                 </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-1.5 border-b border-gray-100 px-5 py-3">
+            <div
+                class="flex flex-wrap items-center gap-1.5 border-b border-gray-100 px-5 py-3"
+            >
                 <button
                     v-for="s in statusFilterOptions"
                     :key="s"
@@ -1158,7 +1186,8 @@ async function confirmDelete() {
                                     {{ row.parcel_code }}
                                 </NuxtLink>
                                 <div class="text-[10px] text-gray-400">
-                                    {{ row.barangay || '—' }} · {{ row.area }} ha
+                                    {{ row.barangay || '—' }} ·
+                                    {{ row.area }} ha
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-gray-500">
@@ -1175,7 +1204,8 @@ async function confirmDelete() {
                                     <span
                                         class="h-1.5 w-1.5 rounded-full"
                                         :style="{
-                                            background: SEVERITY_DOT[row.severity],
+                                            background:
+                                                SEVERITY_DOT[row.severity],
                                         }"
                                     />
                                     {{ row.severity }}
@@ -1189,7 +1219,8 @@ async function confirmDelete() {
                                     <span
                                         class="h-1.5 w-1.5 rounded-full"
                                         :style="{
-                                            background: STATUS_DOT[row.parcelStatus],
+                                            background:
+                                                STATUS_DOT[row.parcelStatus],
                                         }"
                                     />
                                     {{ row.parcelStatus }}
@@ -1256,8 +1287,8 @@ async function confirmDelete() {
                                 Generate Risk Report
                             </h3>
                             <p class="text-xs text-gray-500">
-                                File a risk against a parcel. It is grouped into an
-                                ALPS insight automatically.
+                                File a risk against a parcel. It is grouped into
+                                an ALPS insight automatically.
                             </p>
                         </div>
                     </div>
@@ -1401,7 +1432,9 @@ async function confirmDelete() {
                         {{ newError }}
                     </p>
 
-                    <div class="flex justify-end gap-2 border-t border-gray-100 pt-4">
+                    <div
+                        class="flex justify-end gap-2 border-t border-gray-100 pt-4"
+                    >
                         <button
                             type="button"
                             class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
@@ -1586,7 +1619,9 @@ async function confirmDelete() {
                         {{ editError }}
                     </p>
 
-                    <div class="flex justify-end gap-2 border-t border-gray-100 pt-4">
+                    <div
+                        class="flex justify-end gap-2 border-t border-gray-100 pt-4"
+                    >
                         <button
                             type="button"
                             class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
@@ -1626,7 +1661,10 @@ async function confirmDelete() {
                 <div
                     class="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-red-50"
                 >
-                    <UIcon name="i-lucide-trash-2" class="size-5 text-red-600" />
+                    <UIcon
+                        name="i-lucide-trash-2"
+                        class="size-5 text-red-600"
+                    />
                 </div>
                 <h3 class="text-lg font-bold text-gray-900">
                     Delete Risk Report
@@ -1641,7 +1679,8 @@ async function confirmDelete() {
                         {{ deleteTarget?.parcel_code ?? '' }}
                     </span>
                     ({{ deleteTarget?.observedAt ?? 'no date' }})? This action
-                    cannot be undone, and the parcel's insight totals will change.
+                    cannot be undone, and the parcel's insight totals will
+                    change.
                 </p>
                 <p
                     v-if="deleteError"

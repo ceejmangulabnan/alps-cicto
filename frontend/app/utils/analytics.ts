@@ -7,7 +7,11 @@ import { LAND_STATUS_OPTIONS } from '~/composables/useFarmParcelApi'
 import type { Farmer } from '~/composables/useFarmersApi'
 import type { CsvColumn, CsvTable } from '~/utils/csv'
 import { STATUS_COLOR, STATUS_COLOR_FALLBACK } from '~/utils/landStatus'
-import { monthKeyOf, parseDateOnly, type MonthWindow } from '~/utils/monthWindow'
+import {
+    monthKeyOf,
+    parseDateOnly,
+    type MonthWindow,
+} from '~/utils/monthWindow'
 import { round1, toRiskRows } from '~/utils/riskInsights'
 
 /**
@@ -119,7 +123,9 @@ export function foldLandStatus(parcels: FarmParcel[]): LandStatusSlice[] {
         totals.set(parcel.land_status, bucket)
     }
 
-    const total = round1(parcels.reduce((sum, parcel) => sum + areaOf(parcel), 0))
+    const total = round1(
+        parcels.reduce((sum, parcel) => sum + areaOf(parcel), 0)
+    )
 
     return LAND_STATUS_OPTIONS.flatMap((status) => {
         const bucket = totals.get(status)
@@ -164,7 +170,11 @@ export function foldBarangayArea(
 
     for (const parcel of parcels) {
         const name = barangayOf(parcel)
-        const bucket = totals.get(name) ?? { area: 0, cultivated: 0, parcels: 0 }
+        const bucket = totals.get(name) ?? {
+            area: 0,
+            cultivated: 0,
+            parcels: 0,
+        }
         const area = areaOf(parcel)
         bucket.area = round1(bucket.area + area)
         bucket.parcels += 1
@@ -286,7 +296,8 @@ export function foldMonthlyProduction(
                     [...byCrop.entries()]
                         .filter(([name]) => tailNames.has(name))
                         .reduce(
-                            (sum, [, months]) => sum + (months.get(monthIndex) ?? 0),
+                            (sum, [, months]) =>
+                                sum + (months.get(monthIndex) ?? 0),
                             0
                         )
                 )
@@ -319,11 +330,7 @@ const yieldOf = (harvest: ParcelHarvest, area: number): number | null => {
 /* ------------------------------------------------------------------ */
 
 export type ReportCategory =
-    | 'Land Use'
-    | 'Registry'
-    | 'Production'
-    | 'Risk'
-    | 'Assistance'
+    'Land Use' | 'Registry' | 'Production' | 'Risk' | 'Assistance'
 
 /** Filter order on the export centre, so the chips never depend on row order. */
 export const REPORT_CATEGORIES: ReportCategory[] = [
@@ -544,7 +551,8 @@ export function buildReportDatasets({
             key: 'risk-report',
             title: 'Risk Monitoring Report',
             category: 'Risk',
-            description: 'Risk reports filed against parcels, open and resolved',
+            description:
+                'Risk reports filed against parcels, open and resolved',
             latest: latestOf(riskRows.map((row) => row.observed_at)),
             columns: RISK_COLUMNS,
             rows: riskRows,
@@ -562,7 +570,8 @@ export function buildReportDatasets({
             key: 'assistance-ledger',
             title: 'Assistance Disbursement Ledger',
             category: 'Assistance',
-            description: 'Assistance released to farmers, with value and status',
+            description:
+                'Assistance released to farmers, with value and status',
             latest: latestOf(assistance.map((row) => row.date)),
             columns: ASSISTANCE_COLUMNS,
             // Spread so the row is a plain object, which is what the CSV writer

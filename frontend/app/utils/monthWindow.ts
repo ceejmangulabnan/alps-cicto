@@ -37,7 +37,11 @@ export const parseDateOnly = (
 
     const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value)
     if (match) {
-        return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+        return new Date(
+            Number(match[1]),
+            Number(match[2]) - 1,
+            Number(match[3])
+        )
     }
 
     const parsed = new Date(value)
@@ -66,8 +70,14 @@ export interface MonthWindow {
  * charts age on their own.
  */
 export const trailingMonths = (count: number, from: Date): MonthWindow => {
-    const dates = Array.from({ length: count }, (_, index) =>
-        new Date(from.getFullYear(), from.getMonth() - (count - 1 - index), 1)
+    const dates = Array.from(
+        { length: count },
+        (_, index) =>
+            new Date(
+                from.getFullYear(),
+                from.getMonth() - (count - 1 - index),
+                1
+            )
     )
 
     return {

@@ -118,11 +118,7 @@ async function loadFarmers() {
     loading.value = true
     loadError.value = null
     try {
-        await Promise.all([
-            loadParcels(),
-            loadBarangays(),
-            loadAssistance(),
-        ])
+        await Promise.all([loadParcels(), loadBarangays(), loadAssistance()])
         const response = await getAll()
         farmers.value = response.data.map((farmer) => ({
             ...farmer,
@@ -371,7 +367,10 @@ const columns: TableColumn<FarmerRow>[] = [
         header: sortHeader('Parcels', { align: 'right' }),
         sortDescFirst: false,
         meta: {
-            class: { th: 'text-right', td: 'text-right font-mono text-gray-900' },
+            class: {
+                th: 'text-right',
+                td: 'text-right font-mono text-gray-900',
+            },
         },
     },
     {
@@ -681,7 +680,7 @@ onMounted(async () => {
 <template>
     <!-- Farmer Detail View -->
     <div v-if="selectedFarmer" class="p-4 sm:p-6">
-        <div class="max-w-5xl">
+        <div class="w-full">
             <button
                 type="button"
                 class="mb-6 flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
@@ -711,9 +710,11 @@ onMounted(async () => {
                                     <span
                                         class="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1"
                                         :class="
-                                            selectedFarmer.farmer_status === 'Active'
+                                            selectedFarmer.farmer_status ===
+                                            'Active'
                                                 ? 'bg-green-50 text-green-700 ring-green-100'
-                                                : selectedFarmer.farmer_status === 'Inactive'
+                                                : selectedFarmer.farmer_status ===
+                                                    'Inactive'
                                                   ? 'bg-gray-50 text-gray-600 ring-gray-200'
                                                   : 'bg-amber-50 text-amber-700 ring-amber-100'
                                         "
@@ -721,9 +722,11 @@ onMounted(async () => {
                                         <span
                                             class="h-1.5 w-1.5 rounded-full"
                                             :class="
-                                                selectedFarmer.farmer_status === 'Active'
+                                                selectedFarmer.farmer_status ===
+                                                'Active'
                                                     ? 'bg-green-500'
-                                                    : selectedFarmer.farmer_status === 'Inactive'
+                                                    : selectedFarmer.farmer_status ===
+                                                        'Inactive'
                                                       ? 'bg-gray-400'
                                                       : 'bg-amber-500'
                                             "
@@ -884,7 +887,9 @@ onMounted(async () => {
             <!-- Assistance -->
             <div class="alps-card mt-5 p-5">
                 <div class="mb-4 flex items-baseline justify-between gap-3">
-                    <h3 class="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <h3
+                        class="flex items-center gap-2 text-sm font-semibold text-gray-700"
+                    >
                         <UIcon
                             name="i-lucide-hand-heart"
                             class="size-3.5 text-gray-400"
@@ -1133,9 +1138,7 @@ onMounted(async () => {
                     <div
                         class="flex items-center justify-end gap-1.5 opacity-0 transition-opacity group-hover:opacity-100"
                     >
-                        <span
-                            class="text-[10px] font-semibold text-[#2d6a2d]"
-                        >
+                        <span class="text-[10px] font-semibold text-[#2d6a2d]">
                             View
                         </span>
                         <UIcon
@@ -1525,7 +1528,8 @@ onMounted(async () => {
                                 v-if="selectedFarmer?.residence_barangay"
                                 class="mt-1 text-[10px] text-gray-400"
                             >
-                                Defaults to {{ selectedFarmer.residence_barangay.name }}
+                                Defaults to
+                                {{ selectedFarmer.residence_barangay.name }}
                             </p>
                         </div>
                     </div>
@@ -1622,7 +1626,11 @@ onMounted(async () => {
                                 name="i-lucide-loader-circle"
                                 class="size-3.5 animate-spin"
                             />
-                            {{ recordingAssist ? 'Saving...' : 'Record Assistance' }}
+                            {{
+                                recordingAssist
+                                    ? 'Saving...'
+                                    : 'Record Assistance'
+                            }}
                         </button>
                     </div>
                 </form>

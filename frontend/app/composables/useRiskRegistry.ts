@@ -1,9 +1,5 @@
 import type { FarmParcel } from '~/composables/useFarmParcelApi'
-import type {
-    AlpsInsight,
-    AtRiskParcel,
-    RiskRow,
-} from '~/utils/riskInsights'
+import type { AlpsInsight, AtRiskParcel, RiskRow } from '~/utils/riskInsights'
 import {
     foldAtRiskParcels,
     foldInsights,
@@ -53,10 +49,14 @@ export const useRiskRegistry = () => {
     const riskReports = computed<RiskRow[]>(() => toRiskRows(parcels.value))
 
     /** Reports still in play; Resolved ones drop out. */
-    const openReports = computed<RiskRow[]>(() => openRiskRows(riskReports.value))
+    const openReports = computed<RiskRow[]>(() =>
+        openRiskRows(riskReports.value)
+    )
 
     /** One insight per `risk_type` across the open reports. */
-    const insights = computed<AlpsInsight[]>(() => foldInsights(openReports.value))
+    const insights = computed<AlpsInsight[]>(() =>
+        foldInsights(openReports.value)
+    )
 
     /** Parcels still carrying an open report, worst first. */
     const atRiskParcels = computed<AtRiskParcel[]>(() =>
@@ -68,8 +68,8 @@ export const useRiskRegistry = () => {
 
     /** Risk types already in use, so the form can suggest what the LGU files. */
     const knownRiskTypes = computed<string[]>(() =>
-        [...new Set(riskReports.value.map((row) => row.riskType))].sort((a, b) =>
-            a.localeCompare(b)
+        [...new Set(riskReports.value.map((row) => row.riskType))].sort(
+            (a, b) => a.localeCompare(b)
         )
     )
 

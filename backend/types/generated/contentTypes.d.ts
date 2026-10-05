@@ -521,6 +521,7 @@ export interface ApiBarangayBarangay extends Struct.CollectionTypeSchema {
         createdAt: Schema.Attribute.DateTime
         createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
             Schema.Attribute.Private
+        farmers: Schema.Attribute.Relation<'oneToMany', 'api::farmer.farmer'>
         farms: Schema.Attribute.Relation<'oneToMany', 'api::farm.farm'>
         locale: Schema.Attribute.String & Schema.Attribute.Private
         localizations: Schema.Attribute.Relation<
@@ -711,6 +712,10 @@ export interface ApiFarmerFarmer extends Struct.CollectionTypeSchema {
             'api::farm-parcel.farm-parcel'
         >
         publishedAt: Schema.Attribute.DateTime
+        residence_barangay: Schema.Attribute.Relation<
+            'manyToOne',
+            'api::barangay.barangay'
+        >
         updatedAt: Schema.Attribute.DateTime
         updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
             Schema.Attribute.Private

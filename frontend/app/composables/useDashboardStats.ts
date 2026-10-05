@@ -1,5 +1,4 @@
 import type { FarmParcel, LandStatus } from '~/composables/useFarmParcelApi'
-import { LAND_STATUS_OPTIONS } from '~/composables/useFarmParcelApi'
 import { useFarmersApi } from '~/composables/useFarmersApi'
 import type { Farmer } from '~/composables/useFarmersApi'
 import {
@@ -11,7 +10,20 @@ import {
     toRiskRows,
     type RiskPriority,
 } from '~/utils/riskInsights'
-import { STATUS_COLOR, STATUS_COLOR_FALLBACK } from '~/utils/landStatus'
+import {
+    CROP_COLORS,
+    CROP_SERIES_LIMIT,
+    NEUTRAL_COLOR,
+    ROLLUP_LABEL,
+    areaOf,
+    barangayOf,
+    cropOf,
+    foldBarangayArea,
+    foldLandStatus,
+    type BarangayAreaRow,
+    type LandStatusSlice,
+} from '~/utils/analytics'
+import { monthKeyOf, parseDateOnly, trailingMonths } from '~/utils/monthWindow'
 import {
     toLoadError,
     type LoadError,
@@ -58,101 +70,18 @@ const UPCOMING_WINDOW_DAYS = 30
 /** Trailing months on the harvest chart. */
 const HARVEST_WINDOW_MONTHS = 12
 
-/** Crops drawn as their own line; the rest fold into a single "Others" series. */
-const CROP_SERIES_LIMIT = 4
-
 /** Slices on the crop donut, tail rolled up so the ring stays readable. */
 const CROP_SLICE_LIMIT = 5
 
-const BARANGAY_LIMIT = 9
-
-const ROLLUP_LABEL = 'Others'
-const UNASSIGNED_BARANGAY = 'Unassigned'
-const UNSPECIFIED_CROP = 'Unspecified'
-
-/**
- * Categorical palette for crop series and slices. `current_use` and crop names
- * are free text, so colours cannot be keyed off them the way land status
- * colours are; these are assigned by rank instead, which keeps a given crop on
- * the same colour as long as it holds its position.
- */
-const CROP_COLORS = [
-    '#16a34a',
-    '#ca8a04',
-    '#d97706',
-    '#059669',
-    '#0f766e',
-    '#1d6fa4',
-    '#7c3aed',
-    '#b45309',
-]
-
-/** The rollup bucket and the "no data" cases, so neither implies a real crop. */
-const NEUTRAL_COLOR = '#94a3b8'
-
 const DAY_MS = 86_400_000
-
-const MONTH_LABELS = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-]
-
-/**
- * Strapi date fields are date-only strings. Parsed as local midnight rather than
- * handed to `new Date()` — that would read them as UTC and land on the previous
- * day for anyone west of Greenwich, turning "harvests tomorrow" into "today".
- */
-const parseDateOnly = (value: string | null | undefined): Date | null => {
-    if (!value) return null
-
-    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value)
-    if (match) {
-        return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
-    }
-
-    const parsed = new Date(value)
-    return Number.isNaN(parsed.getTime()) ? null : parsed
-}
 
 const startOfToday = (): Date => {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), now.getDate())
 }
 
-const monthKeyOf = (date: Date): string =>
-    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-
-const monthLabelOf = (date: Date): string => MONTH_LABELS[date.getMonth()] ?? ''
-
-/** Hectares, tolerating a null or malformed number from the API. */
-const areaOf = (parcel: FarmParcel): number =>
-    Number.isFinite(parcel.area_hectares) ? parcel.area_hectares : 0
-
 const farmerOf = (parcel: FarmParcel): string =>
     parcel.farmers?.[0]?.name?.trim() || NO_TENDEE
-
-const barangayOf = (parcel: FarmParcel): string =>
-    parcel.farm?.barangay?.name?.trim() || UNASSIGNED_BARANGAY
-
-/**
- * The crop a parcel is currently planting, falling back to the free-text
- * `current_use` so a parcel that is being worked without a crop record still
- * appears in the distribution instead of silently vanishing.
- */
-const cropOf = (parcel: FarmParcel): string =>
-    parcel.planting_cycle?.crop?.name?.trim() ||
-    parcel.current_use?.trim() ||
-    UNSPECIFIED_CROP
 
 const fmtCount = (value: number): string => value.toLocaleString()
 
@@ -181,25 +110,11 @@ export interface DashboardKpi {
     badge?: { label: string; class: string }
 }
 
-export interface LandStatusSlice {
-    name: LandStatus
-    area: number
-    parcels: number
-    share: number
-    color: string
-}
-
 export interface CropSlice {
     name: string
     area: number
     share: number
     color: string
-}
-
-export interface BarangaySlice {
-    name: string
-    area: number
-    cultivated: number
 }
 
 export interface HarvestSeries {
@@ -340,20 +255,7 @@ export const useDashboardStats = () => {
 
     /** Colours come from the shared land-status map, so pie and legend agree. */
     const landStatusDistribution = computed<LandStatusSlice[]>(() =>
-        LAND_STATUS_OPTIONS.filter((status) => {
-            const bucket = areaByStatus.value.get(status)
-            return bucket !== undefined && bucket.parcels > 0
-        }).map((status) => {
-            const bucket = areaByStatus.value.get(status)
-            const area = bucket?.area ?? 0
-            return {
-                name: status,
-                area,
-                parcels: bucket?.parcels ?? 0,
-                share: totalArea.value > 0 ? round1((area / totalArea.value) * 100) : 0,
-                color: STATUS_COLOR[status] ?? STATUS_COLOR_FALLBACK,
-            }
-        })
+        foldLandStatus(parcels.value)
     )
 
     const classifiedArea = computed(() =>
@@ -420,24 +322,13 @@ export const useDashboardStats = () => {
 
     const leadingCrop = computed(() => cropDistribution.value[0]?.name ?? null)
 
-    const barangayArea = computed<BarangaySlice[]>(() => {
-        const totals = new Map<string, { area: number; cultivated: number }>()
-        for (const parcel of parcels.value) {
-            const name = barangayOf(parcel)
-            const bucket = totals.get(name) ?? { area: 0, cultivated: 0 }
-            const area = areaOf(parcel)
-            bucket.area = round1(bucket.area + area)
-            if (parcel.land_status === 'Cultivated') {
-                bucket.cultivated = round1(bucket.cultivated + area)
-            }
-            totals.set(name, bucket)
-        }
-
-        return [...totals.entries()]
-            .map(([name, bucket]) => ({ name, ...bucket }))
-            .sort((a, b) => b.area - a.area || a.name.localeCompare(b.name))
-            .slice(0, BARANGAY_LIMIT)
-    })
+    /**
+     * Hectares per barangay, largest first, capped so the chart stays readable.
+     * The reports page draws the same comparison from the same fold.
+     */
+    const barangayArea = computed<BarangayAreaRow[]>(() =>
+        foldBarangayArea(parcels.value)
+    )
 
     /* ------------------------------------------------------------------ */
     /* Harvest figures                                                     */
@@ -457,13 +348,10 @@ export const useDashboardStats = () => {
      * been replaced no longer carries its earlier seasons' harvests here.
      */
     const monthlyHarvest = computed<MonthlyHarvest>(() => {
-        const today = startOfToday()
-        const months: Date[] = []
-        for (let offset = HARVEST_WINDOW_MONTHS - 1; offset >= 0; offset -= 1) {
-            months.push(new Date(today.getFullYear(), today.getMonth() - offset, 1))
-        }
-
-        const keys = months.map(monthKeyOf)
+        const { keys, labels } = trailingMonths(
+            HARVEST_WINDOW_MONTHS,
+            startOfToday()
+        )
         const indexByKey = new Map(keys.map((key, index) => [key, index]))
 
         // Accumulate per crop so the series set is decided by rank, not by
@@ -489,7 +377,7 @@ export const useDashboardStats = () => {
 
         if (byCrop.size === 0) {
             return {
-                months: months.map(monthLabelOf),
+                months: labels,
                 series: [],
                 leadingCrop: null,
                 total: 0,
@@ -534,7 +422,7 @@ export const useDashboardStats = () => {
         }
 
         return {
-            months: months.map(monthLabelOf),
+            months: labels,
             series,
             leadingCrop: head[0]?.name ?? null,
             total: round1(

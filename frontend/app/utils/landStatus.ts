@@ -13,7 +13,7 @@ export const STATUS_COLOR: Record<string, HexColor> = {
     Preparation: '#0369a1',
     Harvesting: '#ca8a04',
     Fallow: '#b45309',
-    Idle: '#6b7280',
+    Idle: '#cbd5e1',
     'At Risk': '#dc2626',
     Converted: '#0f766e',
 }
@@ -22,7 +22,7 @@ export const STATUS_COLOR: Record<string, HexColor> = {
  * Colour for features that have no persisted land_status yet, i.e. a polygon
  * that is still being drawn. Neutral so it never implies a real status.
  */
-export const STATUS_COLOR_FALLBACK: HexColor = '#6b7280'
+export const STATUS_COLOR_FALLBACK: HexColor = '#cbd5e1'
 
 /**
  * Resolves a parcel polygon's map colour from its persisted land_status.
@@ -61,7 +61,7 @@ export const STATUS_DOT: Record<LandStatus, string> = {
     Preparation: '#0369a1',
     Harvesting: '#a16207',
     Fallow: '#b45309',
-    Idle: '#4b5563',
+    Idle: '#9ca3af',
     'At Risk': '#b91c1c',
     Converted: '#0f766e',
 }
@@ -76,7 +76,7 @@ export const STATUS_CLASS: Record<LandStatus, string> = {
     Converted: 'status-converted',
 }
 
-const TABLE_FALLBACK_DOT = '#4b5563'
+const TABLE_FALLBACK_DOT = '#9ca3af'
 
 export function statusClass(status: string): string {
     return STATUS_CLASS[status as LandStatus] ?? 'status-idle'

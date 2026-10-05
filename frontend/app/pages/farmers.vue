@@ -5,8 +5,14 @@ import type { Farmer, FarmerStatus } from '~/composables/useFarmersApi'
 import type { FarmParcel } from '~/composables/useFarmParcelApi'
 import {
     ASSISTANCE_STATUS_OPTIONS,
+    type AssistanceProgram,
     type AssistanceStatus,
 } from '~/composables/useAssistanceApi'
+import {
+    ASSISTANCE_STATUS_DOT,
+    ASSISTANCE_STATUS_STYLE,
+    peso,
+} from '~/utils/assistanceStatus'
 import { useBarangayApi } from '~/composables/useBarangayApi'
 
 definePageMeta({ middleware: 'auth' })
@@ -115,7 +121,7 @@ async function loadFarmers() {
         await Promise.all([
             loadParcels(),
             loadBarangays(),
-            loadAssistancePrograms(),
+            loadAssistance(),
         ])
         const response = await getAll()
         farmers.value = response.data.map((farmer) => ({
@@ -515,19 +521,47 @@ const parsedValue = (raw: string | number): number | null => {
 /** Program names already in use, offered as suggestions on the free-text field. */
 const assistanceProgramOptions = ref<string[]>([])
 
-async function loadAssistancePrograms() {
+/**
+ * Every assistance program, kept so a farmer's own records can be listed on
+ * their profile without a second request.
+ *
+ * The profile needs one farmer's history, but this page already loads all of
+ * them to build the datalist above, so filtering the list that is in hand costs
+ * nothing and saves a round trip per farmer opened. It is refreshed after a
+ * record is added, so the new row appears without a reload.
+ */
+const assistanceRecords = ref<AssistanceProgram[]>([])
+
+async function loadAssistance() {
     try {
         const { getAll } = useAssistanceApi()
         const response = await getAll({ sort: 'date:desc' })
+        assistanceRecords.value = response.data
         assistanceProgramOptions.value = [
-            ...new Set(
-                response.data.map((row) => row.program).filter(Boolean)
-            ),
+            ...new Set(response.data.map((row) => row.program).filter(Boolean)),
         ].sort()
     } catch {
+        assistanceRecords.value = []
         assistanceProgramOptions.value = []
     }
 }
+
+/** The selected farmer's assistance, most recent first as the API returned it. */
+const selectedFarmerAssistance = computed(() => {
+    const farmerId = selectedFarmer.value?.documentId
+    if (!farmerId) return []
+    return assistanceRecords.value.filter(
+        (row) => row.farmer?.documentId === farmerId
+    )
+})
+
+/** Headline figures for the assistance card, so the table needs no summary row. */
+const selectedFarmerAssistanceTotal = computed(() =>
+    selectedFarmerAssistance.value.reduce((sum, row) => {
+        const amount = Number(row.value)
+        return sum + (Number.isFinite(amount) ? amount : 0)
+    }, 0)
+)
 
 const canRecordAssist = computed(
     () =>
@@ -570,6 +604,9 @@ async function submitAssist() {
             status: assistForm.status,
         })
         showAssistModal.value = false
+        // Re-read so the record appears in the profile's list straight away
+        // rather than after a manual reload.
+        await loadAssistance()
     } catch (error) {
         assistError.value =
             error instanceof Error
@@ -837,6 +874,115 @@ onMounted(async () => {
                                 </td>
                                 <td class="py-2.5 text-gray-600">
                                     {{ p.current_use ?? '—' }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Assistance -->
+            <div class="alps-card mt-5 p-5">
+                <div class="mb-4 flex items-baseline justify-between gap-3">
+                    <h3 class="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <UIcon
+                            name="i-lucide-hand-heart"
+                            class="size-3.5 text-gray-400"
+                        />
+                        Assistance Received
+                    </h3>
+                    <span
+                        v-if="selectedFarmerAssistance.length > 0"
+                        class="text-xs text-gray-400"
+                    >
+                        {{ selectedFarmerAssistance.length }} record(s) ·
+                        {{ peso(selectedFarmerAssistanceTotal) }} total
+                    </span>
+                </div>
+                <div
+                    v-if="selectedFarmerAssistance.length === 0"
+                    class="py-8 text-center text-xs text-gray-400"
+                >
+                    No assistance recorded for this farmer yet.
+                </div>
+                <div v-else class="overflow-x-auto">
+                    <table class="w-full min-w-[560px] text-xs">
+                        <thead>
+                            <tr class="border-b border-gray-100 text-gray-400">
+                                <th class="pb-2 text-left font-medium">Ref</th>
+                                <th class="pb-2 text-left font-medium">
+                                    Program
+                                </th>
+                                <th class="pb-2 text-left font-medium">Date</th>
+                                <th class="pb-2 text-right font-medium">
+                                    Value
+                                </th>
+                                <th class="pb-2 text-left font-medium">
+                                    Status
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                v-for="a in selectedFarmerAssistance"
+                                :key="a.documentId"
+                                class="border-b border-gray-50 last:border-0 hover:bg-gray-50/50"
+                            >
+                                <td class="py-2.5 font-mono text-gray-400">
+                                    {{ a.reference_code || '—' }}
+                                </td>
+                                <td class="py-2.5">
+                                    <div
+                                        class="font-medium text-gray-800"
+                                        :title="a.program"
+                                    >
+                                        {{ a.program }}
+                                    </div>
+                                    <!-- Items are free text and often long, so they
+                                         sit under the program rather than taking a
+                                         column that would force a scrollbar. -->
+                                    <div
+                                        v-if="a.items"
+                                        class="mt-0.5 max-w-xs truncate text-[10px] text-gray-400"
+                                        :title="a.items"
+                                    >
+                                        {{ a.items }}
+                                    </div>
+                                </td>
+                                <td class="py-2.5 text-gray-500">
+                                    <span class="flex items-center gap-1">
+                                        <UIcon
+                                            name="i-lucide-calendar"
+                                            class="size-[10px] text-gray-400"
+                                        />
+                                        {{ a.date ?? '—' }}
+                                    </span>
+                                </td>
+                                <td
+                                    class="py-2.5 text-right font-mono font-medium text-green-700"
+                                >
+                                    {{ peso(a.value) }}
+                                </td>
+                                <td class="py-2.5 text-gray-500">
+                                    <span
+                                        :class="
+                                            ASSISTANCE_STATUS_STYLE[
+                                                a.status ?? 'Scheduled'
+                                            ]
+                                        "
+                                        class="flex w-fit items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-medium"
+                                    >
+                                        <span
+                                            class="h-1.5 w-1.5 rounded-full"
+                                            :style="{
+                                                background:
+                                                    ASSISTANCE_STATUS_DOT[
+                                                        a.status ?? 'Scheduled'
+                                                    ],
+                                            }"
+                                        />
+                                        {{ a.status ?? '—' }}
+                                    </span>
                                 </td>
                             </tr>
                         </tbody>

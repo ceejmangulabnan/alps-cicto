@@ -2,6 +2,15 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
 
+/*
+ * Tailwind does not pick up `utils/` on its own, so every class written in a
+ * helper under it compiles to nothing. The sort-header icons in `utils/table.ts`
+ * lost their size, colour and focus ring this way: present in the source, absent
+ * from the stylesheet. Paths are relative to this file.
+ */
+@source '../../utils/**/*.ts';
+@source '../../app.config.ts';
+
 :root {
     font-family: 'DM Sans', sans-serif;
     color: #183328;

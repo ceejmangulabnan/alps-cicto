@@ -17,58 +17,64 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <div class="alps-card flex-1 overflow-x-auto">
-        <table class="w-full min-w-[640px] text-xs">
-            <thead class="border-b border-gray-100 bg-gray-50">
-                <tr>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-600">
-                        Parcel Code
-                    </th>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-600">
-                        Farmer
-                    </th>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-600">
-                        Barangay
-                    </th>
-                    <th
-                        class="px-4 py-3 text-right font-semibold text-gray-600"
-                    >
-                        Area (ha)
-                    </th>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-600">
-                        Status
-                    </th>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-600">
-                        Current Use
-                    </th>
-                    <th class="px-4 py-3"></th>
+    <div class="overflow-x-auto">
+        <table class="w-full min-w-[820px] text-sm">
+            <thead class="border-b border-slate-100 bg-slate-50/70">
+                <tr
+                    class="text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+                >
+                    <th class="px-5 py-3.5 text-left">Parcel Code</th>
+                    <th class="px-5 py-3.5 text-left">Farmer</th>
+                    <th class="px-5 py-3.5 text-left">Barangay</th>
+                    <th class="px-5 py-3.5 text-right">Area (ha)</th>
+                    <th class="px-5 py-3.5 text-left">Status</th>
+                    <th class="px-5 py-3.5 text-left">Current Use</th>
+                    <th class="px-5 py-3.5"></th>
                 </tr>
             </thead>
+
             <tbody>
                 <tr
-                    v-for="(p, i) in parcels"
+                    v-for="p in parcels"
                     :key="p.documentId"
-                    class="group cursor-pointer border-b border-gray-50 transition-colors last:border-0 hover:bg-green-50/30"
-                    :class="[
-                        i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white',
+                    class="group cursor-pointer border-b border-slate-100 bg-white transition-colors last:border-0 hover:bg-emerald-50/40"
+                    :class="
                         selectedDocumentId === p.documentId
-                            ? 'bg-green-50/60!'
-                            : '',
-                    ]"
+                            ? 'bg-emerald-50/70'
+                            : ''
+                    "
                     @click="emit('select', p)"
                 >
-                    <td class="px-4 py-2.5 font-mono text-gray-700">
-                        {{ p.parcel_code }}
+                    <!-- Parcel Code -->
+                    <td class="px-5 py-4">
+                        <div class="flex items-center gap-3">
+                            <span
+                                class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
+                            >
+                                <UIcon
+                                    name="i-lucide-layers-3"
+                                    class="size-4.5"
+                                />
+                            </span>
+
+                            <div class="min-w-0">
+                                <div
+                                    class="truncate font-mono font-semibold text-slate-700"
+                                >
+                                    {{ p.parcel_code }}
+                                </div>
+                                <div class="mt-0.5 text-xs text-slate-400">
+                                    Parcel record
+                                </div>
+                            </div>
+                        </div>
                     </td>
-                    <td class="px-4 py-2.5">
-                        <!--
-                            One row per tendee. A parcel usually has a single
-                            farmer, but several may share it, and each needs their
-                            own initials.
-                        -->
+
+                    <!-- Farmers -->
+                    <td class="px-5 py-4">
                         <div
                             v-if="p.farmerNames.length > 0"
-                            class="space-y-1.5"
+                            class="space-y-2"
                         >
                             <div
                                 v-for="name in p.farmerNames"
@@ -76,32 +82,57 @@ const emit = defineEmits<{
                                 class="flex items-center gap-2.5"
                             >
                                 <span
-                                    class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                                    class="flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white shadow-sm ring-2 ring-white"
                                     :style="{
                                         backgroundColor: avatarColor(name),
                                     }"
                                 >
                                     {{ initials(name) }}
                                 </span>
-                                <span class="font-medium text-gray-800">
+
+                                <span
+                                    class="min-w-0 truncate font-medium text-slate-800"
+                                >
                                     {{ name }}
                                 </span>
                             </div>
                         </div>
-                        <span v-else class="text-gray-400">
-                            {{ p.farmerName }}
+
+                        <span
+                            v-else
+                            class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500"
+                        >
+                            <UIcon
+                                name="i-lucide-user-round-x"
+                                class="size-3.5"
+                            />
+                            {{ p.farmerName || 'Unassigned' }}
                         </span>
                     </td>
-                    <td class="px-4 py-2.5 text-gray-500">{{ p.barangay }}</td>
-                    <td
-                        class="px-4 py-2.5 text-right font-mono font-medium text-gray-900"
-                    >
-                        {{ p.area_hectares }}
+
+                    <!-- Barangay -->
+                    <td class="px-5 py-4 text-slate-600">
+                        <span class="flex items-center gap-1.5">
+                            <UIcon
+                                name="i-lucide-map-pin"
+                                class="size-3.5 text-slate-400"
+                            />
+                            {{ p.barangay }}
+                        </span>
                     </td>
-                    <td class="px-4 py-2.5">
+
+                    <!-- Area -->
+                    <td
+                        class="px-5 py-4 text-right font-mono font-semibold text-slate-800"
+                    >
+                        {{ Number(p.area_hectares).toFixed(2) }}
+                    </td>
+
+                    <!-- Status -->
+                    <td class="px-5 py-4">
                         <span
                             :class="statusClass(p.land_status) || 'status-idle'"
-                            class="flex w-fit items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-medium"
+                            class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
                         >
                             <span
                                 class="h-1.5 w-1.5 rounded-full"
@@ -112,34 +143,53 @@ const emit = defineEmits<{
                             {{ p.land_status }}
                         </span>
                     </td>
-                    <td class="px-4 py-2.5 text-gray-600">
-                        {{ p.current_use ?? '—' }}
+
+                    <!-- Current Use -->
+                    <td class="px-5 py-4 text-slate-600">
+                        <span
+                            v-if="p.current_use"
+                            class="font-medium text-slate-700"
+                        >
+                            {{ p.current_use }}
+                        </span>
+                        <span v-else class="text-slate-400">—</span>
                     </td>
-                    <td class="px-4 py-2.5">
+
+                    <!-- View -->
+                    <td class="px-5 py-4">
                         <div class="flex items-center justify-end gap-1.5">
                             <span
-                                class="text-[10px] font-semibold text-[#2d6a2d] opacity-0 transition-opacity group-hover:opacity-100"
+                                class="text-sm font-semibold text-[#245c2a] opacity-0 transition-opacity group-hover:opacity-100"
                             >
                                 View
                             </span>
                             <UIcon
                                 name="i-lucide-chevron-right"
-                                class="size-3.5 text-gray-400 transition-all group-hover:translate-x-0.5 group-hover:text-[#2d6a2d]"
+                                class="size-4 text-slate-400 transition-all group-hover:translate-x-0.5 group-hover:text-[#245c2a]"
                             />
                         </div>
                     </td>
                 </tr>
             </tbody>
         </table>
+
         <div
             v-if="!loading && !hasError && parcels.length === 0"
-            class="py-12 text-center text-gray-400"
+            class="flex flex-col items-center justify-center px-6 py-14 text-center"
         >
-            <UIcon
-                name="i-lucide-layers"
-                class="mx-auto mb-3 size-8 opacity-30"
-            />
-            <div class="text-sm">No parcels found matching your filters.</div>
+            <div
+                class="mb-3 flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-300"
+            >
+                <UIcon name="i-lucide-layers-3" class="size-6" />
+            </div>
+
+            <div class="text-base font-semibold text-slate-700">
+                No parcels found
+            </div>
+
+            <div class="mt-1 max-w-sm text-sm text-slate-400">
+                No parcels match the current search or land-status filters.
+            </div>
         </div>
     </div>
 </template>

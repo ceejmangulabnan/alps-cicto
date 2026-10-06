@@ -24,67 +24,90 @@ function extraFarmerCount(row: FarmRow): number {
 </script>
 
 <template>
-    <div class="alps-card overflow-x-auto">
-        <table class="w-full min-w-[720px] text-xs">
-            <thead class="border-b border-gray-100 bg-gray-50">
-                <tr>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-600">
-                        Farm
-                    </th>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-600">
-                        Farm Code
-                    </th>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-600">
-                        Barangay
-                    </th>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-600">
-                        Farmer
-                    </th>
-                    <th
-                        class="px-4 py-3 text-right font-semibold text-gray-600"
-                    >
-                        Parcels
-                    </th>
-                    <th
-                        class="px-4 py-3 text-right font-semibold text-gray-600"
-                    >
-                        Total Area (ha)
-                    </th>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-600">
-                        Status
-                    </th>
-                    <th class="px-4 py-3"></th>
+    <div class="overflow-x-auto">
+        <table class="w-full min-w-[860px] text-sm">
+            <thead class="border-b border-slate-100 bg-slate-50/70">
+                <tr
+                    class="text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+                >
+                    <th class="px-5 py-3.5 text-left">Farm</th>
+                    <th class="px-5 py-3.5 text-left">Farm Code</th>
+                    <th class="px-5 py-3.5 text-left">Barangay</th>
+                    <th class="px-5 py-3.5 text-left">Farmer</th>
+                    <th class="px-5 py-3.5 text-right">Parcels</th>
+                    <th class="px-5 py-3.5 text-right">Total Area (ha)</th>
+                    <th class="px-5 py-3.5 text-left">Status</th>
+                    <th class="px-5 py-3.5"></th>
                 </tr>
             </thead>
+
             <tbody>
                 <tr
-                    v-for="(row, i) in farms"
+                    v-for="row in farms"
                     :key="row.documentId"
-                    class="group cursor-pointer border-b border-gray-50 transition-colors last:border-0 hover:bg-green-50/40"
-                    :class="[
-                        i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white',
+                    class="group cursor-pointer border-b border-slate-100 bg-white transition-colors last:border-0 hover:bg-emerald-50/40"
+                    :class="
                         selectedDocumentId === row.documentId
-                            ? 'bg-green-50/60!'
-                            : '',
-                    ]"
+                            ? 'bg-emerald-50/70'
+                            : ''
+                    "
                     @click="emit('select', row)"
                 >
-                    <td class="px-4 py-2.5 font-medium text-gray-800">
-                        {{ row.name }}
+                    <!-- Farm -->
+                    <td class="px-5 py-4">
+                        <div class="flex items-center gap-3">
+                            <span
+                                class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
+                            >
+                                <UIcon
+                                    name="i-lucide-tractor"
+                                    class="size-4.5"
+                                />
+                            </span>
+
+                            <div class="min-w-0">
+                                <div
+                                    class="truncate font-semibold text-slate-800"
+                                >
+                                    {{ row.name }}
+                                </div>
+                                <div
+                                    class="mt-0.5 text-xs text-slate-400"
+                                >
+                                    Farm record
+                                </div>
+                            </div>
+                        </div>
                     </td>
-                    <td class="px-4 py-2.5 font-mono text-gray-700">
-                        {{ row.farm_code }}
+
+                    <!-- Farm Code -->
+                    <td class="px-5 py-4">
+                        <span
+                            class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-600"
+                        >
+                            {{ row.farm_code }}
+                        </span>
                     </td>
-                    <td class="px-4 py-2.5 text-gray-500">
-                        {{ row.barangay }}
+
+                    <!-- Barangay -->
+                    <td class="px-5 py-4 text-slate-600">
+                        <span class="flex items-center gap-1.5">
+                            <UIcon
+                                name="i-lucide-map-pin"
+                                class="size-3.5 text-slate-400"
+                            />
+                            {{ row.barangay }}
+                        </span>
                     </td>
-                    <td class="px-4 py-2.5">
+
+                    <!-- Farmer -->
+                    <td class="px-5 py-4">
                         <div
                             v-if="leadFarmer(row)"
                             class="flex items-center gap-2.5"
                         >
                             <span
-                                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                                class="flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white shadow-sm ring-2 ring-white"
                                 :style="{
                                     backgroundColor: avatarColor(
                                         leadFarmer(row)!
@@ -93,37 +116,59 @@ function extraFarmerCount(row: FarmRow): number {
                             >
                                 {{ initials(leadFarmer(row)!) }}
                             </span>
-                            <span class="font-medium text-gray-800">
-                                {{ leadFarmer(row) }}
-                            </span>
-                            <span
-                                v-if="extraFarmerCount(row) > 0"
-                                class="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500"
-                            >
-                                +{{ extraFarmerCount(row) }}
-                            </span>
+
+                            <div class="min-w-0">
+                                <div
+                                    class="truncate font-medium text-slate-800"
+                                >
+                                    {{ leadFarmer(row) }}
+                                </div>
+
+                                <div
+                                    v-if="extraFarmerCount(row) > 0"
+                                    class="mt-0.5 text-xs text-slate-400"
+                                >
+                                    +{{ extraFarmerCount(row) }} more assigned
+                                </div>
+                            </div>
                         </div>
-                        <span v-else class="text-gray-400">Unassigned</span>
+
+                        <span
+                            v-else
+                            class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500"
+                        >
+                            <UIcon
+                                name="i-lucide-user-round-x"
+                                class="size-3.5"
+                            />
+                            Unassigned
+                        </span>
                     </td>
+
+                    <!-- Parcels -->
                     <td
-                        class="px-4 py-2.5 text-right font-mono font-medium"
+                        class="px-5 py-4 text-right font-mono font-semibold"
                         :class="
                             row.parcelCount === 0
                                 ? 'text-amber-600'
-                                : 'text-gray-900'
+                                : 'text-slate-800'
                         "
                     >
                         {{ row.parcelCount }}
                     </td>
+
+                    <!-- Area -->
                     <td
-                        class="px-4 py-2.5 text-right font-mono font-medium text-gray-900"
+                        class="px-5 py-4 text-right font-mono font-semibold text-slate-800"
                     >
-                        {{ row.totalAreaHectares.toFixed(4) }}
+                        {{ row.totalAreaHectares.toFixed(2) }}
                     </td>
-                    <td class="px-4 py-2.5">
+
+                    <!-- Status -->
+                    <td class="px-5 py-4">
                         <span
                             :class="farmStatusClass(row.farmer_status)"
-                            class="flex w-fit items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-medium"
+                            class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
                         >
                             <span
                                 class="h-1.5 w-1.5 rounded-full"
@@ -136,16 +181,18 @@ function extraFarmerCount(row: FarmRow): number {
                             {{ row.farmer_status }}
                         </span>
                     </td>
-                    <td class="px-4 py-2.5">
+
+                    <!-- View -->
+                    <td class="px-5 py-4">
                         <div class="flex items-center justify-end gap-1.5">
                             <span
-                                class="text-[10px] font-semibold text-[#2d6a2d] opacity-0 transition-opacity group-hover:opacity-100"
+                                class="text-sm font-semibold text-[#245c2a] opacity-0 transition-opacity group-hover:opacity-100"
                             >
                                 View
                             </span>
                             <UIcon
                                 name="i-lucide-chevron-right"
-                                class="size-3.5 text-gray-400 transition-all group-hover:translate-x-0.5 group-hover:text-[#2d6a2d]"
+                                class="size-4 text-slate-400 transition-all group-hover:translate-x-0.5 group-hover:text-[#245c2a]"
                             />
                         </div>
                     </td>
@@ -155,13 +202,21 @@ function extraFarmerCount(row: FarmRow): number {
 
         <div
             v-if="!loading && farms.length === 0"
-            class="py-12 text-center text-gray-400"
+            class="flex flex-col items-center justify-center px-6 py-14 text-center"
         >
-            <UIcon
-                name="i-lucide-tractor"
-                class="mx-auto mb-3 size-8 opacity-30"
-            />
-            <div class="text-sm">No farms found matching your filters.</div>
+            <div
+                class="mb-3 flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-300"
+            >
+                <UIcon name="i-lucide-tractor" class="size-6" />
+            </div>
+
+            <div class="text-base font-semibold text-slate-700">
+                No farms found
+            </div>
+
+            <div class="mt-1 max-w-sm text-sm text-slate-400">
+                No farms match the current search or status filters.
+            </div>
         </div>
     </div>
 </template>

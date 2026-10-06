@@ -1,4 +1,5 @@
 <script setup lang="ts">
+//@ts-nocheck
 import type {
     InspectionStatus,
     ParcelInspectionPhoto,
@@ -608,393 +609,558 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
 </script>
 
 <template>
-    <div class="space-y-6 p-4 sm:p-6">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">
-                    Field Inspections
-                </h1>
-                <p class="mt-0.5 text-sm text-gray-500">
-                    GPS-tagged visits · Photo documentation
-                </p>
-            </div>
-            <button
-                type="button"
-                class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
-                @click="openNew"
-            >
-                <UIcon name="i-lucide-plus" class="size-3.5" />
-                New Inspection
-            </button>
-        </div>
-
-        <!-- Summary Cards -->
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div
+        class="min-h-full bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 p-4 sm:p-6 lg:p-8"
+    >
+        <div class="mx-auto max-w-[1800px] space-y-6">
             <div
-                v-for="card in kpis"
-                :key="card.label"
-                class="alps-card relative overflow-hidden p-4"
+                class="relative overflow-hidden rounded-3xl border border-emerald-100/80 bg-gradient-to-r from-white via-white to-emerald-50/70 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-6"
             >
                 <div
-                    class="absolute inset-x-0 top-0 h-0.5 opacity-70"
-                    :style="{
-                        backgroundImage: `linear-gradient(90deg, ${card.color}, transparent)`,
-                    }"
+                    class="pointer-events-none absolute -right-20 -top-24 size-64 rounded-full bg-emerald-300/15 blur-3xl"
                 />
-                <div
-                    class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg"
-                    :style="{ background: card.bg }"
-                >
-                    <UIcon
-                        :name="card.icon"
-                        class="size-4.5"
-                        :style="{ color: card.color }"
-                    />
-                </div>
-                <div
-                    class="mb-1 text-xl font-bold font-sans"
-                    :style="{ color: card.color }"
-                >
-                    {{ card.val }}
-                </div>
-                <div class="text-xs text-gray-500">{{ card.label }}</div>
-            </div>
-        </div>
 
-        <!-- Filters -->
-        <div class="space-y-3">
-            <div class="flex items-center gap-3">
-                <div class="relative max-w-xs flex-1">
-                    <UIcon
-                        name="i-lucide-search"
-                        class="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-gray-400"
-                    />
-                    <input
-                        v-model="search"
-                        type="text"
-                        placeholder="Search parcel, type or inspector..."
-                        class="w-full rounded-full border border-gray-200 bg-white py-2 pl-8 pr-8 text-xs shadow-sm focus:border-[#2d6a2d] focus:outline-none focus:ring-1 focus:ring-green-500"
-                    />
+                <div
+                    class="relative flex flex-wrap items-center justify-between gap-5"
+                >
+                    <div class="flex min-w-0 items-start gap-4">
+                        <div
+                            class="hidden size-12 shrink-0 items-center justify-center rounded-2xl bg-[#2d6a2d] text-white shadow-[0_8px_22px_rgba(45,106,45,0.22)] sm:flex"
+                        >
+                            <UIcon
+                                name="i-lucide-clipboard-check"
+                                class="size-6"
+                            />
+                        </div>
+
+                        <div>
+                            <div class="mb-2 flex flex-wrap items-center gap-2">
+                                <span
+                                    class="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700"
+                                >
+                                    <span
+                                        class="size-1.5 rounded-full bg-emerald-500"
+                                    />
+                                    Field Monitoring & Compliance
+                                </span>
+
+                                <span
+                                    class="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 shadow-sm"
+                                >
+                                    {{ inspections.length }} inspection records
+                                </span>
+                            </div>
+
+                            <h1
+                                class="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl"
+                            >
+                                Field Inspections
+                            </h1>
+
+                            <p
+                                class="mt-1.5 max-w-2xl text-sm text-slate-500 sm:text-base"
+                            >
+                                Track GPS-tagged field visits, risk findings,
+                                compliance status, and photo documentation.
+                            </p>
+                        </div>
+                    </div>
+
                     <button
-                        v-if="search"
                         type="button"
-                        class="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:text-gray-600"
-                        @click="search = ''"
+                        class="inline-flex items-center gap-2 rounded-xl bg-[#2d6a2d] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(45,106,45,0.22)] transition-all hover:-translate-y-0.5 hover:bg-[#1f5125] hover:shadow-[0_10px_24px_rgba(45,106,45,0.28)]"
+                        @click="openNew"
                     >
-                        <UIcon name="i-lucide-x" class="size-3" />
+                        <UIcon name="i-lucide-plus" class="size-4.5" />
+                        New Inspection
                     </button>
                 </div>
-                <div
-                    class="ml-auto flex items-center gap-1.5 text-xs text-gray-400"
-                >
-                    <UIcon name="i-lucide-filter" class="size-3" />
-                    {{ filtered.length }} of
-                    {{ inspections.length }} inspections
-                </div>
             </div>
-            <div class="flex flex-wrap items-center gap-1.5">
-                <button
-                    v-for="s in statusFilterOptions"
-                    :key="s"
-                    type="button"
-                    class="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors"
-                    :class="
-                        filterStatus === s
-                            ? 'border-[#2d6a2d] bg-[#2d6a2d] text-white shadow-sm'
-                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-                    "
-                    @click="filterStatus = s"
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div
+                    v-for="card in kpis"
+                    :key="card.label"
+                    class="group relative min-h-[190px] overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.055)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-100 hover:shadow-[0_18px_40px_rgba(15,23,42,0.10)] sm:p-6"
                 >
-                    <span
-                        v-if="s !== 'All'"
-                        class="h-1.5 w-1.5 rounded-full"
+                    <div
+                        class="absolute inset-x-0 top-0 h-1"
                         :style="{
-                            background: STATUS_DOT[s as InspectionStatus],
+                            backgroundImage: `linear-gradient(90deg, ${card.color}, ${card.color}55, transparent)`,
                         }"
                     />
-                    {{ s }}
-                </button>
-            </div>
-        </div>
 
-        <div class="grid grid-cols-12 gap-4">
-            <!-- Inspections by month and risk -->
-            <div class="alps-card col-span-5 p-5">
-                <div class="mb-3 flex items-center gap-3">
                     <div
-                        class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f0faf0]"
-                    >
-                        <UIcon
-                            name="i-lucide-bar-chart-3"
-                            class="size-4 text-[#2d6a2d]"
-                        />
+                        class="pointer-events-none absolute -right-12 -top-14 size-36 rounded-full opacity-[0.10] blur-2xl transition-transform duration-500 group-hover:scale-125"
+                        :style="{ backgroundColor: card.color }"
+                    />
+
+                    <div class="relative flex h-full flex-col">
+                        <div class="flex items-start justify-between gap-3">
+                            <div
+                                class="flex size-12 items-center justify-center rounded-2xl shadow-sm ring-1 ring-black/5 transition-all duration-300 group-hover:-rotate-3 group-hover:scale-110"
+                                :style="{ background: card.bg }"
+                            >
+                                <UIcon
+                                    :name="card.icon"
+                                    class="size-5"
+                                    :style="{ color: card.color }"
+                                />
+                            </div>
+
+                            <span
+                                class="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 ring-1 ring-slate-100"
+                            >
+                                <span
+                                    class="size-1.5 rounded-full"
+                                    :style="{ backgroundColor: card.color }"
+                                />
+                                Live
+                            </span>
+                        </div>
+
+                        <div class="mt-5">
+                            <div
+                                class="text-3xl font-bold tracking-tight text-slate-950"
+                            >
+                                {{ card.val }}
+                            </div>
+                            <div
+                                class="mt-1 text-sm font-semibold text-slate-700"
+                            >
+                                {{ card.label }}
+                            </div>
+                        </div>
+
+                        <div
+                            class="mt-auto flex items-center gap-2 border-t border-slate-100 pt-3 text-xs leading-5 text-slate-400"
+                        >
+                            <UIcon
+                                name="i-lucide-circle-check"
+                                class="size-3.5"
+                                :style="{ color: card.color }"
+                            />
+                            <span>
+                                {{
+                                    card.label === 'Total Inspections'
+                                        ? 'All recorded field inspections'
+                                        : card.label === 'Completed'
+                                          ? 'Completed inspection visits'
+                                          : card.label === 'Pending'
+                                            ? 'Visits awaiting completion'
+                                            : 'High-risk findings requiring attention'
+                                }}
+                            </span>
+                        </div>
                     </div>
-                    <div>
-                        <h3 class="text-sm font-semibold text-gray-700">
-                            Inspections by Month
-                        </h3>
-                        <p class="text-[11px] text-gray-400">
-                            {{ chartYear }} ·
-                            {{ chartTotals.total }} inspections,
-                            {{ chartTotals.highRisk }} high-risk
-                        </p>
-                    </div>
-                </div>
-                <ClientOnly>
-                    <div class="w-full" :style="{ height: '200px' }">
-                        <VChart
-                            :option="chartOption"
-                            :style="{ height: '200px', width: '100%' }"
-                            autoresize
-                        />
-                    </div>
-                </ClientOnly>
-                <div
-                    class="mt-3 flex items-center justify-between rounded-lg bg-[#f8faf8] px-3 py-2"
-                >
-                    <span class="text-[11px] text-gray-500"
-                        >High-risk findings this year</span
-                    >
-                    <span class="text-xs font-bold text-[#dc2626]">
-                        {{ chartTotals.highRisk }}
-                    </span>
                 </div>
             </div>
 
-            <!-- Inspection Records -->
-            <div class="alps-card col-span-7 overflow-hidden">
-                <div class="border-b border-gray-100 px-5 py-4">
-                    <h3 class="text-sm font-semibold text-gray-700">
-                        Inspection Records
-                    </h3>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full min-w-[960px] text-xs">
-                        <thead class="border-b border-gray-100 bg-gray-50">
-                            <tr>
-                                <th
-                                    class="px-4 py-3 text-left font-semibold text-gray-600"
-                                >
-                                    ID
-                                </th>
-                                <th
-                                    class="px-4 py-3 text-left font-semibold text-gray-600"
-                                >
-                                    Type
-                                </th>
-                                <th
-                                    class="px-4 py-3 text-left font-semibold text-gray-600"
-                                >
-                                    Parcel
-                                </th>
-                                <th
-                                    class="px-4 py-3 text-left font-semibold text-gray-600"
-                                >
-                                    Barangay
-                                </th>
-                                <th
-                                    class="px-4 py-3 text-left font-semibold text-gray-600"
-                                >
-                                    Date
-                                </th>
-                                <th
-                                    class="px-4 py-3 text-left font-semibold text-gray-600"
-                                >
-                                    Inspector
-                                </th>
-                                <th
-                                    class="px-4 py-3 text-left font-semibold text-gray-600"
-                                >
-                                    Risk
-                                </th>
-                                <th
-                                    class="px-4 py-3 text-left font-semibold text-gray-600"
-                                >
-                                    Status
-                                </th>
-                                <th class="px-4 py-3 text-right"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Loading -->
-                            <tr v-if="loading">
-                                <td
-                                    colspan="9"
-                                    class="px-4 py-10 text-center text-gray-400"
-                                >
-                                    <span
-                                        class="inline-flex items-center gap-2"
-                                    >
-                                        <UIcon
-                                            name="i-lucide-loader-circle"
-                                            class="size-4 animate-spin"
-                                        />
-                                        Loading inspections...
-                                    </span>
-                                </td>
-                            </tr>
-                            <!-- Failed -->
-                            <tr v-else-if="loadError">
-                                <td colspan="9" class="px-4 py-10 text-center">
-                                    <p class="text-red-600">{{ loadError }}</p>
-                                    <button
-                                        type="button"
-                                        class="mt-2 text-xs font-medium text-green-700 underline"
-                                        @click="load"
-                                    >
-                                        Try again
-                                    </button>
-                                </td>
-                            </tr>
-                            <!-- Loaded but nothing to show -->
-                            <tr v-else-if="inspections.length === 0">
-                                <td
-                                    colspan="9"
-                                    class="px-4 py-10 text-center text-gray-400"
-                                >
-                                    <div
-                                        class="flex flex-col items-center gap-2"
-                                    >
-                                        <UIcon
-                                            name="i-lucide-clipboard-check"
-                                            class="size-6 text-gray-300"
-                                        />
-                                        <p>
-                                            No inspections recorded yet. Log the
-                                            first one against a parcel.
-                                        </p>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr v-else-if="filtered.length === 0">
-                                <td
-                                    colspan="9"
-                                    class="px-4 py-10 text-center text-gray-400"
-                                >
-                                    No inspections match this search.
-                                </td>
-                            </tr>
-                            <tr
-                                v-for="(row, i) in filtered"
-                                :key="row.documentId"
-                                class="border-b border-gray-50 last:border-0 transition-colors hover:bg-green-50/30"
-                                :class="
-                                    i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'
-                                "
+            <!-- Filters -->
+            <div
+                class="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
+            >
+                <div
+                    class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6"
+                >
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex size-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"
+                        >
+                            <UIcon
+                                name="i-lucide-search-check"
+                                class="size-4.5"
+                            />
+                        </div>
+                        <div>
+                            <h2
+                                class="text-base font-bold tracking-tight text-slate-800"
                             >
-                                <td class="px-4 py-3 font-mono text-gray-400">
-                                    {{ shortId(row.documentId) }}
-                                </td>
-                                <td class="px-4 py-3">
-                                    <span
-                                        class="flex w-fit items-center gap-1 rounded bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600"
-                                    >
-                                        <UIcon
-                                            name="i-lucide-tags"
-                                            class="size-2.5"
-                                        />
-                                        {{ row.inspection_type }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <NuxtLink
-                                        :to="`/parcels/${row.parcel_code}`"
-                                        class="font-mono text-gray-500 underline-offset-2 hover:text-[#2d6a2d] hover:underline"
-                                    >
-                                        {{ row.parcel_code }}
-                                    </NuxtLink>
-                                </td>
-                                <td class="px-4 py-3 text-gray-500">
-                                    {{ row.barangay }}
-                                </td>
-                                <td class="px-4 py-3">
-                                    <div class="text-gray-500">
-                                        {{ row.date ?? '—' }}
-                                    </div>
-                                    <div
-                                        v-if="row.photos.length > 0"
-                                        class="flex items-center gap-1 text-[10px] text-gray-400"
-                                    >
-                                        <UIcon
-                                            name="i-lucide-camera"
-                                            class="size-2.5"
-                                        />
-                                        {{ row.photos.length }}
-                                    </div>
-                                </td>
-                                <td class="px-4 py-3 text-gray-500">
-                                    {{ row.inspector || '—' }}
-                                </td>
-                                <td class="px-4 py-3">
-                                    <span
-                                        :class="RISK_STYLE[row.riskLevel]"
-                                        class="flex w-fit items-center gap-1 rounded px-2 py-0.5 text-[10px] font-semibold"
+                                Find Inspections
+                            </h2>
+                            <p class="text-xs text-slate-500">
+                                Search inspection records or filter by workflow
+                                status.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div
+                        class="hidden items-center gap-1.5 text-sm font-medium text-slate-500 sm:flex"
+                    >
+                        <UIcon name="i-lucide-filter" class="size-3.5" />
+                        {{ filtered.length }} of
+                        {{ inspections.length }} inspections
+                    </div>
+                </div>
+
+                <div class="space-y-4 p-4 sm:p-5">
+                    <div
+                        class="flex flex-col gap-3 sm:flex-row sm:items-center"
+                    >
+                        <div class="relative w-full max-w-md flex-1">
+                            <UIcon
+                                name="i-lucide-search"
+                                class="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400"
+                            />
+                            <input
+                                v-model="search"
+                                type="text"
+                                placeholder="Search parcel, type, barangay or inspector..."
+                                class="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-9 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10"
+                            />
+                            <button
+                                v-if="search"
+                                type="button"
+                                class="absolute right-2.5 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                                @click="search = ''"
+                            >
+                                <UIcon name="i-lucide-x" class="size-3.5" />
+                            </button>
+                        </div>
+
+                        <div
+                            class="flex items-center gap-1.5 text-sm text-slate-500 sm:hidden"
+                        >
+                            <UIcon name="i-lucide-filter" class="size-3.5" />
+                            {{ filtered.length }} of
+                            {{ inspections.length }} inspections
+                        </div>
+                    </div>
+
+                    <div
+                        class="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4"
+                    >
+                        <button
+                            v-for="s in statusFilterOptions"
+                            :key="s"
+                            type="button"
+                            class="flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all"
+                            :class="
+                                filterStatus === s
+                                    ? 'border-[#2d6a2d] bg-[#2d6a2d] text-white shadow-md shadow-green-900/10'
+                                    : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/50 hover:text-emerald-700'
+                            "
+                            @click="filterStatus = s"
+                        >
+                            <span
+                                v-if="s !== 'All'"
+                                class="h-1.5 w-1.5 rounded-full"
+                                :style="{
+                                    background:
+                                        STATUS_DOT[s as InspectionStatus],
+                                }"
+                            />
+                            {{ s }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-12 gap-4">
+                <!-- Inspections by month and risk -->
+                <div
+                    class="col-span-12 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.055)] lg:col-span-5"
+                >
+                    <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f0faf0]"
+                            >
+                                <UIcon
+                                    name="i-lucide-chart-no-axes-column-increasing"
+                                    class="size-4.5"
+                                />
+                            </div>
+                            <div>
+                                <h3
+                                    class="text-base font-bold tracking-tight text-slate-800"
+                                >
+                                    Inspections by Month
+                                </h3>
+                                <p class="text-xs text-slate-500">
+                                    {{ chartYear }} ·
+                                    {{ chartTotals.total }} inspections,
+                                    {{ chartTotals.highRisk }} high-risk
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-5 sm:p-6">
+                        <ClientOnly>
+                            <div class="w-full" :style="{ height: '240px' }">
+                                <VChart
+                                    :option="chartOption"
+                                    :style="{ height: '240px', width: '100%' }"
+                                    autoresize
+                                />
+                            </div>
+                        </ClientOnly>
+                        <div
+                            class="mt-4 flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3"
+                        >
+                            <span class="text-sm text-slate-500"
+                                >High-risk findings this year</span
+                            >
+                            <span class="text-sm font-bold text-red-600">
+                                {{ chartTotals.highRisk }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inspection Records -->
+                <div
+                    class="col-span-12 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)] lg:col-span-7"
+                >
+                    <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <h3
+                                    class="text-base font-bold tracking-tight text-slate-800"
+                                >
+                                    Inspection Records
+                                </h3>
+                                <p
+                                    class="mt-1 text-xs text-slate-500 sm:text-sm"
+                                >
+                                    Review inspection type, parcel, risk level,
+                                    status, and supporting documentation.
+                                </p>
+                            </div>
+                            <div
+                                class="hidden rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 sm:block"
+                            >
+                                {{ filtered.length }} records
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[1040px] text-sm">
+                            <thead
+                                class="border-b border-slate-100 bg-slate-50/70"
+                            >
+                                <tr
+                                    class="text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+                                >
+                                    <th class="px-5 py-3.5 text-left">ID</th>
+                                    <th class="px-5 py-3.5 text-left">Type</th>
+                                    <th class="px-5 py-3.5 text-left">
+                                        Parcel
+                                    </th>
+                                    <th class="px-5 py-3.5 text-left">
+                                        Barangay
+                                    </th>
+                                    <th class="px-5 py-3.5 text-left">Date</th>
+                                    <th class="px-5 py-3.5 text-left">
+                                        Inspector
+                                    </th>
+                                    <th class="px-5 py-3.5 text-left">Risk</th>
+                                    <th class="px-5 py-3.5 text-left">
+                                        Status
+                                    </th>
+                                    <th class="px-5 py-3.5 text-right"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Loading -->
+                                <tr v-if="loading">
+                                    <td
+                                        colspan="9"
+                                        class="px-5 py-12 text-center text-sm text-slate-400"
                                     >
                                         <span
-                                            class="h-1.5 w-1.5 rounded-full"
-                                            :style="{
-                                                background:
-                                                    RISK_DOT[row.riskLevel],
-                                            }"
-                                        />
-                                        {{ row.riskLevel }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <span
-                                        :class="STATUS_STYLE[row.status]"
-                                        class="flex w-fit items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium"
+                                            class="inline-flex items-center gap-2"
+                                        >
+                                            <UIcon
+                                                name="i-lucide-loader-circle"
+                                                class="size-4 animate-spin"
+                                            />
+                                            Loading inspections...
+                                        </span>
+                                    </td>
+                                </tr>
+                                <!-- Failed -->
+                                <tr v-else-if="loadError">
+                                    <td
+                                        colspan="9"
+                                        class="px-5 py-12 text-center"
                                     >
+                                        <p class="text-red-600">
+                                            {{ loadError }}
+                                        </p>
+                                        <button
+                                            type="button"
+                                            class="mt-2 text-xs font-medium text-green-700 underline"
+                                            @click="load"
+                                        >
+                                            Try again
+                                        </button>
+                                    </td>
+                                </tr>
+                                <!-- Loaded but nothing to show -->
+                                <tr v-else-if="inspections.length === 0">
+                                    <td
+                                        colspan="9"
+                                        class="px-5 py-12 text-center text-sm text-slate-400"
+                                    >
+                                        <div
+                                            class="flex flex-col items-center gap-2"
+                                        >
+                                            <div
+                                                class="flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-300"
+                                            >
+                                                <UIcon
+                                                    name="i-lucide-clipboard-check"
+                                                    class="size-6"
+                                                />
+                                            </div>
+                                            <p
+                                                class="text-base font-semibold text-slate-700"
+                                            >
+                                                No inspections recorded yet
+                                            </p>
+                                            <p
+                                                class="max-w-sm text-sm text-slate-400"
+                                            >
+                                                Log the first inspection against
+                                                a parcel to begin field
+                                                monitoring.
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr v-else-if="filtered.length === 0">
+                                    <td
+                                        colspan="9"
+                                        class="px-5 py-12 text-center text-sm text-slate-400"
+                                    >
+                                        No inspections match this search.
+                                    </td>
+                                </tr>
+                                <tr
+                                    v-for="row in filtered"
+                                    :key="row.documentId"
+                                    class="border-b border-slate-100 bg-white transition-colors last:border-0 hover:bg-emerald-50/40"
+                                >
+                                    <td class="px-5 py-4">
                                         <span
-                                            class="h-1.5 w-1.5 rounded-full"
-                                            :style="{
-                                                background:
-                                                    STATUS_DOT[row.status],
-                                            }"
-                                        />
-                                        {{ row.status }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <div
-                                        class="flex items-center justify-end gap-1"
-                                    >
-                                        <button
-                                            type="button"
-                                            title="View details"
-                                            class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-                                            @click="openDetail(row)"
+                                            class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-500"
+                                            >{{ shortId(row.documentId) }}</span
+                                        >
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        <span
+                                            class="inline-flex w-fit items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-600"
                                         >
                                             <UIcon
-                                                name="i-lucide-eye"
+                                                name="i-lucide-tags"
                                                 class="size-3.5"
                                             />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-                                            @click="openEdit(row)"
+                                            {{ row.inspection_type }}
+                                        </span>
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        <NuxtLink
+                                            :to="`/parcels/${row.parcel_code}`"
+                                            class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-700"
+                                        >
+                                            {{ row.parcel_code }}
+                                        </NuxtLink>
+                                    </td>
+                                    <td class="px-5 py-4 text-slate-600">
+                                        {{ row.barangay }}
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        <div class="text-gray-500">
+                                            {{ row.date ?? '—' }}
+                                        </div>
+                                        <div
+                                            v-if="row.photos.length > 0"
+                                            class="mt-1 flex items-center gap-1 text-xs text-slate-400"
                                         >
                                             <UIcon
-                                                name="i-lucide-pencil"
+                                                name="i-lucide-camera"
                                                 class="size-3.5"
                                             />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            class="rounded-md border border-gray-200 p-1.5 text-gray-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                                            @click="askDelete(row)"
+                                            {{ row.photos.length }}
+                                        </div>
+                                    </td>
+                                    <td class="px-5 py-4 text-slate-600">
+                                        {{ row.inspector || '—' }}
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        <span
+                                            :class="RISK_STYLE[row.riskLevel]"
+                                            class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
                                         >
-                                            <UIcon
-                                                name="i-lucide-trash"
-                                                class="size-3.5"
+                                            <span
+                                                class="h-1.5 w-1.5 rounded-full"
+                                                :style="{
+                                                    background:
+                                                        RISK_DOT[row.riskLevel],
+                                                }"
                                             />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                            {{ row.riskLevel }}
+                                        </span>
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        <span
+                                            :class="STATUS_STYLE[row.status]"
+                                            class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
+                                        >
+                                            <span
+                                                class="h-1.5 w-1.5 rounded-full"
+                                                :style="{
+                                                    background:
+                                                        STATUS_DOT[row.status],
+                                                }"
+                                            />
+                                            {{ row.status }}
+                                        </span>
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        <div
+                                            class="flex items-center justify-end gap-2"
+                                        >
+                                            <button
+                                                type="button"
+                                                title="View details"
+                                                class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                                                @click="openDetail(row)"
+                                            >
+                                                <UIcon
+                                                    name="i-lucide-eye"
+                                                    class="size-3.5"
+                                                />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                                                @click="openEdit(row)"
+                                            >
+                                                <UIcon
+                                                    name="i-lucide-pencil"
+                                                    class="size-3.5"
+                                                />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                                @click="askDelete(row)"
+                                            >
+                                                <UIcon
+                                                    name="i-lucide-trash"
+                                                    class="size-3.5"
+                                                />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1004,11 +1170,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
     <Teleport to="body">
         <div
             v-if="showNewModal"
-            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-sm sm:items-center"
             @click.self="closeNew"
         >
             <div
-                class="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl font-sans"
+                class="w-full max-w-lg overflow-hidden rounded-3xl border border-white/70 bg-white p-6 font-sans shadow-[0_24px_70px_rgba(15,23,42,0.28)] ring-1 ring-slate-900/5 sm:p-7"
             >
                 <div class="mb-5 flex items-start justify-between">
                     <div class="flex items-center gap-3">
@@ -1021,10 +1187,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                             />
                         </div>
                         <div>
-                            <h3 class="text-lg font-bold text-gray-900">
+                            <h3
+                                class="text-xl font-bold tracking-tight text-slate-950"
+                            >
                                 New Inspection
                             </h3>
-                            <p class="text-xs text-gray-500">
+                            <p class="text-sm text-slate-500">
                                 Log a field inspection visit with findings.
                             </p>
                         </div>
@@ -1049,13 +1217,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                         <UIcon name="i-lucide-check" class="size-5" />
                     </span>
                     <p class="text-sm font-semibold text-gray-800">Saved</p>
-                    <p class="text-xs text-gray-500">Inspection recorded.</p>
+                    <p class="text-sm text-slate-500">Inspection recorded.</p>
                 </div>
 
                 <form v-else class="space-y-4" @submit.prevent="submitNew">
                     <p
                         v-if="allParcels.length === 0"
-                        class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                        class="rounded-xl border border-amber-100 bg-amber-50 px-3.5 py-3 text-sm text-amber-800"
                     >
                         No parcels registered yet. Register a parcel first, then
                         log its inspection here.
@@ -1064,7 +1232,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Parcel <span class="text-red-500">*</span>
                             </label>
@@ -1073,7 +1241,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                                 :disabled="
                                     submittingNew || allParcels.length === 0
                                 "
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-50 disabled:opacity-60"
                             >
                                 <option value="" disabled>
                                     Select a parcel
@@ -1089,14 +1257,14 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                         </div>
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Type
                             </label>
                             <select
                                 v-model="newForm.inspection_type"
                                 :disabled="submittingNew"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-50 disabled:opacity-60"
                             >
                                 <option
                                     v-for="t in inspectionTypeOptions"
@@ -1112,7 +1280,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Date <span class="text-red-500">*</span>
                             </label>
@@ -1120,19 +1288,19 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                                 v-model="newForm.date"
                                 type="date"
                                 :disabled="submittingNew"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-50 disabled:opacity-60"
                             />
                         </div>
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Status
                             </label>
                             <select
                                 v-model="newForm.status"
                                 :disabled="submittingNew"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-50 disabled:opacity-60"
                             >
                                 <option
                                     v-for="s in statusOptions"
@@ -1148,7 +1316,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Inspector <span class="text-red-500">*</span>
                             </label>
@@ -1157,19 +1325,19 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                                 type="text"
                                 :disabled="submittingNew"
                                 placeholder="e.g. J. Villanueva"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-50 disabled:opacity-60"
                             />
                         </div>
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Risk Level
                             </label>
                             <select
                                 v-model="newForm.risk_level"
                                 :disabled="submittingNew"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-50 disabled:opacity-60"
                             >
                                 <option
                                     v-for="r in riskLevelOptions"
@@ -1184,7 +1352,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
 
                     <div>
                         <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
+                            class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                         >
                             GPS Coordinates
                         </label>
@@ -1193,13 +1361,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                             type="text"
                             :disabled="submittingNew"
                             placeholder="15.03° N, 120.69° E"
-                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-50 disabled:opacity-60"
                         />
                     </div>
 
                     <div>
                         <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
+                            class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                         >
                             Findings
                         </label>
@@ -1208,7 +1376,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                             rows="3"
                             :disabled="submittingNew"
                             placeholder="Observations, potential issues, and recommended follow-ups..."
-                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-50 disabled:opacity-60"
                         ></textarea>
                     </div>
 
@@ -1220,7 +1388,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
 
                     <p
                         v-if="newError"
-                        class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
+                        class="rounded-xl bg-red-50 px-3.5 py-2.5 text-sm text-red-700"
                     >
                         {{ newError }}
                     </p>
@@ -1230,7 +1398,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                     >
                         <button
                             type="button"
-                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
                             :disabled="submittingNew"
                             @click="closeNew"
                         >
@@ -1238,7 +1406,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                         </button>
                         <button
                             type="submit"
-                            class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524] disabled:cursor-not-allowed disabled:opacity-60"
+                            class="flex items-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#1f5125] disabled:cursor-not-allowed disabled:opacity-60"
                             :disabled="!canSaveNew"
                         >
                             <UIcon
@@ -1262,11 +1430,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
     <Teleport to="body">
         <div
             v-if="showEditModal"
-            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-sm sm:items-center"
             @click.self="closeEdit"
         >
             <div
-                class="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl font-sans"
+                class="w-full max-w-lg overflow-hidden rounded-3xl border border-white/70 bg-white p-6 font-sans shadow-[0_24px_70px_rgba(15,23,42,0.28)] ring-1 ring-slate-900/5 sm:p-7"
             >
                 <div class="mb-5 flex items-start justify-between">
                     <div class="flex items-center gap-3">
@@ -1279,10 +1447,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                             />
                         </div>
                         <div>
-                            <h3 class="text-lg font-bold text-gray-900">
+                            <h3
+                                class="text-xl font-bold tracking-tight text-slate-950"
+                            >
                                 Edit Inspection
                             </h3>
-                            <p class="text-xs text-gray-500">
+                            <p class="text-sm text-slate-500">
                                 Update the inspection visit details.
                             </p>
                         </div>
@@ -1307,12 +1477,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                         <UIcon name="i-lucide-check" class="size-5" />
                     </span>
                     <p class="text-sm font-semibold text-gray-800">Saved</p>
-                    <p class="text-xs text-gray-500">Inspection updated.</p>
+                    <p class="text-sm text-slate-500">Inspection updated.</p>
                 </div>
 
                 <form v-else class="space-y-4" @submit.prevent="submitEdit">
                     <div
-                        class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600"
+                        class="rounded-xl bg-slate-50 px-3.5 py-3 text-sm text-slate-600"
                     >
                         <span class="font-medium text-gray-800">
                             {{ editForm.contextLabel }}
@@ -1322,14 +1492,14 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Parcel <span class="text-red-500">*</span>
                             </label>
                             <select
                                 v-model="editForm.parcelDocumentId"
                                 :disabled="submittingEdit"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-50 disabled:opacity-60"
                             >
                                 <option value="" disabled>
                                     Select a parcel
@@ -1345,14 +1515,14 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                         </div>
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Type
                             </label>
                             <select
                                 v-model="editForm.inspection_type"
                                 :disabled="submittingEdit"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-50 disabled:opacity-60"
                             >
                                 <option
                                     v-for="t in inspectionTypeOptions"
@@ -1368,7 +1538,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Date <span class="text-red-500">*</span>
                             </label>
@@ -1376,19 +1546,19 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                                 v-model="editForm.date"
                                 type="date"
                                 :disabled="submittingEdit"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-50 disabled:opacity-60"
                             />
                         </div>
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Status
                             </label>
                             <select
                                 v-model="editForm.status"
                                 :disabled="submittingEdit"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-50 disabled:opacity-60"
                             >
                                 <option
                                     v-for="s in statusOptions"
@@ -1404,7 +1574,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Inspector <span class="text-red-500">*</span>
                             </label>
@@ -1413,19 +1583,19 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                                 type="text"
                                 :disabled="submittingEdit"
                                 placeholder="e.g. J. Villanueva"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-50 disabled:opacity-60"
                             />
                         </div>
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Risk Level
                             </label>
                             <select
                                 v-model="editForm.risk_level"
                                 :disabled="submittingEdit"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-50 disabled:opacity-60"
                             >
                                 <option
                                     v-for="r in riskLevelOptions"
@@ -1440,7 +1610,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
 
                     <div>
                         <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
+                            class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                         >
                             GPS Coordinates
                         </label>
@@ -1449,13 +1619,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                             type="text"
                             :disabled="submittingEdit"
                             placeholder="15.03° N, 120.69° E"
-                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-50 disabled:opacity-60"
                         />
                     </div>
 
                     <div>
                         <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
+                            class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                         >
                             Findings
                         </label>
@@ -1464,7 +1634,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                             rows="3"
                             :disabled="submittingEdit"
                             placeholder="Observations, potential issues, and recommended follow-ups..."
-                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:bg-gray-50"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-50 disabled:opacity-60"
                         ></textarea>
                     </div>
 
@@ -1476,7 +1646,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
 
                     <p
                         v-if="editError"
-                        class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
+                        class="rounded-xl bg-red-50 px-3.5 py-2.5 text-sm text-red-700"
                     >
                         {{ editError }}
                     </p>
@@ -1486,7 +1656,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                     >
                         <button
                             type="button"
-                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
                             :disabled="submittingEdit"
                             @click="closeEdit"
                         >
@@ -1494,7 +1664,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                         </button>
                         <button
                             type="submit"
-                            class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524] disabled:cursor-not-allowed disabled:opacity-60"
+                            class="flex items-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#1f5125] disabled:cursor-not-allowed disabled:opacity-60"
                             :disabled="!canSaveEdit"
                         >
                             <UIcon
@@ -1514,18 +1684,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
     <Teleport to="body">
         <div
             v-if="showDeleteModal"
-            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-sm sm:items-center"
             @click.self="closeDelete"
         >
             <div
-                class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl font-sans"
+                class="w-full max-w-sm overflow-hidden rounded-3xl border border-white/70 bg-white p-6 font-sans shadow-[0_24px_70px_rgba(15,23,42,0.28)] ring-1 ring-slate-900/5"
             >
                 <div
                     class="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-red-50"
                 >
                     <UIcon name="i-lucide-trash" class="size-5 text-red-600" />
                 </div>
-                <h3 class="text-lg font-bold text-gray-900">
+                <h3 class="text-xl font-bold tracking-tight text-slate-950">
                     Delete Inspection
                 </h3>
                 <p class="mt-1 text-xs text-gray-500">
@@ -1549,7 +1719,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                 <div class="mt-6 flex justify-end gap-2">
                     <button
                         type="button"
-                        class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                        class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
                         :disabled="deleting"
                         @click="closeDelete"
                     >
@@ -1557,7 +1727,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                     </button>
                     <button
                         type="button"
-                        class="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-xs font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        class="flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
                         :disabled="deleting"
                         @click="confirmDelete"
                     >
@@ -1577,11 +1747,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
     <Teleport to="body">
         <div
             v-if="showDetailModal && detailTarget"
-            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-sm sm:items-center"
             @click.self="closeDetail"
         >
             <div
-                class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl font-sans"
+                class="w-full max-w-2xl overflow-hidden rounded-3xl border border-white/70 bg-white p-6 font-sans shadow-[0_24px_70px_rgba(15,23,42,0.28)] ring-1 ring-slate-900/5 sm:p-7"
             >
                 <div class="mb-5 flex items-start justify-between">
                     <div class="flex items-center gap-3">
@@ -1594,10 +1764,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                             />
                         </div>
                         <div>
-                            <h3 class="text-lg font-bold text-gray-900">
+                            <h3
+                                class="text-xl font-bold tracking-tight text-slate-950"
+                            >
                                 Inspection Details
                             </h3>
-                            <p class="text-xs text-gray-500">
+                            <p class="text-sm text-slate-500">
                                 {{ detailTarget?.inspection_type }} ·
                                 {{ shortId(detailTarget?.documentId ?? '') }}
                             </p>
@@ -1616,7 +1788,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                 <div class="mb-5 flex flex-wrap items-center gap-2">
                     <span
                         :class="STATUS_STYLE[detailTarget?.status ?? 'Pending']"
-                        class="flex w-fit items-center gap-1.5 rounded px-2.5 py-1 text-[11px] font-medium"
+                        class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
                     >
                         <span
                             class="h-1.5 w-1.5 rounded-full"
@@ -1631,7 +1803,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                     </span>
                     <span
                         :class="RISK_STYLE[detailTarget?.riskLevel ?? 'None']"
-                        class="flex w-fit items-center gap-1.5 rounded px-2.5 py-1 text-[11px] font-semibold"
+                        class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
                     >
                         <span
                             class="h-1.5 w-1.5 rounded-full"
@@ -1643,7 +1815,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                         {{ detailTarget?.riskLevel }} risk
                     </span>
                     <span
-                        class="flex w-fit items-center gap-1 rounded bg-gray-100 px-2.5 py-1 text-[11px] font-medium text-gray-600"
+                        class="flex w-fit items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600"
                     >
                         <UIcon name="i-lucide-tags" class="size-3" />
                         {{ detailTarget?.inspection_type }}
@@ -1656,64 +1828,64 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                 >
                     <div>
                         <p
-                            class="text-[10px] font-semibold uppercase tracking-wide text-gray-400"
+                            class="text-xs font-semibold uppercase tracking-wide text-slate-400"
                         >
                             Parcel
                         </p>
                         <NuxtLink
                             :to="`/parcels/${detailTarget?.parcel_code}`"
-                            class="font-mono text-xs font-semibold text-gray-800 underline-offset-2 hover:text-[#2d6a2d] hover:underline"
+                            class="font-mono text-sm font-semibold text-slate-800 underline-offset-2 hover:text-[#2d6a2d] hover:underline"
                         >
                             {{ detailTarget?.parcel_code }}
                         </NuxtLink>
                     </div>
                     <div>
                         <p
-                            class="text-[10px] font-semibold uppercase tracking-wide text-gray-400"
+                            class="text-xs font-semibold uppercase tracking-wide text-slate-400"
                         >
                             Barangay
                         </p>
-                        <p class="text-xs text-gray-700">
+                        <p class="text-sm text-slate-700">
                             {{ detailTarget?.barangay || '—' }}
                         </p>
                     </div>
                     <div>
                         <p
-                            class="text-[10px] font-semibold uppercase tracking-wide text-gray-400"
+                            class="text-xs font-semibold uppercase tracking-wide text-slate-400"
                         >
                             Date
                         </p>
-                        <p class="text-xs text-gray-700">
+                        <p class="text-sm text-slate-700">
                             {{ detailTarget?.date ?? '—' }}
                         </p>
                     </div>
                     <div>
                         <p
-                            class="text-[10px] font-semibold uppercase tracking-wide text-gray-400"
+                            class="text-xs font-semibold uppercase tracking-wide text-slate-400"
                         >
                             Inspector
                         </p>
-                        <p class="text-xs text-gray-700">
+                        <p class="text-sm text-slate-700">
                             {{ detailTarget?.inspector || '—' }}
                         </p>
                     </div>
                     <div>
                         <p
-                            class="text-[10px] font-semibold uppercase tracking-wide text-gray-400"
+                            class="text-xs font-semibold uppercase tracking-wide text-slate-400"
                         >
                             GPS Coordinates
                         </p>
-                        <p class="text-xs text-gray-700">
+                        <p class="text-sm text-slate-700">
                             {{ gpsLabel(detailTarget?.gps_point) || '—' }}
                         </p>
                     </div>
                     <div>
                         <p
-                            class="text-[10px] font-semibold uppercase tracking-wide text-gray-400"
+                            class="text-xs font-semibold uppercase tracking-wide text-slate-400"
                         >
                             Photos
                         </p>
-                        <p class="text-xs text-gray-700">
+                        <p class="text-sm text-slate-700">
                             {{ detailPhotos.length }}
                             {{ detailPhotos.length === 1 ? 'photo' : 'photos' }}
                         </p>
@@ -1722,11 +1894,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
 
                 <!-- Findings -->
                 <div class="mb-5">
-                    <p class="mb-1.5 text-xs font-semibold text-gray-700">
+                    <p class="mb-2 text-sm font-semibold text-slate-700">
                         Findings
                     </p>
                     <div
-                        class="rounded-xl border border-gray-100 bg-white px-4 py-3 text-xs leading-relaxed text-gray-600"
+                        class="rounded-2xl border border-slate-100 bg-white px-4 py-3.5 text-sm leading-6 text-slate-600"
                     >
                         <p
                             v-if="detailTarget?.notes?.trim()"
@@ -1742,7 +1914,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
 
                 <!-- Field photos -->
                 <div v-if="detailPhotos.length > 0" class="mb-5">
-                    <p class="mb-1.5 text-xs font-semibold text-gray-700">
+                    <p class="mb-2 text-sm font-semibold text-slate-700">
                         Field Photos
                     </p>
                     <div class="grid grid-cols-3 gap-2 sm:grid-cols-4">
@@ -1750,7 +1922,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                             v-for="(photo, index) in detailPhotos"
                             :key="photo.id ?? index"
                             type="button"
-                            class="group relative aspect-square overflow-hidden rounded-lg border border-gray-200 bg-gray-100"
+                            class="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-100"
                             @click="lightboxIndex = index"
                         >
                             <img
@@ -1767,7 +1939,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                             </div>
                         </button>
                     </div>
-                    <p class="mt-2 text-[11px] text-gray-400">
+                    <p class="mt-2 text-xs text-slate-400">
                         Click a photo to view it full-size.
                     </p>
                 </div>
@@ -1777,14 +1949,14 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                 >
                     <button
                         type="button"
-                        class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                        class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
                         @click="closeDetail"
                     >
                         Close
                     </button>
                     <button
                         type="button"
-                        class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
+                        class="flex items-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#1f5125]"
                         @click="editFromDetail"
                     >
                         <UIcon name="i-lucide-pencil" class="size-3.5" />

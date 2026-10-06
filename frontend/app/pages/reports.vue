@@ -122,9 +122,7 @@ const CATEGORY_STYLE: Record<
 /* Charts                                                              */
 /* ------------------------------------------------------------------ */
 
-const hasProduction = computed(
-    () => monthlyProduction.value.series.length > 0
-)
+const hasProduction = computed(() => monthlyProduction.value.series.length > 0)
 
 const hasLandStatus = computed(() => landStatusSlices.value.length > 0)
 
@@ -173,7 +171,9 @@ const productionOption = computed(() => ({
         // Only the leading crop is filled: the series set is derived from the
         // data, and a variable number of overlapping fills reads as mud once
         // there is more than one or two.
-        ...(index === 0 ? { areaStyle: { color: areaGradient(crop.color) } } : {}),
+        ...(index === 0
+            ? { areaStyle: { color: areaGradient(crop.color) } }
+            : {}),
         data: crop.data,
     })),
 }))
@@ -450,15 +450,18 @@ onUnmounted(() => {
                             <span
                                 class="flex size-7 items-center justify-center rounded-md bg-[#fef3c7] text-amber-600"
                             >
-                                <UIcon name="i-lucide-line-chart" class="size-4" />
+                                <UIcon
+                                    name="i-lucide-line-chart"
+                                    class="size-4"
+                                />
                             </span>
                             <div>
                                 <h3 class="text-sm font-semibold text-gray-700">
                                     Monthly Production by Crop
                                 </h3>
                                 <p class="text-[11px] text-gray-400">
-                                    Kilograms recorded against a parcel's current
-                                    cycle · trailing
+                                    Kilograms recorded against a parcel's
+                                    current cycle · trailing
                                     {{ productionWindowMonths }} months
                                 </p>
                             </div>
@@ -466,7 +469,9 @@ onUnmounted(() => {
                         <span
                             class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700"
                         >
-                            <template v-if="monthlyProduction.averageYield !== null">
+                            <template
+                                v-if="monthlyProduction.averageYield !== null"
+                            >
                                 {{ fmtWhole(monthlyProduction.averageYield) }}
                                 kg/ha avg
                             </template>
@@ -490,7 +495,10 @@ onUnmounted(() => {
                             {{ productionWindowMonths }} months.
                         </div>
                         <template #fallback>
-                            <div class="w-full" :style="{ height: '220px' }"></div>
+                            <div
+                                class="w-full"
+                                :style="{ height: '220px' }"
+                            ></div>
                         </template>
                     </ClientOnly>
 
@@ -530,15 +538,20 @@ onUnmounted(() => {
                             <span
                                 class="flex size-7 items-center justify-center rounded-md bg-[#e8f5e8] text-[#2d6a2d]"
                             >
-                                <UIcon name="i-lucide-pie-chart" class="size-4" />
+                                <UIcon
+                                    name="i-lucide-pie-chart"
+                                    class="size-4"
+                                />
                             </span>
                             <div>
                                 <h3 class="text-sm font-semibold text-gray-700">
                                     Land Status
                                 </h3>
                                 <p class="text-[11px] text-gray-400">
-                                    {{ fmtWhole(landStatusTotals.classified) }} ha
-                                    classified
+                                    {{
+                                        fmtWhole(landStatusTotals.classified)
+                                    }}
+                                    ha classified
                                 </p>
                             </div>
                         </div>
@@ -564,7 +577,10 @@ onUnmounted(() => {
                             No parcel carries a land status.
                         </div>
                         <template #fallback>
-                            <div class="w-full" :style="{ height: '180px' }"></div>
+                            <div
+                                class="w-full"
+                                :style="{ height: '180px' }"
+                            ></div>
                         </template>
                     </ClientOnly>
 
@@ -597,7 +613,10 @@ onUnmounted(() => {
                             {{ fmtWhole(landStatusTotals.cultivated) }} ha under
                             cultivation
                         </span>
-                        <span>{{ landStatusTotals.cultivatedPct }}% of the area</span>
+                        <span
+                            >{{ landStatusTotals.cultivatedPct }}% of the
+                            area</span
+                        >
                     </div>
                 </div>
             </div>
@@ -623,7 +642,9 @@ onUnmounted(() => {
                         </div>
                     </div>
                     <div class="flex items-center gap-3">
-                        <span class="flex items-center gap-3 text-[11px] text-gray-500">
+                        <span
+                            class="flex items-center gap-3 text-[11px] text-gray-500"
+                        >
                             <span class="flex items-center gap-1.5">
                                 <span
                                     class="size-2.5 rounded-sm bg-[#dde5dd]"
@@ -673,8 +694,10 @@ onUnmounted(() => {
                             class="h-2 w-2 rounded-full"
                             style="background: #2d6a2d"
                         />
-                        {{ leadingBarangay.name }} leads cultivated area
-                        ({{ fmtWhole(leadingBarangay.cultivated) }} ha)
+                        {{ leadingBarangay.name }} leads cultivated area ({{
+                            fmtWhole(leadingBarangay.cultivated)
+                        }}
+                        ha)
                     </span>
                     <span class="text-gray-400">
                         {{ fmtWhole(leadingBarangay.area) }} ha total area
@@ -692,7 +715,10 @@ onUnmounted(() => {
                     <div
                         class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e8f5e8]"
                     >
-                        <UIcon name="i-lucide-folder-open" class="size-4 text-[#2d6a2d]" />
+                        <UIcon
+                            name="i-lucide-folder-open"
+                            class="size-4 text-[#2d6a2d]"
+                        />
                     </div>
                     <div>
                         <h2 class="text-sm font-semibold text-gray-700">
@@ -700,8 +726,8 @@ onUnmounted(() => {
                         </h2>
                         <p class="text-[11px] text-gray-400">
                             {{ datasets.length }} reports ·
-                            {{ fmtCount(rowTotal) }} rows ·
-                            generated in the browser as CSV
+                            {{ fmtCount(rowTotal) }} rows · generated in the
+                            browser as CSV
                         </p>
                     </div>
                 </div>
@@ -756,17 +782,12 @@ onUnmounted(() => {
                 </div>
             </div>
 
-            <div
-                v-if="filteredDatasets.length"
-                class="divide-y divide-gray-50"
-            >
+            <div v-if="filteredDatasets.length" class="divide-y divide-gray-50">
                 <div
                     v-for="(dataset, index) in filteredDatasets"
                     :key="dataset.key"
                     class="group flex flex-wrap items-center justify-between gap-3 px-5 py-3 transition-colors"
-                    :class="
-                        index % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'
-                    "
+                    :class="index % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'"
                 >
                     <div class="flex min-w-0 items-center gap-3">
                         <div
@@ -779,7 +800,8 @@ onUnmounted(() => {
                                 :name="CATEGORY_STYLE[dataset.category].icon"
                                 class="size-4"
                                 :style="{
-                                    color: CATEGORY_STYLE[dataset.category].text,
+                                    color: CATEGORY_STYLE[dataset.category]
+                                        .text,
                                 }"
                             />
                         </div>
@@ -804,7 +826,10 @@ onUnmounted(() => {
                                     <span
                                         class="h-0.5 w-0.5 rounded-full bg-gray-300"
                                     />
-                                    <span>latest {{ fmtDate(dataset.latest) }}</span>
+                                    <span
+                                        >latest
+                                        {{ fmtDate(dataset.latest) }}</span
+                                    >
                                 </template>
                             </div>
                         </div>
@@ -840,7 +865,10 @@ onUnmounted(() => {
                 <div
                     class="mb-2 flex size-10 items-center justify-center rounded-lg bg-gray-50"
                 >
-                    <UIcon name="i-lucide-file-question" class="size-5 text-gray-400" />
+                    <UIcon
+                        name="i-lucide-file-question"
+                        class="size-5 text-gray-400"
+                    />
                 </div>
                 <div class="text-xs font-medium text-gray-500">
                     No reports match this filter
@@ -858,8 +886,8 @@ onUnmounted(() => {
                 class="flex flex-wrap items-center gap-1.5 border-t border-gray-100 bg-gray-50/60 px-5 py-2.5 text-[10px] text-gray-400"
             >
                 <UIcon name="i-lucide-info" class="size-3" />
-                Exports are built from the registries as they stand right now, so
-                a file always matches the figures above it. Nothing is stored
+                Exports are built from the registries as they stand right now,
+                so a file always matches the figures above it. Nothing is stored
                 server-side.
             </div>
         </div>
@@ -923,12 +951,15 @@ onUnmounted(() => {
                                 :name="CATEGORY_STYLE[dataset.category].icon"
                                 class="size-4"
                                 :style="{
-                                    color: CATEGORY_STYLE[dataset.category].text,
+                                    color: CATEGORY_STYLE[dataset.category]
+                                        .text,
                                 }"
                             />
                         </span>
                         <span class="min-w-0 flex-1">
-                            <span class="block text-xs font-medium text-gray-800">
+                            <span
+                                class="block text-xs font-medium text-gray-800"
+                            >
                                 {{ dataset.title }}
                             </span>
                             <span class="block text-[11px] text-gray-400">
@@ -948,7 +979,9 @@ onUnmounted(() => {
                     v-if="selectedDataset"
                     class="mt-3 rounded-lg bg-gray-50 px-3 py-2"
                 >
-                    <div class="text-[10px] font-semibold tracking-wide text-gray-400 uppercase">
+                    <div
+                        class="text-[10px] font-semibold tracking-wide text-gray-400 uppercase"
+                    >
                         Columns
                     </div>
                     <div class="mt-1 text-[11px] text-gray-600">

@@ -4,6 +4,9 @@
  * Seeds the barangays and farmers referenced by frontend/app/pages/farmers.vue
  * so the Create Farm and parcel forms have real options to pick from.
  *
+ * Each farmer is given the barangay they live in (`residence_barangay`), which
+ * is separate from the barangay of the parcels they tend.
+ *
  * A farmer is linked to a farm through the parcels they tend, so this script
  * also seeds one farm with a parcel and two farmers assigned to it. That gives
  * the farm's farmer rollup and its derived status something to resolve.
@@ -91,29 +94,36 @@ const BARANGAYS = [
 ]
 
 /**
- * A farmer's barangay is not stored on them; it follows from the parcels they
- * tend. So these entries carry no location, and a farmer only gets one once a
- * parcel is assigned to them.
+ * Each farmer carries the barangay they live in, which is stored on them as
+ * `residence_barangay` rather than derived from the parcels they tend.
+ *
+ * The two are deliberately separate: a farmer tends parcels wherever their farm
+ * sits, and lives somewhere else entirely, and the assistance page needs the
+ * residence. Every name here is one the BARANGAYS list above already creates.
  */
 const FARMERS = [
-    { name: 'Jose Mendoza' },
-    { name: 'Rosa Dizon' },
-    { name: 'Pedro Santos' },
-    { name: 'Ana Reyes' },
-    { name: 'Carlos Garcia' },
-    { name: 'Liza Ramos' },
-    { name: 'Mario Cruz' },
-    { name: 'Elena Bautista' },
-    { name: 'Ramon Villanueva' },
-    { name: 'Fe Domingo' },
-    { name: 'Arturo Salazar' },
-    { name: 'Corazon Lim' },
+    { name: 'Jose Mendoza', barangay: 'Sto. Niño' },
+    { name: 'Rosa Dizon', barangay: 'Sindalan' },
+    { name: 'Pedro Santos', barangay: 'Sto. Niño' },
+    { name: 'Ana Reyes', barangay: 'Calulut' },
+    { name: 'Carlos Garcia', barangay: 'Pulung Bulu' },
+    { name: 'Liza Ramos', barangay: 'Dolores' },
+    { name: 'Mario Cruz', barangay: 'San Pedro Cutud' },
+    { name: 'Elena Bautista', barangay: 'Del Pilar' },
+    { name: 'Ramon Villanueva', barangay: 'Sindalan' },
+    { name: 'Fe Domingo', barangay: 'Pulung Bulu' },
+    { name: 'Arturo Salazar', barangay: 'Pulung Bulu' },
+    { name: 'Corazon Lim', barangay: 'Calulut' },
 ]
 
 /**
  * A worked set of released, queued and scheduled assistance, so the assistance
  * registry has every status represented. Each entry names a farmer and a
  * barangay that the lists above already create.
+ *
+ * The barangay is the farmer's residence, which is where the release is picked
+ * up; it is not the barangay of whichever parcel they happen to farm. The
+ * assistance form prefills this field from the farmer for the same reason.
  */
 const ASSISTANCE_PROGRAMS = [
     {
@@ -173,7 +183,7 @@ const ASSISTANCE_PROGRAMS = [
     {
         program: 'Training - Rice Production',
         farmer: 'Elena Bautista',
-        barangay: 'San Pedro Cutud',
+        barangay: 'Del Pilar',
         items: 'Capacity building (3-day), training kits',
         value: 2500,
         date: '2024-12-05',
@@ -182,7 +192,7 @@ const ASSISTANCE_PROGRAMS = [
     {
         program: 'Soil Amendment Support',
         farmer: 'Fe Domingo',
-        barangay: 'Del Pilar',
+        barangay: 'Pulung Bulu',
         items: '10 bags biochar, 5 bags lime',
         value: 4600,
         date: '2024-12-08',
@@ -221,24 +231,60 @@ async function seedFarmers(strapi) {
     const created = []
     const skipped = []
 
-    for (const { name } of FARMERS) {
+    // Resolved once and reused: every farmer's residence is one of these, and
+    // a miss here would mean the FARMERS list named a barangay that no longer
+    // exists, which is a bug in the seed rather than a runtime condition.
+    const barangaysByName = new Map()
+    const barangayRows = await strapi
+        .documents(BARANGAY_UID)
+        .findMany({ fields: ['documentId', 'name'] })
+    for (const row of barangayRows) {
+        barangaysByName.set(row.name, row.documentId)
+    }
+
+    for (const { name, barangay } of FARMERS) {
         const existing = await strapi
             .documents(FARMER_UID)
             .findFirst({ filters: { name: { $eq: name } } })
 
         if (existing) {
-            skipped.push(name)
+            // A farmer seeded before residence existed is given it here, so
+            // re-running the seeder backfills the relation instead of leaving
+            // the roster permanently without one.
+            const residenceDocumentId = barangaysByName.get(barangay)
+            const current = await strapi.documents(FARMER_UID).findOne({
+                documentId: existing.documentId,
+                populate: { residence_barangay: { fields: ['name'] } },
+            })
+
+            if (!current?.residence_barangay && residenceDocumentId) {
+                await strapi.documents(FARMER_UID).update({
+                    documentId: existing.documentId,
+                    data: { residence_barangay: residenceDocumentId },
+                })
+                skipped.push(`${name} (residence set to ${barangay})`)
+            } else {
+                skipped.push(name)
+            }
             continue
+        }
+
+        const residenceDocumentId = barangaysByName.get(barangay)
+        if (!residenceDocumentId) {
+            throw new Error(
+                `Cannot seed farmer "${name}": barangay "${barangay}" does not exist`
+            )
         }
 
         const entry = await strapi.documents(FARMER_UID).create({
             data: {
                 name,
                 farmer_status: 'Active',
+                residence_barangay: residenceDocumentId,
             },
         })
 
-        created.push(`${entry.farmer_code} ${name}`)
+        created.push(`${entry.farmer_code} ${name} (${barangay})`)
     }
 
     console.log(

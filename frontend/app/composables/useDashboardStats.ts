@@ -193,7 +193,9 @@ export const useDashboardStats = () => {
     /** Distinct parcels and hectares, so a parcel with two reports counts once. */
     const atRiskTotals = computed(() => ({
         parcels: atRiskParcels.value.length,
-        area: round1(atRiskParcels.value.reduce((sum, parcel) => sum + parcel.area, 0)),
+        area: round1(
+            atRiskParcels.value.reduce((sum, parcel) => sum + parcel.area, 0)
+        ),
     }))
 
     const riskSummary = computed<RiskSummaryRow[]>(() =>
@@ -235,7 +237,10 @@ export const useDashboardStats = () => {
     const areaByStatus = computed(() => {
         const totals = new Map<LandStatus, { area: number; parcels: number }>()
         for (const parcel of parcels.value) {
-            const bucket = totals.get(parcel.land_status) ?? { area: 0, parcels: 0 }
+            const bucket = totals.get(parcel.land_status) ?? {
+                area: 0,
+                parcels: 0,
+            }
             bucket.area = round1(bucket.area + areaOf(parcel))
             bucket.parcels += 1
             totals.set(parcel.land_status, bucket)
@@ -251,7 +256,9 @@ export const useDashboardStats = () => {
     const fallowArea = computed(() => areaForStatus('Fallow'))
 
     /** Unworked ground: idle and fallow are the two statuses that yield nothing. */
-    const idleFallowArea = computed(() => round1(idleArea.value + fallowArea.value))
+    const idleFallowArea = computed(() =>
+        round1(idleArea.value + fallowArea.value)
+    )
 
     /** Colours come from the shared land-status map, so pie and legend agree. */
     const landStatusDistribution = computed<LandStatusSlice[]>(() =>
@@ -260,7 +267,10 @@ export const useDashboardStats = () => {
 
     const classifiedArea = computed(() =>
         round1(
-            landStatusDistribution.value.reduce((sum, slice) => sum + slice.area, 0)
+            landStatusDistribution.value.reduce(
+                (sum, slice) => sum + slice.area,
+                0
+            )
         )
     )
 
@@ -271,7 +281,9 @@ export const useDashboardStats = () => {
     const farmerTotal = computed(() => farmers.value.length)
 
     const activeFarmers = computed(
-        () => farmers.value.filter((farmer) => farmer.farmer_status === 'Active').length
+        () =>
+            farmers.value.filter((farmer) => farmer.farmer_status === 'Active')
+                .length
     )
 
     /* ------------------------------------------------------------------ */
@@ -287,7 +299,9 @@ export const useDashboardStats = () => {
             totals.set(crop, (totals.get(crop) ?? 0) + areaOf(parcel))
         }
 
-        const plantedArea = round1([...totals.values()].reduce((s, v) => s + v, 0))
+        const plantedArea = round1(
+            [...totals.values()].reduce((s, v) => s + v, 0)
+        )
         if (plantedArea <= 0) return []
 
         const ranked = [...totals.entries()]
@@ -304,7 +318,9 @@ export const useDashboardStats = () => {
         }))
 
         if (tail.length > 0) {
-            const tailArea = round1(tail.reduce((sum, crop) => sum + crop.area, 0))
+            const tailArea = round1(
+                tail.reduce((sum, crop) => sum + crop.area, 0)
+            )
             slices.push({
                 name: ROLLUP_LABEL,
                 area: tailArea,
@@ -317,7 +333,9 @@ export const useDashboardStats = () => {
     })
 
     const plantedArea = computed(() =>
-        round1(cropDistribution.value.reduce((sum, slice) => sum + slice.area, 0))
+        round1(
+            cropDistribution.value.reduce((sum, slice) => sum + slice.area, 0)
+        )
     )
 
     const leadingCrop = computed(() => cropDistribution.value[0]?.name ?? null)
@@ -369,7 +387,8 @@ export const useDashboardStats = () => {
                 const index = indexByKey.get(monthKeyOf(date))
                 if (index === undefined) continue
 
-                const monthsForCrop = byCrop.get(crop) ?? new Map<number, number>()
+                const monthsForCrop =
+                    byCrop.get(crop) ?? new Map<number, number>()
                 monthsForCrop.set(index, (monthsForCrop.get(index) ?? 0) + area)
                 byCrop.set(crop, monthsForCrop)
             }
@@ -388,7 +407,9 @@ export const useDashboardStats = () => {
         const ranked = [...byCrop.entries()]
             .map(([name, values]) => ({
                 name,
-                total: round1([...values.values()].reduce((sum, v) => sum + v, 0)),
+                total: round1(
+                    [...values.values()].reduce((sum, v) => sum + v, 0)
+                ),
             }))
             .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name))
 
@@ -413,7 +434,8 @@ export const useDashboardStats = () => {
                         [...byCrop.entries()]
                             .filter(([name]) => tailNames.has(name))
                             .reduce(
-                                (sum, [, values]) => sum + (values.get(monthIndex) ?? 0),
+                                (sum, [, values]) =>
+                                    sum + (values.get(monthIndex) ?? 0),
                                 0
                             )
                     )
@@ -428,7 +450,8 @@ export const useDashboardStats = () => {
             total: round1(
                 series.reduce(
                     (sum, crop) =>
-                        sum + crop.data.reduce((monthSum, v) => monthSum + v, 0),
+                        sum +
+                        crop.data.reduce((monthSum, v) => monthSum + v, 0),
                     0
                 )
             ),
@@ -442,13 +465,20 @@ export const useDashboardStats = () => {
 
     const upcomingHarvests = computed<UpcomingHarvest[]>(() => {
         const today = startOfToday()
-        const horizon = new Date(today.getTime() + UPCOMING_WINDOW_DAYS * DAY_MS)
-        const flagged = new Set(atRiskParcels.value.map((parcel) => parcel.parcelDocumentId))
+        const horizon = new Date(
+            today.getTime() + UPCOMING_WINDOW_DAYS * DAY_MS
+        )
+        const flagged = new Set(
+            atRiskParcels.value.map((parcel) => parcel.parcelDocumentId)
+        )
 
         return parcels.value
             .flatMap((parcel): UpcomingHarvest[] => {
-                const expected = parseDateOnly(parcel.planting_cycle?.expected_harvest)
-                if (!expected || expected < today || expected > horizon) return []
+                const expected = parseDateOnly(
+                    parcel.planting_cycle?.expected_harvest
+                )
+                if (!expected || expected < today || expected > horizon)
+                    return []
 
                 return [
                     {
@@ -463,7 +493,9 @@ export const useDashboardStats = () => {
                             day: 'numeric',
                             year: 'numeric',
                         }),
-                        daysUntil: Math.round((expected.getTime() - today.getTime()) / DAY_MS),
+                        daysUntil: Math.round(
+                            (expected.getTime() - today.getTime()) / DAY_MS
+                        ),
                         atRisk: flagged.has(parcel.documentId),
                     },
                 ]

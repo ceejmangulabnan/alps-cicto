@@ -130,7 +130,9 @@ export const useReportAnalytics = () => {
             classified,
             cultivated,
             cultivatedPct:
-                classified > 0 ? Math.round((cultivated / classified) * 100) : 0,
+                classified > 0
+                    ? Math.round((cultivated / classified) * 100)
+                    : 0,
         }
     })
 
@@ -144,14 +146,17 @@ export const useReportAnalytics = () => {
 
     /** Distinct barangays on the registry, including any trimmed off the chart. */
     const barangayCount = computed(
-        () => new Set(parcels.value.map((parcel) => parcel.farm?.barangay?.name)).size
+        () =>
+            new Set(parcels.value.map((parcel) => parcel.farm?.barangay?.name))
+                .size
     )
 
     /** The barangay with the most hectares under cultivation. */
-    const leadingBarangay = computed(() =>
-        [...barangayRows.value].sort(
-            (a, b) => b.cultivated - a.cultivated || b.area - a.area
-        )[0]
+    const leadingBarangay = computed(
+        () =>
+            [...barangayRows.value].sort(
+                (a, b) => b.cultivated - a.cultivated || b.area - a.area
+            )[0]
     )
 
     /* ------------------------------------------------------------------ */
@@ -184,7 +189,9 @@ export const useReportAnalytics = () => {
      * return an empty list.
      */
     const categories = computed<ReportCategory[]>(() => {
-        const present = new Set(datasets.value.map((dataset) => dataset.category))
+        const present = new Set(
+            datasets.value.map((dataset) => dataset.category)
+        )
         return REPORT_CATEGORIES.filter((category) => present.has(category))
     })
 

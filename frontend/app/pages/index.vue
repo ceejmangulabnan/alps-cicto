@@ -154,7 +154,9 @@ const harvestOption = computed(() => ({
         // Only the leading series is filled. The crop set is derived from the
         // data, and a variable number of overlapping fills reads as mud once
         // there is more than one or two series.
-        ...(index === 0 ? { areaStyle: { color: areaGradient(crop.color) } } : {}),
+        ...(index === 0
+            ? { areaStyle: { color: areaGradient(crop.color) } }
+            : {}),
         data: crop.data,
     })),
 }))
@@ -385,9 +387,7 @@ const miniMapZoom = ref(13)
 
         <template v-else>
             <!-- KPI Grid -->
-            <div
-                class="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6"
-            >
+            <div class="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
                 <NuxtLink
                     v-for="kpi in kpis"
                     :key="kpi.key"
@@ -420,7 +420,9 @@ const miniMapZoom = ref(13)
                             {{ kpi.badge.label }}
                         </span>
                     </div>
-                    <div class="mb-1 font-sans text-2xl font-bold text-gray-900">
+                    <div
+                        class="mb-1 font-sans text-2xl font-bold text-gray-900"
+                    >
                         {{ kpi.value }}
                     </div>
                     <div class="text-xs text-gray-500">{{ kpi.label }}</div>
@@ -455,14 +457,19 @@ const miniMapZoom = ref(13)
                         <div
                             class="flex size-8 items-center justify-center rounded-lg bg-[#2d6a2d]"
                         >
-                            <UIcon name="i-lucide-activity" class="size-4 text-white" />
+                            <UIcon
+                                name="i-lucide-activity"
+                                class="size-4 text-white"
+                            />
                         </div>
                         <div>
                             <div class="text-sm font-semibold text-[#2d6a2d]">
                                 ALPS Insights — {{ insightCounts.total }} active
                                 recommendations
                             </div>
-                            <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                            <div
+                                class="mt-1 flex flex-wrap items-center gap-1.5"
+                            >
                                 <span
                                     class="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-600 ring-1 ring-red-100"
                                 >
@@ -506,14 +513,18 @@ const miniMapZoom = ref(13)
                             <span
                                 class="flex size-7 items-center justify-center rounded-md bg-[#e8f5e8] text-[#2d6a2d]"
                             >
-                                <UIcon name="i-lucide-pie-chart" class="size-4" />
+                                <UIcon
+                                    name="i-lucide-pie-chart"
+                                    class="size-4"
+                                />
                             </span>
                             <div>
                                 <h3 class="text-sm font-semibold text-gray-700">
                                     Land Status Distribution
                                 </h3>
                                 <p class="text-[11px] text-gray-400">
-                                    {{ fmtNumber(classifiedArea) }} ha classified
+                                    {{ fmtNumber(classifiedArea) }} ha
+                                    classified
                                 </p>
                             </div>
                         </div>
@@ -528,9 +539,7 @@ const miniMapZoom = ref(13)
                             <div
                                 class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
                             >
-                                <div
-                                    class="text-xl font-bold text-gray-900"
-                                >
+                                <div class="text-xl font-bold text-gray-900">
                                     {{ fmtNumber(classifiedArea) }}
                                 </div>
                                 <div class="text-[10px] text-gray-400">
@@ -539,7 +548,10 @@ const miniMapZoom = ref(13)
                             </div>
                         </div>
                         <template #fallback>
-                            <div class="w-full" :style="{ height: '200px' }"></div>
+                            <div
+                                class="w-full"
+                                :style="{ height: '200px' }"
+                            ></div>
                         </template>
                     </ClientOnly>
                     <div class="mt-2 grid grid-cols-2 gap-1">
@@ -569,7 +581,10 @@ const miniMapZoom = ref(13)
                             <span
                                 class="flex size-7 items-center justify-center rounded-md bg-[#fef3c7] text-amber-600"
                             >
-                                <UIcon name="i-lucide-line-chart" class="size-4" />
+                                <UIcon
+                                    name="i-lucide-line-chart"
+                                    class="size-4"
+                                />
                             </span>
                             <div>
                                 <h3 class="text-sm font-semibold text-gray-700">
@@ -578,7 +593,8 @@ const miniMapZoom = ref(13)
                                 <p class="text-[11px] text-gray-400">
                                     Trailing
                                     {{ monthlyHarvest.windowMonths }} months ·
-                                    {{ fmtNumber(monthlyHarvest.total) }} ha total
+                                    {{ fmtNumber(monthlyHarvest.total) }} ha
+                                    total
                                 </p>
                             </div>
                         </div>
@@ -599,7 +615,10 @@ const miniMapZoom = ref(13)
                             {{ monthlyHarvest.windowMonths }} months.
                         </div>
                         <template #fallback>
-                            <div class="w-full" :style="{ height: '220px' }"></div>
+                            <div
+                                class="w-full"
+                                :style="{ height: '220px' }"
+                            ></div>
                         </template>
                     </ClientOnly>
                 </div>
@@ -619,7 +638,9 @@ const miniMapZoom = ref(13)
                                 <UIcon name="i-lucide-map" class="size-4.5" />
                             </span>
                             <div>
-                                <h3 class="text-base font-semibold text-gray-800">
+                                <h3
+                                    class="text-base font-semibold text-gray-800"
+                                >
                                     Barangay Agricultural Area (ha)
                                 </h3>
                                 <p class="text-xs text-gray-400">
@@ -628,13 +649,19 @@ const miniMapZoom = ref(13)
                                 </p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-3 text-xs text-gray-500">
+                        <div
+                            class="flex items-center gap-3 text-xs text-gray-500"
+                        >
                             <span class="flex items-center gap-1.5">
-                                <span class="size-2.5 rounded-sm bg-[#dde5dd]"></span>
+                                <span
+                                    class="size-2.5 rounded-sm bg-[#dde5dd]"
+                                ></span>
                                 Total
                             </span>
                             <span class="flex items-center gap-1.5">
-                                <span class="size-2.5 rounded-sm bg-[#2d6a2d]"></span>
+                                <span
+                                    class="size-2.5 rounded-sm bg-[#2d6a2d]"
+                                ></span>
                                 Cultivated
                             </span>
                         </div>
@@ -646,7 +673,10 @@ const miniMapZoom = ref(13)
                             autoresize
                         />
                         <template #fallback>
-                            <div class="w-full" :style="{ height: '300px' }"></div>
+                            <div
+                                class="w-full"
+                                :style="{ height: '300px' }"
+                            ></div>
                         </template>
                     </ClientOnly>
                 </div>
@@ -665,7 +695,10 @@ const miniMapZoom = ref(13)
                                 @click="navigateTo('/risks')"
                             >
                                 View all
-                                <UIcon name="i-lucide-arrow-right" class="size-2.5" />
+                                <UIcon
+                                    name="i-lucide-arrow-right"
+                                    class="size-2.5"
+                                />
                             </button>
                         </div>
                         <div v-if="riskSummary.length > 0" class="space-y-1">
@@ -690,14 +723,19 @@ const miniMapZoom = ref(13)
                                     :class="PRIORITY_BADGE[row.priority].cls"
                                 >
                                     <UIcon
-                                        :name="PRIORITY_BADGE[row.priority].icon"
+                                        :name="
+                                            PRIORITY_BADGE[row.priority].icon
+                                        "
                                         class="size-3"
                                     />
                                     {{ PRIORITY_BADGE[row.priority].label }}
                                 </span>
                             </div>
                         </div>
-                        <p v-else class="py-4 text-center text-xs text-gray-400">
+                        <p
+                            v-else
+                            class="py-4 text-center text-xs text-gray-400"
+                        >
                             No open risk reports.
                         </p>
                         <div
@@ -760,7 +798,10 @@ const miniMapZoom = ref(13)
                                 class="absolute bottom-2 right-2 flex items-center gap-1 rounded-lg bg-white/90 px-2.5 py-1.5 text-[11px] font-semibold text-[#2d6a2d] shadow-md backdrop-blur-sm hover:bg-white"
                             >
                                 Open Map
-                                <UIcon name="i-lucide-arrow-right" class="size-3" />
+                                <UIcon
+                                    name="i-lucide-arrow-right"
+                                    class="size-3"
+                                />
                             </NuxtLink>
                         </div>
                     </div>
@@ -772,7 +813,8 @@ const miniMapZoom = ref(13)
                 <div class="alps-card col-span-12 p-5 md:col-span-8">
                     <div class="mb-4 flex items-center justify-between">
                         <h3 class="text-sm font-semibold text-gray-700">
-                            Upcoming Harvests (Next {{ upcomingWindowDays }} Days)
+                            Upcoming Harvests (Next
+                            {{ upcomingWindowDays }} Days)
                         </h3>
                         <button
                             type="button"
@@ -780,17 +822,24 @@ const miniMapZoom = ref(13)
                             @click="navigateTo('/harvests')"
                         >
                             View all
-                            <UIcon name="i-lucide-arrow-right" class="size-2.5" />
+                            <UIcon
+                                name="i-lucide-arrow-right"
+                                class="size-2.5"
+                            />
                         </button>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full min-w-[560px] text-xs">
                             <thead>
-                                <tr class="border-b border-gray-100 text-gray-400">
+                                <tr
+                                    class="border-b border-gray-100 text-gray-400"
+                                >
                                     <th class="pb-2 text-left font-medium">
                                         Farmer
                                     </th>
-                                    <th class="pb-2 text-left font-medium">Crop</th>
+                                    <th class="pb-2 text-left font-medium">
+                                        Crop
+                                    </th>
                                     <th class="pb-2 text-left font-medium">
                                         Barangay
                                     </th>
@@ -866,7 +915,11 @@ const miniMapZoom = ref(13)
                                                     : 'status-cultivated'
                                             "
                                         >
-                                            {{ row.atRisk ? 'At Risk' : 'On Track' }}
+                                            {{
+                                                row.atRisk
+                                                    ? 'At Risk'
+                                                    : 'On Track'
+                                            }}
                                         </span>
                                     </td>
                                 </tr>
@@ -920,7 +973,9 @@ const miniMapZoom = ref(13)
                                 <div class="text-lg font-bold text-gray-900">
                                     {{ cropDistribution[0]?.share ?? 0 }}%
                                 </div>
-                                <div class="max-w-[80px] truncate text-[10px] text-gray-400">
+                                <div
+                                    class="max-w-[80px] truncate text-[10px] text-gray-400"
+                                >
                                     {{ leadingCrop }} leads
                                 </div>
                             </div>
@@ -933,7 +988,10 @@ const miniMapZoom = ref(13)
                             No planting cycle recorded on any parcel.
                         </div>
                         <template #fallback>
-                            <div class="w-full" :style="{ height: '160px' }"></div>
+                            <div
+                                class="w-full"
+                                :style="{ height: '160px' }"
+                            ></div>
                         </template>
                     </ClientOnly>
                     <div v-if="hasCropData" class="mt-2 space-y-1.5">
@@ -960,7 +1018,9 @@ const miniMapZoom = ref(13)
                                     }"
                                 />
                             </div>
-                            <span class="w-9 text-right font-mono text-gray-400">
+                            <span
+                                class="w-9 text-right font-mono text-gray-400"
+                            >
                                 {{ slice.share }}%
                             </span>
                         </div>

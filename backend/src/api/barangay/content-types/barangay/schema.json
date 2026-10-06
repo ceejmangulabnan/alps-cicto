@@ -35,6 +35,12 @@
             "relation": "oneToMany",
             "target": "api::assistance-program.assistance-program",
             "mappedBy": "barangay"
+        },
+        "farmers": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "api::farmer.farmer",
+            "mappedBy": "residence_barangay"
         }
     }
 }

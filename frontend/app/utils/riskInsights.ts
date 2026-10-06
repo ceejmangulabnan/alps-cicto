@@ -103,7 +103,11 @@ export const worstSeverity = (severities: RiskSeverity[]): RiskSeverity =>
     )
 
 export const priorityOf = (severity: RiskSeverity): RiskPriority =>
-    SEVERITY_RANK[severity] >= 3 ? 'High' : severity === 'Medium' ? 'Medium' : 'Low'
+    SEVERITY_RANK[severity] >= 3
+        ? 'High'
+        : severity === 'Medium'
+          ? 'Medium'
+          : 'Low'
 
 /** Mirrors the three chips the risk page has always shown for an insight. */
 const TYPE_OF_PRIORITY: Record<RiskPriority, InsightType> = {
@@ -200,9 +204,14 @@ export function foldInsights(rows: RiskRow[]): AlpsInsight[] {
         // A parcel can carry more than one report under the same risk type,
         // so area and parcel count are taken over distinct parcels — summing
         // per report would double-count the hectares.
-        const distinctParcels = new Map(rows.map((row) => [row.parcelDocumentId, row]))
+        const distinctParcels = new Map(
+            rows.map((row) => [row.parcelDocumentId, row])
+        )
         const affectedArea = round1(
-            [...distinctParcels.values()].reduce((sum, row) => sum + row.area, 0)
+            [...distinctParcels.values()].reduce(
+                (sum, row) => sum + row.area,
+                0
+            )
         )
 
         const description = [
@@ -230,8 +239,9 @@ export function foldInsights(rows: RiskRow[]): AlpsInsight[] {
             severityCounts: {
                 High: rows.filter((row) => priorityOf(row.severity) === 'High')
                     .length,
-                Medium: rows.filter((row) => priorityOf(row.severity) === 'Medium')
-                    .length,
+                Medium: rows.filter(
+                    (row) => priorityOf(row.severity) === 'Medium'
+                ).length,
                 Low: rows.filter((row) => priorityOf(row.severity) === 'Low')
                     .length,
             },

@@ -9,6 +9,10 @@ import {
     type AssistanceRow,
 } from '~/composables/useAssistanceRegistry'
 import { getErrorMessage } from '~/utils/apiError'
+import {
+    ASSISTANCE_STATUS_DOT,
+    ASSISTANCE_STATUS_STYLE,
+} from '~/utils/assistanceStatus'
 import { avatarColor, initials } from '~/utils/initials'
 
 definePageMeta({ middleware: 'auth' })
@@ -25,19 +29,8 @@ const {
 const { create, update, deleteProgram } = useAssistanceApi()
 
 /** Reuses the shared land-status pills, one shade per assistance status. */
-const STATUS_STYLE: Record<AssistanceStatus, string> = {
-    Released: 'status-cultivated',
-    'For Release': 'status-preparation',
-    Pending: 'status-harvesting',
-    Scheduled: 'status-idle',
-}
-
-const STATUS_DOT: Record<AssistanceStatus, string> = {
-    Released: '#166534',
-    'For Release': '#0369a1',
-    Pending: '#a16207',
-    Scheduled: '#4b5563',
-}
+const STATUS_STYLE = ASSISTANCE_STATUS_STYLE
+const STATUS_DOT = ASSISTANCE_STATUS_DOT
 
 /**
  * Program colours, keyed by name. A program recorded outside this list still

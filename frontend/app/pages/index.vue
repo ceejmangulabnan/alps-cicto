@@ -1,1032 +1,1747 @@
 <script setup lang="ts">
-import type { StyleSpecification } from 'maplibre-gl'
-import type { RiskPriority } from '~/utils/riskInsights'
-import { initials, avatarColor } from '~/utils/initials'
+//@ts-nocheck
+import type { TableColumn, TableRow } from '@nuxt/ui'
+import type { TableMeta } from '@tanstack/vue-table'
+import type { Farmer, FarmerStatus } from '~/composables/useFarmersApi'
+import type { FarmParcel } from '~/composables/useFarmParcelApi'
+import {
+    ASSISTANCE_STATUS_OPTIONS,
+    type AssistanceProgram,
+    type AssistanceStatus,
+} from '~/composables/useAssistanceApi'
+import {
+    ASSISTANCE_STATUS_DOT,
+    ASSISTANCE_STATUS_STYLE,
+    peso,
+} from '~/utils/assistanceStatus'
+import { useBarangayApi } from '~/composables/useBarangayApi'
 
 definePageMeta({ middleware: 'auth' })
-
-const { logout } = useAuth()
-
-/**
- * Every figure below comes from `useDashboardStats`, which derives each one
- * from the parcel registry and its related records. Nothing on this page is a
- * typed-in constant, so a KPI cannot drift away from the registry page.
- */
-const {
-    load,
-    loading,
-    loadError,
-    parcelCount,
-    farmCount,
-    classifiedArea,
-    landStatusDistribution,
-    cropDistribution,
-    plantedArea,
-    leadingCrop,
-    barangayArea,
-    monthlyHarvest,
-    upcomingHarvests,
-    insightCounts,
-    riskSummary,
-    atRiskTotals,
-    kpis,
-    upcomingWindowDays,
-} = useDashboardStats()
-
-async function signInAgain() {
-    await logout()
-    await navigateTo('/login')
-}
-
-/* ------------------------------------------------------------------ */
-/* Presentation maps                                                    */
-/* ------------------------------------------------------------------ */
-
-const PRIORITY_BADGE: Record<
-    RiskPriority,
-    { label: string; icon: string; cls: string }
-> = {
-    High: {
-        label: 'High',
-        icon: 'i-lucide-alert-triangle',
-        cls: 'bg-red-50 text-red-600',
-    },
-    Medium: {
-        label: 'Medium',
-        icon: 'i-lucide-alert-circle',
-        cls: 'bg-amber-50 text-amber-700',
-    },
-    Low: {
-        label: 'Low',
-        icon: 'i-lucide-info',
-        cls: 'bg-sky-50 text-sky-700',
-    },
-}
-
-const fmtNumber = (value: number): string => value.toLocaleString()
-
-/** `#rrggbb` + alpha, for the harvest chart's area fill. */
-const withAlpha = (hex: string, alpha: number): string => {
-    const full = hex.replace('#', '')
-    const int = Number.parseInt(full, 16)
-    return `rgba(${(int >> 16) & 255}, ${(int >> 8) & 255}, ${int & 255}, ${alpha})`
-}
-
-const areaGradient = (hex: string) => ({
-    type: 'linear',
-    x: 0,
-    y: 0,
-    x2: 0,
-    y2: 1,
-    colorStops: [
-        { offset: 0, color: withAlpha(hex, 0.2) },
-        { offset: 1, color: withAlpha(hex, 0) },
-    ],
-})
-
-/* ------------------------------------------------------------------ */
-/* Charts                                                              */
-/* ------------------------------------------------------------------ */
-
-const landStatusOption = computed(() => ({
-    animation: false,
-    tooltip: {
-        trigger: 'item',
-        formatter: (p: any) => `${p.name}: ${p.value} ha (${p.percent}%)`,
-    },
-    series: [
-        {
-            type: 'pie',
-            radius: ['55%', '85%'],
-            center: ['50%', '50%'],
-            padAngle: 2,
-            label: { show: false },
-            emphasis: { label: { show: false } },
-            data: landStatusDistribution.value.map((slice) => ({
-                name: slice.name,
-                value: slice.area,
-                itemStyle: { color: slice.color },
-            })),
-        },
-    ],
-}))
-
-const hasHarvestData = computed(() => monthlyHarvest.value.series.length > 0)
-
-const harvestOption = computed(() => ({
-    animation: false,
-    tooltip: { trigger: 'axis', valueFormatter: (v: any) => `${v} ha` },
-    legend: {
-        icon: 'circle',
-        itemWidth: 8,
-        itemHeight: 8,
-        top: 0,
-        right: 8,
-        textStyle: { fontSize: 11 },
-    },
-    grid: {
-        left: 8,
-        right: 16,
-        top: 34,
-        bottom: 24,
-        containLabel: true,
-    },
-    xAxis: {
-        type: 'category',
-        boundaryGap: false,
-        data: monthlyHarvest.value.months,
-        axisTick: { show: false },
-        axisLine: { lineStyle: { color: '#e5e7eb' } },
-        axisLabel: { fontSize: 11, color: '#6b7280' },
-    },
-    yAxis: {
-        type: 'value',
-        splitLine: { lineStyle: { color: '#f0f0f0' } },
-        axisLabel: { fontSize: 11, color: '#9ca3af' },
-    },
-    series: monthlyHarvest.value.series.map((crop, index) => ({
-        name: crop.name,
-        type: 'line',
-        smooth: true,
-        showSymbol: false,
-        lineStyle: { width: 2, color: crop.color },
-        itemStyle: { color: crop.color },
-        // Only the leading series is filled. The crop set is derived from the
-        // data, and a variable number of overlapping fills reads as mud once
-        // there is more than one or two series.
-        ...(index === 0
-            ? { areaStyle: { color: areaGradient(crop.color) } }
-            : {}),
-        data: crop.data,
-    })),
-}))
+type LandStatus =
+    | 'Cultivated'
+    | 'Preparation'
+    | 'Harvesting'
+    | 'Fallow'
+    | 'Idle'
+    | 'At Risk'
+    | 'Converted'
 
 /**
- * Ascending order, so the largest barangay sits at the top of the horizontal
- * bars — ECharts lays a category axis out from the bottom.
+ * A farmer as this page needs them: the API record, plus the parcel tally the
+ * table shows. The tally is derived rather than stored, because a farmer has no
+ * count of its own any more — they are counted by the parcels they tend.
  */
-const barangayBars = computed(() => [...barangayArea.value].reverse())
+type FarmerRow = Farmer & { parcelCount: number }
 
-const barangayTotal = computed(() =>
-    barangayArea.value.reduce((sum, row) => sum + row.area, 0)
-)
+/**
+ * A parcel as this page needs it: the farmer's own tendees, flattened. A parcel
+ * can have several, so the join is on documentId rather than a single code.
+ */
+type Parcel = {
+    documentId: string
+    parcel_code: string
+    farm_code: string
+    barangay: string
+    area_hectares: number
+    land_status: LandStatus
+    current_use: string | null
+    farmerDocumentIds: string[]
+}
 
-const barangayOption = computed(() => ({
-    animation: false,
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    grid: {
-        left: 8,
-        right: 16,
-        top: 8,
-        bottom: 8,
-        containLabel: true,
-    },
-    xAxis: {
-        type: 'value',
-        splitLine: { show: false },
-        axisLabel: { fontSize: 12, color: '#9ca3af' },
-    },
-    yAxis: {
-        type: 'category',
-        data: barangayBars.value.map((row) => row.name),
-        axisLine: { show: false },
-        axisTick: { show: false },
-        axisLabel: { fontSize: 12, color: '#374151' },
-    },
-    series: [
-        {
-            name: 'Total Area',
-            type: 'bar',
-            barWidth: 18,
-            itemStyle: { color: '#dde5dd', borderRadius: [0, 3, 3, 0] },
-            data: barangayBars.value.map((row) => row.area),
-        },
-        {
-            name: 'Cultivated',
-            type: 'bar',
-            barWidth: 18,
-            barGap: '-100%',
-            itemStyle: { color: '#2d6a2d', borderRadius: [0, 3, 3, 0] },
-            data: barangayBars.value.map((row) => row.cultivated),
-        },
-    ],
-}))
+const parcels = ref<Parcel[]>([])
 
-const hasCropData = computed(() => cropDistribution.value.length > 0)
+/** The parcels a farmer tends, matched on documentId. */
+const parcelsOf = (f: Farmer) =>
+    parcels.value.filter((p) => p.farmerDocumentIds.includes(f.documentId))
 
-const cropDistributionOption = computed(() => ({
-    animation: false,
-    tooltip: {
-        trigger: 'item',
-        formatter: (p: any) => `${p.name}: ${p.value}%`,
-    },
-    series: [
-        {
-            type: 'pie',
-            radius: ['35%', '70%'],
-            center: ['50%', '50%'],
-            padAngle: 2,
-            label: { show: false },
-            emphasis: { label: { show: false } },
-            data: cropDistribution.value.map((slice) => ({
-                name: slice.name,
-                value: slice.share,
-                itemStyle: { color: slice.color },
-            })),
-        },
-    ],
-}))
+/**
+ * A farmer has no barangay of its own: they are located by the parcels they tend,
+ * and the parcels by the farms those belong to. A farmer with no parcel therefore
+ * has no location to show.
+ */
+const farmerBarangays = (f: Farmer): string[] => [
+    ...new Set(parcelsOf(f).map((p) => p.barangay)),
+]
 
-/* ------------------------------------------------------------------ */
-/* Header clock                                                        */
-/* ------------------------------------------------------------------ */
+const farmerBarangay = (f: Farmer) => {
+    const residence = f.residence_barangay?.name
+    if (residence) return residence
+    const names = farmerBarangays(f)
+    return names.length > 0 ? names.join(', ') : 'No parcel assigned'
+}
 
-const clock = ref('')
-let clockTimer: ReturnType<typeof setInterval> | undefined
-const tick = () => {
-    clock.value = new Date().toLocaleTimeString('en-PH', {
-        hour: 'numeric',
-        minute: '2-digit',
-        second: '2-digit',
+const { getAll, create, update } = useFarmersApi()
+const { getAll: getAllParcels } = useFarmParcelApi()
+const { getAllForSelect: getAllBarangays } = useBarangayApi()
+const { create: createAssistance } = useAssistanceApi()
+
+const route = useRoute()
+
+const farmers = ref<FarmerRow[]>([])
+const loading = ref(true)
+const loadError = ref<string | null>(null)
+
+const UNKNOWN_BARANGAY = 'Unknown barangay'
+
+/**
+ * Flattens the parcel records into the shape this page joins against. Only the
+ * parcel's own `farmers` counts: `farm.farmers` is the farm-wide rollup, which
+ * would credit every farmer on the farm with every parcel in it.
+ */
+function toFarmerParcel(parcel: FarmParcel): Parcel {
+    return {
+        documentId: parcel.documentId,
+        parcel_code: parcel.parcel_code,
+        farm_code: parcel.farm?.farm_code ?? 'Unassigned',
+        barangay: parcel.farm?.barangay?.name ?? UNKNOWN_BARANGAY,
+        area_hectares: parcel.area_hectares,
+        land_status: parcel.land_status,
+        current_use: parcel.current_use ?? null,
+        farmerDocumentIds: (parcel.farmers ?? []).map(
+            (farmer) => farmer.documentId
+        ),
+    }
+}
+
+/**
+ * Loads the parcels first: they are what the farmer list's counts, areas and
+ * locations are derived from, so counting before they arrive would report every
+ * farmer as having no parcels.
+ */
+async function loadParcels() {
+    const response = await getAllParcels({
+        populate: ['farm', 'farm.barangay', 'farm.farmers', 'farmers'],
     })
+    parcels.value = response.data.map(toFarmerParcel)
 }
 
-onMounted(() => {
-    load()
-    tick()
-    clockTimer = setInterval(tick, 1000)
+async function loadFarmers() {
+    loading.value = true
+    loadError.value = null
+    try {
+        await Promise.all([loadParcels(), loadBarangays(), loadAssistance()])
+        const response = await getAll()
+        farmers.value = response.data.map((farmer) => ({
+            ...farmer,
+            parcelCount: parcelsOf(farmer).length,
+        }))
+    } catch (error) {
+        loadError.value =
+            error instanceof Error ? error.message : 'Could not load farmers.'
+    } finally {
+        loading.value = false
+    }
+}
+
+const initials = (name: string) =>
+    name
+        .split(' ')
+        .map((p) => p[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+
+const AVATAR_COLORS = [
+    '#2d6a2d',
+    '#1d6fa4',
+    '#7c3aed',
+    '#b45309',
+    '#0f766e',
+    '#be123c',
+]
+const avatarColor = (name: string) =>
+    AVATAR_COLORS[
+        name.split('').reduce((s, c) => s + c.charCodeAt(0), 0) %
+            AVATAR_COLORS.length
+    ]
+
+const parcelStatusClass = (s: LandStatus) =>
+    s === 'At Risk'
+        ? 'status-atrisk'
+        : s === 'Cultivated'
+          ? 'status-cultivated'
+          : s === 'Idle'
+            ? 'status-idle'
+            : s === 'Fallow'
+              ? 'status-fallow'
+              : s === 'Harvesting'
+                ? 'status-harvesting'
+                : s === 'Preparation'
+                  ? 'status-preparation'
+                  : s === 'Converted'
+                    ? 'status-converted'
+                    : 'status-idle'
+
+/**
+ * Total area each farmer tends. A shared parcel counts in full for every farmer
+ * on it, matching the parcel count, rather than being split between them.
+ */
+const areaByFarmer = computed(() => {
+    const totals = new Map<string, number>()
+    for (const parcel of parcels.value) {
+        for (const farmerId of parcel.farmerDocumentIds) {
+            totals.set(
+                farmerId,
+                (totals.get(farmerId) ?? 0) + parcel.area_hectares
+            )
+        }
+    }
+    return totals
 })
 
-onUnmounted(() => {
-    if (clockTimer) clearInterval(clockTimer)
+const search = ref('')
+const filterBarangay = ref('All')
+const selectedFarmer = ref<FarmerRow | null>(null)
+const showRegisterModal = ref(false)
+// The farmer code is not a field: it is generated by the backend on create.
+const registerForm = reactive({
+    name: '',
+    contact: '',
+    status: 'Active' as FarmerStatus,
+})
+const registering = ref(false)
+const registerError = ref<string | null>(null)
+
+function resetRegisterForm() {
+    registerForm.name = ''
+    registerForm.contact = ''
+    registerForm.status = 'Active'
+    registerError.value = null
+}
+
+async function submitRegister() {
+    // The name is the only field the backend requires, so it is the only one
+    // worth blocking on; everything else has a sensible empty value.
+    if (!registerForm.name.trim()) {
+        registerError.value = 'A name is required.'
+        return
+    }
+
+    registering.value = true
+    registerError.value = null
+    try {
+        await create({
+            name: registerForm.name.trim(),
+            contact: registerForm.contact.trim(),
+            farmer_status: registerForm.status,
+        })
+        showRegisterModal.value = false
+        resetRegisterForm()
+        // Re-read rather than pushing the response into the list, so the
+        // ordering and the derived parcel tally come from one place.
+        await loadFarmers()
+    } catch (error) {
+        registerError.value =
+            error instanceof Error
+                ? error.message
+                : 'Could not register the farmer.'
+    } finally {
+        registering.value = false
+    }
+}
+
+const showEditModal = ref(false)
+const editing = ref(false)
+const editError = ref<string | null>(null)
+const selectedFarmerForEdit = ref<Farmer | null>(null)
+const editForm = reactive({
+    farmer_code: '',
+    name: '',
+    contact: '',
+    status: 'Active' as FarmerStatus,
+    residence_barangay: '' as string,
 })
 
-/* ------------------------------------------------------------------ */
-/* Mini map                                                            */
-/* ------------------------------------------------------------------ */
+function openEditModal(farmer: Farmer) {
+    selectedFarmerForEdit.value = farmer
+    editForm.farmer_code = farmer.farmer_code
+    editForm.name = farmer.name
+    editForm.contact = farmer.contact ?? ''
+    editForm.status = farmer.farmer_status
+    editForm.residence_barangay = farmer.residence_barangay?.documentId ?? ''
+    editError.value = null
+    editing.value = false
+    showEditModal.value = true
+}
 
-const config = useRuntimeConfig()
-const maptilerKey = config.public.maptilerKey as string | undefined
+async function submitEdit() {
+    if (!selectedFarmerForEdit.value?.documentId) return
+    if (!editForm.name.trim()) {
+        editError.value = 'A name is required.'
+        return
+    }
 
-const MINI_OSM_STYLE: StyleSpecification = {
-    version: 8,
-    sources: {
-        openstreetmap: {
-            type: 'raster',
-            attribution: '© OpenStreetMap contributors',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            maxzoom: 19,
+    editing.value = true
+    editError.value = null
+    try {
+        showEditModal.value = false
+        const updatedFarmer = await update(
+            selectedFarmerForEdit.value.documentId,
+            {
+                name: editForm.name.trim(),
+                contact: editForm.contact.trim() || null,
+                farmer_status: editForm.status,
+                residence_barangay: editForm.residence_barangay || null,
+            }
+        )
+        const updated = updatedFarmer as Farmer
+        selectedFarmerForEdit.value = updated
+        const farmerInList = farmers.value.find(
+            (f) => f.documentId === updated.documentId
+        )
+        if (farmerInList) {
+            Object.assign(farmerInList, updated, {
+                parcelCount: parcelsOf(updated).length,
+            })
+        }
+        if (selectedFarmer.value?.documentId === updated.documentId) {
+            Object.assign(selectedFarmer.value, updated)
+        }
+    } catch (error) {
+        editError.value =
+            error instanceof Error
+                ? error.message
+                : 'Could not update the farmer.'
+    } finally {
+        editing.value = false
+    }
+}
+
+// Closing the modal by any route — cancel, the X, or the backdrop — clears what
+// was typed, so reopening it never shows a stale name or a stale error.
+watch(showRegisterModal, (open) => {
+    if (!open) {
+        resetRegisterForm()
+    }
+})
+
+const filtered = computed(() =>
+    farmers.value.filter((f) => {
+        const matchSearch =
+            !search.value ||
+            f.name.toLowerCase().includes(search.value.toLowerCase()) ||
+            f.farmer_code.toLowerCase().includes(search.value.toLowerCase())
+        // The filter lists the barangays farmers work in, so a farmer with no
+        // parcel appears under "All" but under no specific barangay.
+        const matchBarangay =
+            filterBarangay.value === 'All' ||
+            farmerBarangays(f).includes(filterBarangay.value)
+        return matchSearch && matchBarangay
+    })
+)
+
+/**
+ * The registry table's columns.
+ *
+ * Barangay and Area are not fields on a farmer: one is derived from the parcels
+ * they tend and the other from a tally over those same parcels, so both use
+ * `accessorFn` to give TanStack something to sort on. The remaining columns
+ * sort off their own fields, and their numbers need no comparator because
+ * TanStack's default `basic` function compares numerically.
+ *
+ * `sortDescFirst: false` on the two numeric columns is not a style choice. Left
+ * unset, TanStack peeks at the first row and sorts columns descending-first
+ * whenever the value is not a string, so Area and Parcels would start on
+ * descending while Name and Barangay started on ascending — the same click
+ * doing opposite things depending on the column.
+ */
+const columns: TableColumn<FarmerRow>[] = [
+    {
+        accessorKey: 'farmer_code',
+        header: sortHeader('Farmer Code'),
+        cell: ({ row }) => row.getValue('farmer_code'),
+        meta: { class: { td: 'font-mono text-gray-700' } },
+    },
+    {
+        accessorKey: 'name',
+        header: sortHeader('Name'),
+    },
+    {
+        id: 'barangay',
+        accessorFn: (row) => farmerBarangay(row),
+        header: sortHeader('Barangay'),
+        cell: ({ row }) => farmerBarangay(row.original),
+        meta: { class: { td: 'text-gray-600' } },
+    },
+    {
+        accessorKey: 'parcelCount',
+        header: sortHeader('Parcels', { align: 'right' }),
+        sortDescFirst: false,
+        meta: {
+            class: {
+                th: 'text-right',
+                td: 'text-right font-mono text-gray-900',
+            },
         },
     },
-    layers: [
-        {
-            id: 'osm-tiles',
-            type: 'raster',
-            source: 'openstreetmap',
+    {
+        id: 'area',
+        accessorFn: (row) => areaByFarmer.value.get(row.documentId) ?? 0,
+        header: sortHeader('Area (ha)', { align: 'right' }),
+        sortDescFirst: false,
+        cell: ({ row }) => Number(row.getValue('area')).toFixed(1),
+        meta: {
+            class: {
+                th: 'text-right',
+                td: 'text-right font-mono font-semibold text-gray-900',
+            },
         },
-    ],
+    },
+    {
+        // The chevron that only appears on hover. Not a value, so not sortable.
+        id: 'view',
+        enableSorting: false,
+        enableHiding: false,
+        meta: { class: { td: 'text-right' } },
+    },
+]
+
+/**
+ * Row pointer and the `group` the chevron reveals into. The zebra stripe is not
+ * here but in the app-wide table theme, because it has to follow the visible
+ * row order and rows are reordered by sorting.
+ */
+const farmerTableMeta: TableMeta<FarmerRow> = {
+    class: {
+        tr: 'group cursor-pointer transition-colors',
+    },
 }
-const miniMapStyle = computed<StyleSpecification | string>(() =>
-    maptilerKey
-        ? `https://api.maptiler.com/maps/streets/style.json?key=${maptilerKey}`
-        : MINI_OSM_STYLE
+
+function onFarmerSelect(_event: Event, row: TableRow<FarmerRow>) {
+    selectedFarmer.value = row.original
+}
+
+const barangaysByParcels = computed(() =>
+    [...new Set(parcels.value.map((p) => p.barangay))].sort()
 )
-const miniMapCenter = ref<[number, number]>([120.6896, 15.0282])
-const miniMapZoom = ref(13)
+
+const barangays = ref<{ value: string; label: string }[]>([])
+
+async function loadBarangays() {
+    try {
+        const rows = await getAllBarangays()
+        barangays.value = rows.map((b) => ({
+            value: b.documentId,
+            label: b.name,
+        }))
+    } catch (error) {
+        barangays.value = []
+    }
+}
+
+const summaryCards = computed(() => [
+    {
+        label: 'Total Farmers',
+        val: farmers.value.length,
+        hint: 'Registered farmer profiles',
+        color: '#2d6a2d',
+        bg: '#e8f5e8',
+        icon: 'i-lucide-users',
+    },
+    {
+        label: 'Barangays Covered',
+        val: barangaysByParcels.value.length,
+        hint: 'Based on parcel locations',
+        color: '#1d6fa4',
+        bg: '#e0f0fb',
+        icon: 'i-lucide-map-pin',
+    },
+    {
+        label: 'Registered Parcels',
+        val: parcels.value.length,
+        hint: 'Linked agricultural parcels',
+        color: '#16a34a',
+        bg: '#dcfce7',
+        icon: 'i-lucide-layers-3',
+    },
+    {
+        label: 'Total Registered Area',
+        val: `${parcels.value
+            .reduce((a, p) => a + p.area_hectares, 0)
+            .toFixed(1)} ha`,
+        hint: 'Mapped agricultural coverage',
+        color: '#ca8a04',
+        bg: '#fef3c7',
+        icon: 'i-lucide-wheat',
+    },
+])
+
+const selectedFarmerParcels = computed(() =>
+    selectedFarmer.value ? parcelsOf(selectedFarmer.value) : []
+)
+
+const profileFields = computed(() =>
+    selectedFarmer.value
+        ? [
+              {
+                  icon: 'i-lucide-map-pin',
+                  label: 'Barangay',
+                  val: farmerBarangay(selectedFarmer.value),
+              },
+              {
+                  icon: 'i-lucide-wheat',
+                  label: 'Registry Code',
+                  val: selectedFarmer.value.farmer_code,
+              },
+              {
+                  icon: 'i-lucide-clipboard-check',
+                  label: 'Parcels',
+                  val: `${selectedFarmerParcels.value.length} parcel(s)`,
+              },
+          ]
+        : []
+)
+
+/* ------------------------------------------------------------------ */
+/* Record assistance                                                   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The same record-assistance form the assistance page uses, opened from a
+ * farmer's profile. The recipient is the farmer being viewed, so it is fixed
+ * rather than chosen, and the barangay starts at their residence — the release
+ * is handed to the person, not to one of their parcels — but stays editable,
+ * since a release can still be picked up in another barangay.
+ */
+const showAssistModal = ref(false)
+const recordingAssist = ref(false)
+const assistError = ref<string | null>(null)
+
+const assistForm = reactive({
+    program: '',
+    barangayDocumentId: '',
+    items: '',
+    /** v-model casts the number input, so this is a string only while blank. */
+    value: '' as string | number,
+    date: new Date().toISOString().slice(0, 10),
+    status: 'Pending' as AssistanceStatus,
+})
+
+const parsedValue = (raw: string | number): number | null => {
+    const amount = Number(raw)
+    return String(raw).trim() !== '' && Number.isFinite(amount) ? amount : null
+}
+
+/** Program names already in use, offered as suggestions on the free-text field. */
+const assistanceProgramOptions = ref<string[]>([])
+
+/**
+ * Every assistance program, kept so a farmer's own records can be listed on
+ * their profile without a second request.
+ *
+ * The profile needs one farmer's history, but this page already loads all of
+ * them to build the datalist above, so filtering the list that is in hand costs
+ * nothing and saves a round trip per farmer opened. It is refreshed after a
+ * record is added, so the new row appears without a reload.
+ */
+const assistanceRecords = ref<AssistanceProgram[]>([])
+
+async function loadAssistance() {
+    try {
+        const { getAll } = useAssistanceApi()
+        const response = await getAll({ sort: 'date:desc' })
+        assistanceRecords.value = response.data
+        assistanceProgramOptions.value = [
+            ...new Set(response.data.map((row) => row.program).filter(Boolean)),
+        ].sort()
+    } catch {
+        assistanceRecords.value = []
+        assistanceProgramOptions.value = []
+    }
+}
+
+/** The selected farmer's assistance, most recent first as the API returned it. */
+const selectedFarmerAssistance = computed(() => {
+    const farmerId = selectedFarmer.value?.documentId
+    if (!farmerId) return []
+    return assistanceRecords.value.filter(
+        (row) => row.farmer?.documentId === farmerId
+    )
+})
+
+/** Headline figures for the assistance card, so the table needs no summary row. */
+const selectedFarmerAssistanceTotal = computed(() =>
+    selectedFarmerAssistance.value.reduce((sum, row) => {
+        const amount = Number(row.value)
+        return sum + (Number.isFinite(amount) ? amount : 0)
+    }, 0)
+)
+
+const canRecordAssist = computed(
+    () =>
+        !recordingAssist.value &&
+        Boolean(assistForm.program.trim()) &&
+        Boolean(assistForm.date)
+)
+
+function openAssistModal(farmer: Farmer) {
+    assistForm.program = ''
+    assistForm.barangayDocumentId = farmer.residence_barangay?.documentId ?? ''
+    assistForm.items = ''
+    assistForm.value = ''
+    assistForm.date = new Date().toISOString().slice(0, 10)
+    assistForm.status = 'Pending'
+    assistError.value = null
+    showAssistModal.value = true
+}
+
+function closeAssistModal() {
+    if (recordingAssist.value) return
+    assistError.value = null
+    showAssistModal.value = false
+}
+
+async function submitAssist() {
+    const farmer = selectedFarmer.value
+    if (!farmer) return
+
+    recordingAssist.value = true
+    assistError.value = null
+    try {
+        await createAssistance({
+            program: assistForm.program.trim(),
+            farmer: farmer.documentId,
+            barangay: assistForm.barangayDocumentId || null,
+            items: assistForm.items.trim() || null,
+            value: parsedValue(assistForm.value),
+            date: assistForm.date,
+            status: assistForm.status,
+        })
+        showAssistModal.value = false
+        // Re-read so the record appears in the profile's list straight away
+        // rather than after a manual reload.
+        await loadAssistance()
+    } catch (error) {
+        assistError.value =
+            error instanceof Error
+                ? error.message
+                : 'Could not record the assistance.'
+    } finally {
+        recordingAssist.value = false
+    }
+}
+
+const detailStats = computed(() => {
+    const fp = selectedFarmerParcels.value
+    return [
+        {
+            label: 'Total Parcels',
+            val: selectedFarmer.value?.parcelCount ?? 0,
+            icon: 'i-lucide-layers',
+            color: '#2d6a2d',
+            bg: '#e8f5e8',
+        },
+        {
+            label: 'Total Area',
+            val: `${fp.reduce((a, p) => a + p.area_hectares, 0).toFixed(1)} ha`,
+            icon: 'i-lucide-map-pin',
+            color: '#1d6fa4',
+            bg: '#e0f0fb',
+        },
+        {
+            label: 'Cultivated Parcels',
+            val: fp.filter((p) => p.land_status === 'Cultivated').length,
+            icon: 'i-lucide-activity',
+            color: '#16a34a',
+            bg: '#dcfce7',
+        },
+        {
+            label: 'At-Risk Parcels',
+            val: fp.filter((p) => p.land_status === 'At Risk').length,
+            icon: 'i-lucide-alert-triangle',
+            color: '#dc2626',
+            bg: '#fee2e2',
+        },
+    ]
+})
+
+/**
+ * Leaves the profile, dropping the `?farmer=` deep link on the way out: the
+ * registry is the page's resting state, so a refresh there should show the
+ * registry rather than reopen the profile that was just dismissed.
+ */
+async function backToRegistry() {
+    selectedFarmer.value = null
+    await navigateTo({ path: '/farmers' }, { replace: true })
+}
+
+onMounted(async () => {
+    await loadFarmers()
+
+    // Deep link from a registry that links a farmer by id (the assistance page's
+    // recipient column does): open that farmer's profile straight away, the way
+    // `?farm=<documentId>` opens a farm card on /farms.
+    const farmerId =
+        typeof route.query.farmer === 'string' ? route.query.farmer : undefined
+    if (farmerId) {
+        const row = farmers.value.find(
+            (farmer) => farmer.documentId === farmerId
+        )
+        if (row) selectedFarmer.value = row
+    }
+})
 </script>
 
 <template>
-    <div class="space-y-6 p-4 sm:p-6">
-        <!-- Header -->
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">
-                    Agricultural Command Center
-                </h1>
-                <div class="mt-1 flex flex-wrap items-center gap-2">
-                    <span class="text-sm text-gray-500">
-                        City Agriculture Office · San Fernando, Pampanga
-                    </span>
-                    <span
-                        class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-700 shadow-sm"
+    <!-- Farmer Detail View -->
+    <div v-if="selectedFarmer" class="min-h-full bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 p-4 sm:p-6 lg:p-8">
+        <div class="w-full">
+            <button
+                type="button"
+                class="mb-6 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-500 transition-all hover:bg-white hover:text-emerald-700 hover:shadow-sm"
+                @click="backToRegistry"
+            >
+                <UIcon name="i-lucide-arrow-left" class="size-3.5" />
+                Back to Farmers Registry
+            </button>
+
+            <!-- Profile Header -->
+            <div class="relative mb-6 overflow-hidden rounded-3xl border border-emerald-100/80 bg-gradient-to-br from-white via-white to-emerald-50/60 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.07)] ring-1 ring-white/80 sm:p-7">
+                <div class="flex flex-col items-start gap-5 sm:flex-row">
+                    <div
+                        class="flex h-20 w-20 shrink-0 items-center justify-center rounded-3xl bg-gradient-to-br from-[#5cba5c] via-[#3d9948] to-[#246c31] text-2xl font-extrabold text-white shadow-[0_12px_30px_rgba(45,106,45,0.25)] ring-4 ring-emerald-50"
                     >
-                        <UIcon
-                            name="i-lucide-layers"
-                            class="size-3 text-[#2d6a2d]"
-                        />
-                        {{ fmtNumber(parcelCount) }} parcels ·
-                        {{ fmtNumber(farmCount) }} farms
-                    </span>
-                    <span
-                        class="inline-flex items-center gap-1 text-[11px] text-gray-400"
-                    >
-                        <span
-                            class="h-1.5 w-1.5 rounded-full bg-green-500"
-                        ></span>
-                        Live · {{ clock }}
-                    </span>
+                        {{ initials(selectedFarmer.name) }}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div
+                            class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+                        >
+                            <div>
+                                <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                                    <h2 class="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+                                        {{ selectedFarmer.name }}
+                                    </h2>
+                                    <span
+                                        class="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
+                                        :class="
+                                            selectedFarmer.farmer_status ===
+                                            'Active'
+                                                ? 'bg-green-50 text-green-700 ring-green-100'
+                                                : selectedFarmer.farmer_status ===
+                                                    'Inactive'
+                                                  ? 'bg-gray-50 text-gray-600 ring-gray-200'
+                                                  : 'bg-amber-50 text-amber-700 ring-amber-100'
+                                        "
+                                    >
+                                        <span
+                                            class="h-1.5 w-1.5 rounded-full"
+                                            :class="
+                                                selectedFarmer.farmer_status ===
+                                                'Active'
+                                                    ? 'bg-green-500'
+                                                    : selectedFarmer.farmer_status ===
+                                                        'Inactive'
+                                                      ? 'bg-gray-400'
+                                                      : 'bg-amber-500'
+                                            "
+                                        ></span>
+                                        {{ selectedFarmer.farmer_status }}
+                                    </span>
+                                </div>
+                                <div class="mt-1 flex items-center gap-3">
+                                    <span
+                                        class="rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-sm font-semibold text-slate-600"
+                                    >
+                                        {{ selectedFarmer.farmer_code }}
+                                    </span>
+                                    <span class="text-sm text-slate-500">
+                                        {{ farmerBarangay(selectedFarmer) }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button
+                                    type="button"
+                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
+                                    @click="openEditModal(selectedFarmer)"
+                                >
+                                    <UIcon name="i-lucide-pencil" class="size-4" />
+                                    Edit Profile
+                                </button>
+                                <button
+                                    type="button"
+                                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_6px_16px_rgba(45,106,45,0.22)] transition-all hover:-translate-y-0.5 hover:bg-[#1f5125] hover:shadow-[0_8px_20px_rgba(45,106,45,0.28)]"
+                                    @click="openAssistModal(selectedFarmer)"
+                                >
+                                    <UIcon name="i-lucide-hand-heart" class="size-4" />
+                                    Add Assistance
+                                </button>
+                            </div>
+                        </div>
+                        <div
+                            class="mt-6 grid grid-cols-1 gap-3 border-t border-slate-100 pt-5 sm:grid-cols-2 lg:grid-cols-4"
+                        >
+                            <div
+                                v-for="field in profileFields"
+                                :key="field.label"
+                                class="text-sm"
+                            >
+                                <div class="mb-1 text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">
+                                    {{ field.label }}
+                                </div>
+                                <div
+                                    class="flex items-center gap-1.5 text-sm font-semibold text-slate-700"
+                                >
+                                    <UIcon
+                                        :name="field.icon"
+                                        class="size-2.75 text-gray-400"
+                                    />
+                                    {{ field.val }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="flex gap-2">
-                <button
-                    type="button"
-                    class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
-                    @click="navigateTo('/reports')"
-                >
-                    Export Report
-                </button>
-                <button
-                    type="button"
-                    class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
-                    @click="navigateTo('/map')"
-                >
-                    <UIcon name="i-lucide-map-pin" class="size-3.5" />
-                    Open GIS Map
-                </button>
-            </div>
-        </div>
 
-        <LoadErrorBanner
-            v-if="loadError"
-            :message="loadError.message"
-            :action="loadError.action"
-            @retry="load"
-            @sign-in="signInAgain"
-        />
-
-        <div
-            v-if="loading"
-            class="alps-card flex items-center justify-center gap-3 p-10 text-sm text-gray-500"
-        >
-            <UIcon name="i-lucide-loader-circle" class="size-4 animate-spin" />
-            Loading dashboard figures...
-        </div>
-
-        <div
-            v-else-if="parcelCount === 0"
-            class="alps-card flex flex-col items-center gap-2 p-10 text-center"
-        >
-            <UIcon name="i-lucide-map-pin-off" class="size-8 text-gray-300" />
-            <div class="text-sm font-semibold text-gray-700">
-                No parcels mapped yet
-            </div>
-            <p class="max-w-md text-xs text-gray-500">
-                Every figure on this page is derived from the parcel registry.
-                Once a parcel is drawn on the GIS map, the KPIs and charts below
-                fill in from it.
-            </p>
-            <NuxtLink
-                to="/map"
-                class="mt-2 flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
-            >
-                <UIcon name="i-lucide-map-pin" class="size-3.5" />
-                Open GIS Map
-            </NuxtLink>
-        </div>
-
-        <template v-else>
-            <!-- KPI Grid -->
-            <div class="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
-                <NuxtLink
-                    v-for="kpi in kpis"
-                    :key="kpi.key"
-                    :to="kpi.to"
-                    class="alps-card group relative block overflow-hidden p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-                    :class="
-                        kpi.key === 'at-risk' && atRiskTotals.parcels > 0
-                            ? 'ring-1 ring-red-200'
-                            : ''
-                    "
+            <!-- Stats Row -->
+            <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div
+                    v-for="stat in detailStats"
+                    :key="stat.label"
+                    class="group relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_28px_rgba(15,23,42,0.055)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-100 hover:shadow-[0_16px_36px_rgba(15,23,42,0.09)]"
                 >
                     <div
-                        class="absolute inset-x-0 top-0 h-0.5 opacity-70"
+                        class="absolute inset-x-0 top-0 h-1 opacity-80"
                         :style="{
-                            backgroundImage: `linear-gradient(90deg, ${kpi.accent}, transparent)`,
+                            backgroundImage: `linear-gradient(90deg, ${stat.color}, transparent)`,
                         }"
                     />
-                    <div class="mb-3 flex items-start justify-between gap-2">
-                        <div
-                            class="flex size-10 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105"
-                            :class="kpi.iconClass"
-                        >
-                            <UIcon :name="kpi.icon" class="size-5" />
-                        </div>
-                        <span
-                            v-if="kpi.badge"
-                            class="rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                            :class="kpi.badge.class"
-                        >
-                            {{ kpi.badge.label }}
-                        </span>
-                    </div>
                     <div
-                        class="mb-1 font-sans text-2xl font-bold text-gray-900"
+                        class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm ring-1 ring-black/5 transition-transform duration-200 group-hover:scale-105"
+                        :style="{ background: stat.bg }"
                     >
-                        {{ kpi.value }}
+                        <UIcon
+                            :name="stat.icon"
+                            class="size-4"
+                            :style="{ color: stat.color }"
+                        />
                     </div>
-                    <div class="text-xs text-gray-500">{{ kpi.label }}</div>
-                    <div class="mt-1 text-[11px] text-gray-400">
-                        {{ kpi.sub }}
+                    <div class="text-3xl font-bold tracking-tight text-slate-950">
+                        {{ stat.val }}
                     </div>
-                    <div
-                        v-if="kpi.key === 'at-risk' && atRiskTotals.parcels > 0"
-                        class="absolute inset-y-0 right-0 w-1 rounded-r bg-red-400"
-                    />
-                </NuxtLink>
+                    <div class="text-sm font-medium text-slate-500">{{ stat.label }}</div>
+                </div>
             </div>
 
-            <!-- ALPS Insights Banner -->
-            <div
-                class="alps-card relative overflow-hidden border-l-4 border-[#2d6a2d] bg-gradient-to-r from-[#e6f2e6] via-[#f0f7f0] to-white p-4"
-            >
+            <!-- Parcels -->
+            <div class="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_12px_34px_rgba(15,23,42,0.06)]">
+                <h3 class="border-b border-slate-100 px-6 py-5 text-base font-bold tracking-tight text-slate-800">
+                    Registered Parcels
+                </h3>
                 <div
-                    class="pointer-events-none absolute inset-y-0 right-0 w-44 opacity-40"
-                    style="
-                        background-image: radial-gradient(
-                            #2d6a2d55 1.2px,
-                            transparent 1.2px
-                        );
-                        background-size: 12px 12px;
-                    "
-                />
-                <div
-                    class="relative flex flex-wrap items-center justify-between gap-3"
+                    v-if="selectedFarmerParcels.length === 0"
+                    class="px-6 py-12 text-center text-sm text-slate-400"
                 >
-                    <div class="flex items-center gap-3">
+                    No parcels registered for this farmer.
+                </div>
+                <div v-else class="overflow-x-auto px-2 pb-2">
+                    <table class="w-full min-w-[560px] text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-100 bg-slate-50/70 text-xs uppercase tracking-wide text-slate-400">
+                                <th class="pb-2 text-left font-medium">
+                                    Parcel Code
+                                </th>
+                                <th class="pb-2 text-left font-medium">
+                                    Barangay
+                                </th>
+                                <th class="pb-2 text-right font-medium">
+                                    Area (ha)
+                                </th>
+                                <th class="pb-2 text-left font-medium">
+                                    Land Status
+                                </th>
+                                <th class="pb-2 text-left font-medium">
+                                    Current Use
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                v-for="p in selectedFarmerParcels"
+                                :key="p.parcel_code"
+                                class="border-b border-slate-100 last:border-0 transition-colors hover:bg-emerald-50/40"
+                            >
+                                <td class="px-4 py-3.5 font-mono font-semibold text-slate-700">
+                                    {{ p.parcel_code }}
+                                </td>
+                                <td class="px-4 py-3.5 text-slate-600">
+                                    {{ p.barangay }}
+                                </td>
+                                <td class="px-4 py-3.5 text-right font-mono font-semibold text-slate-700">
+                                    {{ p.area_hectares }}
+                                </td>
+                                <td class="px-4 py-3.5">
+                                    <span
+                                        :class="
+                                            parcelStatusClass(p.land_status)
+                                        "
+                                        class="rounded-full px-2.5 py-1 text-xs font-semibold"
+                                    >
+                                        {{ p.land_status }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3.5 text-slate-600">
+                                    {{ p.current_use ?? '—' }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Assistance -->
+            <div class="mt-6 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-5">
+                    <h3
+                        class="flex items-center gap-2 text-base font-bold tracking-tight text-slate-800"
+                    >
+                        <UIcon
+                            name="i-lucide-hand-heart"
+                            class="size-3.5 text-gray-400"
+                        />
+                        Assistance Received
+                    </h3>
+                    <span
+                        v-if="selectedFarmerAssistance.length > 0"
+                        class="text-xs text-slate-400"
+                    >
+                        {{ selectedFarmerAssistance.length }} record(s) ·
+                        {{ peso(selectedFarmerAssistanceTotal) }} total
+                    </span>
+                </div>
+                <div
+                    v-if="selectedFarmerAssistance.length === 0"
+                    class="px-6 py-12 text-center text-sm text-slate-400"
+                >
+                    No assistance recorded for this farmer yet.
+                </div>
+                <div v-else class="overflow-x-auto px-2 pb-2">
+                    <table class="w-full min-w-[560px] text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-100 bg-slate-50/70 text-xs uppercase tracking-wide text-slate-400">
+                                <th class="pb-2 text-left font-medium">Ref</th>
+                                <th class="pb-2 text-left font-medium">
+                                    Program
+                                </th>
+                                <th class="pb-2 text-left font-medium">Date</th>
+                                <th class="pb-2 text-right font-medium">
+                                    Value
+                                </th>
+                                <th class="pb-2 text-left font-medium">
+                                    Status
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                v-for="a in selectedFarmerAssistance"
+                                :key="a.documentId"
+                                class="border-b border-slate-100 last:border-0 transition-colors hover:bg-emerald-50/40"
+                            >
+                                <td class="py-2.5 font-mono text-gray-400">
+                                    {{ a.reference_code || '—' }}
+                                </td>
+                                <td class="px-4 py-3.5">
+                                    <div
+                                        class="font-medium text-slate-800"
+                                        :title="a.program"
+                                    >
+                                        {{ a.program }}
+                                    </div>
+                                    <!-- Items are free text and often long, so they
+                                         sit under the program rather than taking a
+                                         column that would force a scrollbar. -->
+                                    <div
+                                        v-if="a.items"
+                                        class="mt-0.5 max-w-xs truncate text-[10px] text-gray-400"
+                                        :title="a.items"
+                                    >
+                                        {{ a.items }}
+                                    </div>
+                                </td>
+                                <td class="py-2.5 text-gray-500">
+                                    <span class="flex items-center gap-1.5">
+                                        <UIcon
+                                            name="i-lucide-calendar"
+                                            class="size-[10px] text-gray-400"
+                                        />
+                                        {{ a.date ?? '—' }}
+                                    </span>
+                                </td>
+                                <td
+                                    class="py-2.5 text-right font-mono font-medium text-green-700"
+                                >
+                                    {{ peso(a.value) }}
+                                </td>
+                                <td class="py-2.5 text-gray-500">
+                                    <span
+                                        :class="
+                                            ASSISTANCE_STATUS_STYLE[
+                                                a.status ?? 'Scheduled'
+                                            ]
+                                        "
+                                        class="flex w-fit items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-medium"
+                                    >
+                                        <span
+                                            class="h-1.5 w-1.5 rounded-full"
+                                            :style="{
+                                                background:
+                                                    ASSISTANCE_STATUS_DOT[
+                                                        a.status ?? 'Scheduled'
+                                                    ],
+                                            }"
+                                        />
+                                        {{ a.status ?? '—' }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Farmers Registry List -->
+    <div v-else class="min-h-full bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 p-4 sm:p-6 lg:p-8">
+        <div
+            class="relative mb-7 overflow-hidden rounded-3xl border border-emerald-100/80 bg-gradient-to-r from-white via-white to-emerald-50/70 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-6"
+        >
+            <div
+                class="pointer-events-none absolute -right-20 -top-24 size-64 rounded-full bg-emerald-300/15 blur-3xl"
+            />
+            <div class="relative flex flex-wrap items-center justify-between gap-5">
+                <div class="flex min-w-0 items-start gap-4">
+                    <div
+                        class="hidden size-12 shrink-0 items-center justify-center rounded-2xl bg-[#2d6a2d] text-white shadow-[0_8px_22px_rgba(45,106,45,0.22)] sm:flex"
+                    >
+                        <UIcon name="i-lucide-users" class="size-6" />
+                    </div>
+                    <div>
+                        <div class="mb-2 flex flex-wrap items-center gap-2">
+                            <span
+                                class="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700"
+                            >
+                                <span class="size-1.5 rounded-full bg-emerald-500" />
+                                Farmer Information Management
+                            </span>
+                            <span
+                                class="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 shadow-sm"
+                            >
+                                {{ farmers.length }} registered
+                            </span>
+                        </div>
+                        <h1 class="text-3xl font-bold tracking-tight text-slate-950">
+                            Farmers Registry
+                        </h1>
+                        <p class="mt-1.5 max-w-2xl text-sm text-slate-500 sm:text-base">
+                            Manage farmer profiles, parcel assignments, coverage, and assistance records.
+                        </p>
+                    </div>
+                </div>
+
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-2 rounded-xl bg-[#245c2a] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(45,106,45,0.22)] transition-all hover:-translate-y-0.5 hover:bg-[#1f5125] hover:shadow-[0_10px_24px_rgba(45,106,45,0.28)]"
+                    @click="showRegisterModal = true"
+                >
+                    <UIcon name="i-lucide-user-plus" class="size-4.5" />
+                    Register Farmer
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="mb-7 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div
+                v-for="card in summaryCards"
+                :key="card.label"
+                class="group relative min-h-[190px] overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.055)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-100 hover:shadow-[0_18px_40px_rgba(15,23,42,0.10)] sm:p-6"
+            >
+                <!-- Accent rail -->
+                <div
+                    class="absolute inset-x-0 top-0 h-1"
+                    :style="{
+                        backgroundImage: `linear-gradient(90deg, ${card.color}, ${card.color}55, transparent)`,
+                    }"
+                />
+
+                <!-- Decorative accent -->
+                <div
+                    class="pointer-events-none absolute -right-12 -top-14 size-36 rounded-full opacity-[0.10] blur-2xl transition-transform duration-500 group-hover:scale-125"
+                    :style="{ backgroundColor: card.color }"
+                />
+
+                <div class="relative flex h-full flex-col">
+                    <div class="flex items-start justify-between gap-3">
                         <div
-                            class="flex size-8 items-center justify-center rounded-lg bg-[#2d6a2d]"
+                            class="flex size-12 items-center justify-center rounded-2xl shadow-sm ring-1 ring-black/5 transition-all duration-300 group-hover:-rotate-3 group-hover:scale-110"
+                            :style="{ background: card.bg }"
                         >
                             <UIcon
-                                name="i-lucide-activity"
-                                class="size-4 text-white"
+                                :name="card.icon"
+                                class="size-5"
+                                :style="{ color: card.color }"
+                            />
+                        </div>
+
+                        <span
+                            class="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 ring-1 ring-slate-100"
+                        >
+                            <span
+                                class="size-1.5 rounded-full"
+                                :style="{ backgroundColor: card.color }"
+                            />
+                            Live
+                        </span>
+                    </div>
+
+                    <div class="mt-5">
+                        <div
+                            class="font-sans text-3xl font-bold tracking-tight text-slate-950"
+                        >
+                            {{ card.val }}
+                        </div>
+                        <div class="mt-1 text-sm font-semibold text-slate-700">
+                            {{ card.label }}
+                        </div>
+                    </div>
+
+                    <div
+                        class="mt-auto flex items-center gap-2 border-t border-slate-100 pt-3 text-xs leading-5 text-slate-400"
+                    >
+                        <UIcon
+                            name="i-lucide-circle-check"
+                            class="size-3.5"
+                            :style="{ color: card.color }"
+                        />
+                        <span>{{ card.hint }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div
+            class="mb-7 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
+        >
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
+                <div class="flex items-center gap-3">
+                    <div class="flex size-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                        <UIcon name="i-lucide-search-check" class="size-4.5" />
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold tracking-tight text-slate-800">Find Farmers</h2>
+                        <p class="text-xs text-slate-500">Search the registry or filter by barangay.</p>
+                    </div>
+                </div>
+                <div class="hidden items-center gap-1.5 text-sm font-medium text-slate-500 sm:flex">
+                    <UIcon name="i-lucide-filter" class="size-3.5" />
+                    {{ filtered.length }} of {{ farmers.length }} farmers
+                </div>
+            </div>
+
+            <div class="p-4 sm:p-5">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div class="relative w-full max-w-md flex-1">
+                    <UIcon
+                        name="i-lucide-search"
+                        class="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400"
+                    />
+                    <input
+                        v-model="search"
+                        type="text"
+                        placeholder="Search farmer name or code..."
+                        class="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-9 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10"
+                    />
+                    <UButton
+                        v-if="search"
+                        type="button"
+                        class="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:text-gray-600"
+                        @click="search = ''"
+                    >
+                        <UIcon name="i-lucide-x" class="size-3" />
+                    </UButton>
+                </div>
+                <div
+                    class="flex items-center gap-1.5 text-sm font-medium text-slate-500 sm:ml-auto"
+                >
+                    <UIcon name="i-lucide-filter" class="size-3" />
+                    {{ filtered.length }} of {{ farmers.length }} farmers
+                </div>
+            </div>
+            <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+                <button
+                    v-for="b in ['All', ...barangaysByParcels]"
+                    :key="b"
+                    type="button"
+                    class="rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all"
+                    :class="
+                        filterBarangay === b
+                            ? 'border-[#2d6a2d] bg-[#2d6a2d] text-white shadow-md shadow-green-900/10'
+                            : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/50 hover:text-emerald-700'
+                    "
+                    @click="filterBarangay = b"
+                >
+                    {{ b }}
+                </button>
+            </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+            <div class="border-b border-slate-100 px-6 py-4">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-base font-bold tracking-tight text-slate-800">Farmer Directory</h2>
+                        <p class="mt-1 text-xs text-slate-500 sm:text-sm">Select a farmer to view profile, parcels, and assistance history.</p>
+                    </div>
+                    <div class="hidden rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 sm:block">
+                        {{ filtered.length }} records
+                    </div>
+                </div>
+            </div>
+            <UTable
+                :data="filtered"
+                :columns="columns"
+                :meta="farmerTableMeta"
+                :ui="{
+                    th: 'bg-slate-50/70 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500',
+                    td: 'px-4 py-3.5 text-sm text-slate-600',
+                    tr: 'border-b border-slate-100 last:border-0 hover:bg-emerald-50/40'
+                }"
+                :loading="loading"
+                :get-row-id="(row: FarmerRow) => row.documentId"
+                @select="onFarmerSelect"
+            >
+                <template #name-cell="{ row }">
+                    <div class="flex items-center gap-2.5">
+                        <span
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white shadow-sm ring-2 ring-white"
+                            :style="{
+                                backgroundColor: avatarColor(row.original.name),
+                            }"
+                        >
+                            {{ initials(row.original.name) }}
+                        </span>
+                        <span class="font-medium text-slate-800">
+                            {{ row.original.name }}
+                        </span>
+                    </div>
+                </template>
+                <template #barangay-cell="{ row }">
+                    <span class="flex items-center gap-1.5">
+                        <UIcon
+                            name="i-lucide-map-pin"
+                            class="size-2.5 text-gray-400"
+                        />
+                        {{ row.getValue('barangay') }}
+                    </span>
+                </template>
+                <template #view-cell>
+                    <div
+                        class="flex items-center justify-end gap-1.5 opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                        <span class="text-sm font-semibold text-[#245c2a]">
+                            View
+                        </span>
+                        <UIcon
+                            name="i-lucide-chevron-right"
+                            class="size-3.5 text-gray-400 transition-all group-hover:translate-x-0.5 group-hover:text-[#2d6a2d]"
+                        />
+                    </div>
+                </template>
+                <template #loading>
+                    <span class="inline-flex items-center gap-2">
+                        <UIcon
+                            name="i-lucide-loader-circle"
+                            class="size-4 animate-spin"
+                        />
+                        Loading farmers...
+                    </span>
+                </template>
+                <template #empty>
+                    <!-- Failed: UTable has no error state, so it rides here. -->
+                    <div v-if="loadError">
+                        <p class="text-red-600">{{ loadError }}</p>
+                        <button
+                            type="button"
+                            class="mt-2 text-xs font-medium text-green-700 underline"
+                            @click="loadFarmers"
+                        >
+                            Try again
+                        </button>
+                    </div>
+                    <div v-else class="flex flex-col items-center gap-2">
+                        <UIcon
+                            name="i-lucide-user"
+                            class="size-6 text-gray-300"
+                        />
+                        <p class="text-sm">
+                            {{
+                                farmers.length === 0
+                                    ? 'No farmers registered yet.'
+                                    : 'No farmers match your filters.'
+                            }}
+                        </p>
+                    </div>
+                </template>
+            </UTable>
+        </div>
+    </div>
+
+    <!-- Register Farmer Modal -->
+    <Teleport to="body">
+        <div
+            v-if="showRegisterModal"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-sm sm:items-center"
+            @click.self="showRegisterModal = false"
+        >
+            <div
+                class="w-full max-w-md overflow-hidden rounded-3xl border border-white/70 bg-white p-6 font-sans shadow-[0_24px_70px_rgba(15,23,42,0.28)] ring-1 ring-slate-900/5 sm:p-7"
+            >
+                <div class="mb-6 flex items-start justify-between gap-4">
+                    <div>
+                        <h3 class="text-xl font-bold tracking-tight text-slate-950">
+                            Register Farmer
+                        </h3>
+                        <p class="text-sm text-slate-500">
+                            The farmer code is generated automatically.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        class="flex size-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                        @click="showRegisterModal = false"
+                    >
+                        <UIcon name="i-lucide-x" class="size-4" />
+                    </button>
+                </div>
+
+                <form class="space-y-5" @submit.prevent="submitRegister">
+                    <div>
+                        <label
+                            class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                        >
+                            Status
+                        </label>
+                        <select
+                            v-model="registerForm.status"
+                            :disabled="registering"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:opacity-60"
+                        >
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Departed">Departed</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label
+                            class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                        >
+                            Full Name
+                        </label>
+                        <input
+                            v-model="registerForm.name"
+                            type="text"
+                            :disabled="registering"
+                            placeholder="e.g. Juan Dela Cruz"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:opacity-60"
+                        />
+                    </div>
+
+                    <div>
+                        <label
+                            class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                        >
+                            Contact Number
+                        </label>
+                        <input
+                            v-model="registerForm.contact"
+                            type="text"
+                            :disabled="registering"
+                            placeholder="09XX XXX XXXX"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:opacity-60"
+                        />
+                    </div>
+
+                    <p
+                        v-if="registerError"
+                        class="rounded-lg bg-red-50 px-3 py-2 text-[11px] text-red-700"
+                    >
+                        {{ registerError }}
+                    </p>
+
+                    <div
+                        class="flex justify-end gap-2 border-t border-slate-100 pt-5"
+                    >
+                        <button
+                            type="button"
+                            :disabled="registering"
+                            class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-60"
+                            @click="showRegisterModal = false"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="registering"
+                            class="rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#1f5125] disabled:opacity-60"
+                        >
+                            <span
+                                v-if="registering"
+                                class="inline-flex items-center gap-1.5"
+                            >
+                                <UIcon
+                                    name="i-lucide-loader-circle"
+                                    class="size-3 animate-spin"
+                                />
+                                Registering...
+                            </span>
+                            <span v-else>Register Farmer</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </Teleport>
+
+    <!-- Edit Farmer Profile Modal -->
+    <Teleport to="body">
+        <div
+            v-if="showEditModal"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-sm sm:items-center"
+            @click.self="showEditModal = false"
+        >
+            <div
+                class="w-full max-w-md overflow-hidden rounded-3xl border border-white/70 bg-white p-6 font-sans shadow-[0_24px_70px_rgba(15,23,42,0.28)] ring-1 ring-slate-900/5 sm:p-7"
+            >
+                <div class="mb-6 flex items-start justify-between gap-4">
+                    <div>
+                        <h3 class="text-xl font-bold tracking-tight text-slate-950">
+                            Edit Profile
+                        </h3>
+                        <p class="text-sm text-slate-500">
+                            Update the farmer's details.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        class="flex size-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                        @click="showEditModal = false"
+                    >
+                        <UIcon name="i-lucide-x" class="size-4" />
+                    </button>
+                </div>
+
+                <form class="space-y-5" @submit.prevent="submitEdit">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                            <label
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                            >
+                                Farmer Code
+                            </label>
+                            <input
+                                :value="editForm.farmer_code"
+                                type="text"
+                                readonly
+                                class="w-full rounded-xl border border-slate-200 bg-slate-100 px-3.5 py-2.5 font-mono text-sm font-semibold text-slate-600"
                             />
                         </div>
                         <div>
-                            <div class="text-sm font-semibold text-[#2d6a2d]">
-                                ALPS Insights — {{ insightCounts.total }} active
-                                recommendations
-                            </div>
-                            <div
-                                class="mt-1 flex flex-wrap items-center gap-1.5"
+                            <label
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
-                                <span
-                                    class="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-600 ring-1 ring-red-100"
+                                Status
+                            </label>
+                            <select
+                                v-model="editForm.status"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                            >
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                                <option value="Departed">Departed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label
+                            class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                        >
+                            Full Name
+                        </label>
+                        <input
+                            v-model="editForm.name"
+                            type="text"
+                            placeholder="e.g. Juan Dela Cruz"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                        />
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                            <label
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                            >
+                                Contact Number
+                            </label>
+                            <input
+                                v-model="editForm.contact"
+                                type="text"
+                                placeholder="09XX XXX XXXX"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                            >
+                                Barangay of Residence
+                            </label>
+                            <select
+                                v-model="editForm.residence_barangay"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                            >
+                                <option value="">Not specified</option>
+                                <option
+                                    v-for="b in barangays"
+                                    :key="b.value"
+                                    :value="b.value"
                                 >
-                                    {{ insightCounts.high }} high
-                                </span>
-                                <span
-                                    class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-100"
-                                >
-                                    {{ insightCounts.medium }} medium
-                                </span>
-                                <span
-                                    class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600 ring-1 ring-gray-200"
-                                >
-                                    {{ insightCounts.low }} low
-                                </span>
-                                <span class="text-[11px] text-gray-400">
-                                    · Rolled up from open risk reports
-                                </span>
-                            </div>
+                                    {{ b.label }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <p v-if="editError" class="text-xs text-red-600">
+                        {{ editError }}
+                    </p>
+                    <div
+                        class="flex justify-end gap-2 border-t border-slate-100 pt-5"
+                    >
+                        <button
+                            type="button"
+                            class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                            :disabled="editing"
+                            @click="showEditModal = false"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            class="rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#1f5125] disabled:opacity-50"
+                            :disabled="editing"
+                        >
+                            <span v-if="editing">Saving...</span>
+                            <span v-else>Save Changes</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </Teleport>
+
+    <!-- Record Assistance Modal -->
+    <Teleport to="body">
+        <div
+            v-if="showAssistModal"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-sm sm:items-center"
+            @click.self="closeAssistModal"
+        >
+            <div
+                class="w-full max-w-md overflow-hidden rounded-3xl border border-white/70 bg-white p-6 font-sans shadow-[0_24px_70px_rgba(15,23,42,0.28)] ring-1 ring-slate-900/5 sm:p-7"
+            >
+                <div class="mb-6 flex items-start justify-between gap-4">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8f5e8]"
+                        >
+                            <UIcon
+                                name="i-lucide-hand-heart"
+                                class="size-5 text-[#2d6a2d]"
+                            />
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold tracking-tight text-slate-950">
+                                Record Assistance
+                            </h3>
+                            <p class="text-sm text-slate-500">
+                                For
+                                {{ selectedFarmer?.name }}
+                                ({{ selectedFarmer?.farmer_code }})
+                            </p>
                         </div>
                     </div>
                     <button
                         type="button"
-                        class="flex items-center gap-1 text-xs font-medium text-[#2d6a2d] hover:underline"
-                        @click="navigateTo('/risks')"
+                        class="flex size-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                        @click="closeAssistModal"
                     >
-                        View All
-                        <UIcon name="i-lucide-arrow-right" class="size-3" />
+                        <UIcon name="i-lucide-x" class="size-4" />
                     </button>
                 </div>
-            </div>
 
-            <!-- Charts Row 1 -->
-            <div class="grid grid-cols-12 gap-4">
-                <!-- Land Status Pie -->
-                <div class="alps-card col-span-12 p-5 md:col-span-4">
-                    <div
-                        class="mb-3 flex items-center justify-between border-b border-gray-100 pb-3"
-                    >
-                        <div class="flex items-center gap-2">
-                            <span
-                                class="flex size-7 items-center justify-center rounded-md bg-[#e8f5e8] text-[#2d6a2d]"
+                <form class="space-y-5" @submit.prevent="submitAssist">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                            <label
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
-                                <UIcon
-                                    name="i-lucide-pie-chart"
-                                    class="size-4"
-                                />
-                            </span>
-                            <div>
-                                <h3 class="text-sm font-semibold text-gray-700">
-                                    Land Status Distribution
-                                </h3>
-                                <p class="text-[11px] text-gray-400">
-                                    {{ fmtNumber(classifiedArea) }} ha
-                                    classified
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <ClientOnly>
-                        <div class="relative">
-                            <VChart
-                                :option="landStatusOption"
-                                :style="{ height: '200px', width: '100%' }"
-                                autoresize
+                                Program
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <input
+                                v-model="assistForm.program"
+                                type="text"
+                                list="assist-program-options-farmer"
+                                placeholder="e.g. Rice Seed Subsidy"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                             />
-                            <div
-                                class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
-                            >
-                                <div class="text-xl font-bold text-gray-900">
-                                    {{ fmtNumber(classifiedArea) }}
-                                </div>
-                                <div class="text-[10px] text-gray-400">
-                                    hectares
-                                </div>
-                            </div>
+                            <datalist id="assist-program-options-farmer">
+                                <option
+                                    v-for="p in assistanceProgramOptions"
+                                    :key="p"
+                                    :value="p"
+                                />
+                            </datalist>
                         </div>
-                        <template #fallback>
-                            <div
-                                class="w-full"
-                                :style="{ height: '200px' }"
-                            ></div>
-                        </template>
-                    </ClientOnly>
-                    <div class="mt-2 grid grid-cols-2 gap-1">
-                        <div
-                            v-for="slice in landStatusDistribution"
-                            :key="slice.name"
-                            class="flex items-center gap-1.5 text-xs text-gray-600"
+                        <div>
+                            <label
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                            >
+                                Barangay
+                            </label>
+                            <select
+                                v-model="assistForm.barangayDocumentId"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                            >
+                                <option value="">Not specified</option>
+                                <option
+                                    v-for="b in barangays"
+                                    :key="b.value"
+                                    :value="b.value"
+                                >
+                                    {{ b.label }}
+                                </option>
+                            </select>
+                            <p
+                                v-if="selectedFarmer?.residence_barangay"
+                                class="mt-1 text-[10px] text-gray-400"
+                            >
+                                Defaults to
+                                {{ selectedFarmer.residence_barangay.name }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label
+                            class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                         >
-                            <div
-                                class="size-2.5 flex-shrink-0 rounded-sm"
-                                :style="{ backgroundColor: slice.color }"
+                            Items
+                        </label>
+                        <textarea
+                            v-model="assistForm.items"
+                            rows="2"
+                            placeholder="e.g. 4 bags certified rice seed (40 kg), 1 bag fertilizer"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                        ></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div>
+                            <label
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                            >
+                                Value (₱)
+                            </label>
+                            <input
+                                v-model="assistForm.value"
+                                type="number"
+                                step="1"
+                                min="0"
+                                placeholder="0.00"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                             />
-                            <span class="truncate">{{ slice.name }}</span>
-                            <span class="ml-auto font-mono text-gray-500">
-                                {{ fmtNumber(slice.area) }}
-                            </span>
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                            >
+                                Date
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <input
+                                v-model="assistForm.date"
+                                type="date"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                            >
+                                Status
+                            </label>
+                            <select
+                                v-model="assistForm.status"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                            >
+                                <option
+                                    v-for="s in ASSISTANCE_STATUS_OPTIONS"
+                                    :key="s"
+                                    :value="s"
+                                >
+                                    {{ s }}
+                                </option>
+                            </select>
                         </div>
                     </div>
-                </div>
 
-                <!-- Harvest Trend -->
-                <div class="alps-card col-span-12 p-5 md:col-span-8">
-                    <div
-                        class="mb-3 flex items-center justify-between border-b border-gray-100 pb-3"
+                    <p
+                        v-if="assistError"
+                        class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700"
                     >
-                        <div class="flex items-center gap-2">
-                            <span
-                                class="flex size-7 items-center justify-center rounded-md bg-[#fef3c7] text-amber-600"
-                            >
-                                <UIcon
-                                    name="i-lucide-line-chart"
-                                    class="size-4"
-                                />
-                            </span>
-                            <div>
-                                <h3 class="text-sm font-semibold text-gray-700">
-                                    Monthly Harvested Area (ha)
-                                </h3>
-                                <p class="text-[11px] text-gray-400">
-                                    Trailing
-                                    {{ monthlyHarvest.windowMonths }} months ·
-                                    {{ fmtNumber(monthlyHarvest.total) }} ha
-                                    total
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <ClientOnly>
-                        <VChart
-                            v-if="hasHarvestData"
-                            :option="harvestOption"
-                            :style="{ height: '220px', width: '100%' }"
-                            autoresize
-                        />
-                        <div
-                            v-else
-                            class="flex items-center justify-center text-xs text-gray-400"
-                            :style="{ height: '220px' }"
-                        >
-                            No harvest records in the last
-                            {{ monthlyHarvest.windowMonths }} months.
-                        </div>
-                        <template #fallback>
-                            <div
-                                class="w-full"
-                                :style="{ height: '220px' }"
-                            ></div>
-                        </template>
-                    </ClientOnly>
-                </div>
-            </div>
+                        {{ assistError }}
+                    </p>
 
-            <!-- Charts Row 2 -->
-            <div class="grid grid-cols-12 gap-4">
-                <!-- Barangay Area Bar -->
-                <div class="alps-card col-span-12 p-5 md:col-span-7">
                     <div
-                        class="mb-3 flex items-center justify-between border-b border-gray-100 pb-3"
+                        class="flex justify-end gap-2 border-t border-slate-100 pt-5"
                     >
-                        <div class="flex items-center gap-2">
-                            <span
-                                class="flex size-8 items-center justify-center rounded-md bg-[#e8f5e8] text-[#2d6a2d]"
-                            >
-                                <UIcon name="i-lucide-map" class="size-4.5" />
-                            </span>
-                            <div>
-                                <h3
-                                    class="text-base font-semibold text-gray-800"
-                                >
-                                    Barangay Agricultural Area (ha)
-                                </h3>
-                                <p class="text-xs text-gray-400">
-                                    {{ barangayArea.length }} barangays ·
-                                    {{ fmtNumber(barangayTotal) }} ha
-                                </p>
-                            </div>
-                        </div>
-                        <div
-                            class="flex items-center gap-3 text-xs text-gray-500"
-                        >
-                            <span class="flex items-center gap-1.5">
-                                <span
-                                    class="size-2.5 rounded-sm bg-[#dde5dd]"
-                                ></span>
-                                Total
-                            </span>
-                            <span class="flex items-center gap-1.5">
-                                <span
-                                    class="size-2.5 rounded-sm bg-[#2d6a2d]"
-                                ></span>
-                                Cultivated
-                            </span>
-                        </div>
-                    </div>
-                    <ClientOnly>
-                        <VChart
-                            :option="barangayOption"
-                            :style="{ height: '300px', width: '100%' }"
-                            autoresize
-                        />
-                        <template #fallback>
-                            <div
-                                class="w-full"
-                                :style="{ height: '300px' }"
-                            ></div>
-                        </template>
-                    </ClientOnly>
-                </div>
-
-                <!-- Risk Summary + Mini Map -->
-                <div class="col-span-12 space-y-4 md:col-span-5">
-                    <!-- Risk Table -->
-                    <div class="alps-card p-5">
-                        <div class="mb-3 flex items-center justify-between">
-                            <h3 class="text-sm font-semibold text-gray-700">
-                                Active Risks
-                            </h3>
-                            <button
-                                type="button"
-                                class="flex items-center gap-1 text-xs text-green-700 hover:underline"
-                                @click="navigateTo('/risks')"
-                            >
-                                View all
-                                <UIcon
-                                    name="i-lucide-arrow-right"
-                                    class="size-2.5"
-                                />
-                            </button>
-                        </div>
-                        <div v-if="riskSummary.length > 0" class="space-y-1">
-                            <div
-                                v-for="row in riskSummary"
-                                :key="row.type"
-                                class="flex items-center justify-between gap-2 rounded-md px-1 py-1.5 text-xs hover:bg-gray-50"
-                            >
-                                <div class="min-w-0">
-                                    <div
-                                        class="truncate font-medium text-gray-800"
-                                    >
-                                        {{ row.type }}
-                                    </div>
-                                    <div class="text-gray-400">
-                                        {{ row.parcels }} parcels ·
-                                        {{ fmtNumber(row.area) }} ha
-                                    </div>
-                                </div>
-                                <span
-                                    class="flex flex-shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                                    :class="PRIORITY_BADGE[row.priority].cls"
-                                >
-                                    <UIcon
-                                        :name="
-                                            PRIORITY_BADGE[row.priority].icon
-                                        "
-                                        class="size-3"
-                                    />
-                                    {{ PRIORITY_BADGE[row.priority].label }}
-                                </span>
-                            </div>
-                        </div>
-                        <p
-                            v-else
-                            class="py-4 text-center text-xs text-gray-400"
-                        >
-                            No open risk reports.
-                        </p>
-                        <div
-                            class="mt-2 flex items-center justify-between border-t border-gray-100 pt-2.5 text-[11px]"
-                        >
-                            <span class="text-gray-400">Total affected</span>
-                            <span class="font-semibold text-gray-700">
-                                {{ atRiskTotals.parcels }} parcels ·
-                                {{ fmtNumber(atRiskTotals.area) }} ha
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Mini Map -->
-                    <div class="alps-card group overflow-hidden">
-                        <div class="relative h-36 overflow-hidden bg-[#e8f0e8]">
-                            <ClientOnly>
-                                <div class="absolute inset-0">
-                                    <MglMap
-                                        v-model:center="miniMapCenter"
-                                        v-model:zoom="miniMapZoom"
-                                        :map-style="miniMapStyle"
-                                        :attribution-control="false"
-                                        height="100%"
-                                        width="100%"
-                                    />
-                                </div>
-                                <template #fallback>
-                                    <div
-                                        class="absolute inset-0 flex items-center justify-center text-xs text-gray-400"
-                                    >
-                                        Loading map...
-                                    </div>
-                                </template>
-                            </ClientOnly>
-
-                            <div
-                                class="pointer-events-none absolute bottom-2 left-3"
-                            >
-                                <div
-                                    class="rounded bg-[#2d6a2d]/85 px-2 py-1 backdrop-blur-sm"
-                                >
-                                    <div
-                                        class="text-xs font-medium text-white drop-shadow"
-                                    >
-                                        Agricultural Map
-                                    </div>
-                                    <div class="text-[10px] text-white/70">
-                                        San Fernando, Pampanga · OpenStreetMap
-                                    </div>
-                                </div>
-                            </div>
-                            <div
-                                class="pointer-events-none absolute right-2 top-2 rounded bg-white/80 px-2 py-1 text-[10px] text-gray-600 backdrop-blur-sm"
-                            >
-                                {{ fmtNumber(parcelCount) }} parcels mapped
-                            </div>
-                            <NuxtLink
-                                to="/map"
-                                class="absolute bottom-2 right-2 flex items-center gap-1 rounded-lg bg-white/90 px-2.5 py-1.5 text-[11px] font-semibold text-[#2d6a2d] shadow-md backdrop-blur-sm hover:bg-white"
-                            >
-                                Open Map
-                                <UIcon
-                                    name="i-lucide-arrow-right"
-                                    class="size-3"
-                                />
-                            </NuxtLink>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Upcoming Harvests + Crop Distribution -->
-            <div class="grid grid-cols-12 gap-4">
-                <div class="alps-card col-span-12 p-5 md:col-span-8">
-                    <div class="mb-4 flex items-center justify-between">
-                        <h3 class="text-sm font-semibold text-gray-700">
-                            Upcoming Harvests (Next
-                            {{ upcomingWindowDays }} Days)
-                        </h3>
                         <button
                             type="button"
-                            class="flex items-center gap-1 text-xs text-green-700 hover:underline"
-                            @click="navigateTo('/harvests')"
+                            class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
+                            :disabled="recordingAssist"
+                            @click="closeAssistModal"
                         >
-                            View all
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            class="flex items-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#1f5125] disabled:cursor-not-allowed disabled:opacity-60"
+                            :disabled="!canRecordAssist"
+                        >
                             <UIcon
-                                name="i-lucide-arrow-right"
-                                class="size-2.5"
+                                v-if="recordingAssist"
+                                name="i-lucide-loader-circle"
+                                class="size-3.5 animate-spin"
                             />
+                            {{
+                                recordingAssist
+                                    ? 'Saving...'
+                                    : 'Record Assistance'
+                            }}
                         </button>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full min-w-[560px] text-xs">
-                            <thead>
-                                <tr
-                                    class="border-b border-gray-100 text-gray-400"
-                                >
-                                    <th class="pb-2 text-left font-medium">
-                                        Farmer
-                                    </th>
-                                    <th class="pb-2 text-left font-medium">
-                                        Crop
-                                    </th>
-                                    <th class="pb-2 text-left font-medium">
-                                        Barangay
-                                    </th>
-                                    <th class="pb-2 text-right font-medium">
-                                        Area
-                                    </th>
-                                    <th class="pb-2 pl-8 text-left font-medium">
-                                        Est. Date
-                                    </th>
-                                    <th class="pb-2 text-left font-medium">
-                                        Status
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody v-if="upcomingHarvests.length > 0">
-                                <tr
-                                    v-for="row in upcomingHarvests"
-                                    :key="row.parcelDocumentId"
-                                    class="border-b border-gray-50 transition-colors last:border-0 hover:bg-[#f0f7f0]/70"
-                                >
-                                    <td class="py-2.5">
-                                        <div class="flex items-center gap-2">
-                                            <span
-                                                class="flex size-6 flex-shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
-                                                :style="{
-                                                    backgroundColor:
-                                                        avatarColor(row.farmer),
-                                                }"
-                                            >
-                                                {{ initials(row.farmer) }}
-                                            </span>
-                                            <span
-                                                class="font-medium text-gray-800"
-                                            >
-                                                {{ row.farmer }}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td class="py-2.5 text-gray-600">
-                                        {{ row.crop }}
-                                    </td>
-                                    <td class="py-2.5 text-gray-500">
-                                        {{ row.barangay }}
-                                    </td>
-                                    <td
-                                        class="py-2.5 text-right font-mono text-gray-600"
-                                    >
-                                        {{ row.area }} ha
-                                    </td>
-                                    <td class="py-2.5 pl-8">
-                                        <div class="text-gray-600">
-                                            {{ row.expectedDate }}
-                                        </div>
-                                        <div
-                                            class="text-[10px]"
-                                            :class="
-                                                row.daysUntil <= 10
-                                                    ? 'font-medium text-amber-600'
-                                                    : 'text-gray-400'
-                                            "
-                                        >
-                                            in {{ row.daysUntil }} day{{
-                                                row.daysUntil === 1 ? '' : 's'
-                                            }}
-                                        </div>
-                                    </td>
-                                    <td class="py-2.5">
-                                        <span
-                                            class="rounded px-2 py-0.5 text-[10px] font-medium"
-                                            :class="
-                                                row.atRisk
-                                                    ? 'status-atrisk'
-                                                    : 'status-cultivated'
-                                            "
-                                        >
-                                            {{
-                                                row.atRisk
-                                                    ? 'At Risk'
-                                                    : 'On Track'
-                                            }}
-                                        </span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                            <tbody v-else>
-                                <tr>
-                                    <td
-                                        colspan="6"
-                                        class="py-8 text-center text-xs text-gray-400"
-                                    >
-                                        No harvest expected in the next
-                                        {{ upcomingWindowDays }} days.
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Crop Distribution -->
-                <div class="alps-card col-span-12 p-5 md:col-span-4">
-                    <div
-                        class="mb-3 flex items-center justify-between border-b border-gray-100 pb-3"
-                    >
-                        <div class="flex items-center gap-2">
-                            <span
-                                class="flex size-7 items-center justify-center rounded-md bg-[#dcfce7] text-green-700"
-                            >
-                                <UIcon name="i-lucide-sprout" class="size-4" />
-                            </span>
-                            <div>
-                                <h3 class="text-sm font-semibold text-gray-700">
-                                    Crop Distribution
-                                </h3>
-                                <p class="text-[11px] text-gray-400">
-                                    {{ fmtNumber(plantedArea) }} ha planted
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <ClientOnly>
-                        <div v-if="hasCropData" class="relative">
-                            <VChart
-                                :option="cropDistributionOption"
-                                :style="{ height: '160px', width: '100%' }"
-                                autoresize
-                            />
-                            <div
-                                class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
-                            >
-                                <div class="text-lg font-bold text-gray-900">
-                                    {{ cropDistribution[0]?.share ?? 0 }}%
-                                </div>
-                                <div
-                                    class="max-w-[80px] truncate text-[10px] text-gray-400"
-                                >
-                                    {{ leadingCrop }} leads
-                                </div>
-                            </div>
-                        </div>
-                        <div
-                            v-else
-                            class="flex items-center justify-center px-4 text-center text-xs text-gray-400"
-                            :style="{ height: '160px' }"
-                        >
-                            No planting cycle recorded on any parcel.
-                        </div>
-                        <template #fallback>
-                            <div
-                                class="w-full"
-                                :style="{ height: '160px' }"
-                            ></div>
-                        </template>
-                    </ClientOnly>
-                    <div v-if="hasCropData" class="mt-2 space-y-1.5">
-                        <div
-                            v-for="slice in cropDistribution"
-                            :key="slice.name"
-                            class="flex items-center gap-2 text-xs text-gray-600"
-                        >
-                            <div
-                                class="size-2 flex-shrink-0 rounded-sm"
-                                :style="{ backgroundColor: slice.color }"
-                            />
-                            <span class="max-w-[76px] truncate">{{
-                                slice.name
-                            }}</span>
-                            <div
-                                class="ml-1 h-1 flex-1 overflow-hidden rounded-full bg-gray-100"
-                            >
-                                <div
-                                    class="h-full rounded-full"
-                                    :style="{
-                                        width: `${slice.share}%`,
-                                        backgroundColor: slice.color,
-                                    }"
-                                />
-                            </div>
-                            <span
-                                class="w-9 text-right font-mono text-gray-400"
-                            >
-                                {{ slice.share }}%
-                            </span>
-                        </div>
-                    </div>
-                </div>
+                </form>
             </div>
-        </template>
-    </div>
+        </div>
+    </Teleport>
 </template>

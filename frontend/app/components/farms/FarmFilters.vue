@@ -20,18 +20,19 @@ const filters: FarmStatusFilter[] = ['All', ...FARM_STATUS_OPTIONS]
 </script>
 
 <template>
-    <div class="mb-5 space-y-3">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-            <div class="relative w-full max-w-xs sm:flex-1">
+    <div class="space-y-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div class="relative w-full max-w-md flex-1">
                 <UIcon
                     name="i-lucide-search"
-                    class="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-gray-400"
+                    class="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400"
                 />
+
                 <input
                     :value="search"
                     type="text"
                     placeholder="Search farm code, barangay or farmer..."
-                    class="w-full rounded-full border border-gray-200 bg-white py-2 pl-8 pr-8 text-xs shadow-sm focus:border-[#2d6a2d] focus:outline-none focus:ring-1 focus:ring-green-500"
+                    class="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-10 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10"
                     @input="
                         emit(
                             'update:search',
@@ -39,33 +40,37 @@ const filters: FarmStatusFilter[] = ['All', ...FARM_STATUS_OPTIONS]
                         )
                     "
                 />
+
                 <button
                     v-if="search"
                     type="button"
-                    class="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:text-gray-600"
+                    class="absolute right-2.5 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                     @click="emit('update:search', '')"
                 >
-                    <UIcon name="i-lucide-x" class="size-3" />
+                    <UIcon name="i-lucide-x" class="size-3.5" />
                 </button>
             </div>
+
             <div
-                class="flex items-center gap-1.5 text-xs text-gray-400 sm:ml-auto"
+                class="flex items-center gap-1.5 text-sm font-medium text-slate-500 sm:ml-auto"
             >
-                <UIcon name="i-lucide-filter" class="size-3" />
+                <UIcon name="i-lucide-filter" class="size-3.5" />
                 {{ filteredCount }} of {{ totalCount }} farms
             </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-1.5">
+        <div
+            class="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4"
+        >
             <button
                 v-for="status in filters"
                 :key="status"
                 type="button"
-                class="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors"
+                class="flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all"
                 :class="
                     filterStatus === status
-                        ? 'bg-[#2d6a2d] text-white border-[#2d6a2d] shadow-sm'
-                        : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                        ? 'border-[#2d6a2d] bg-[#2d6a2d] text-white shadow-md shadow-green-900/10'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/50 hover:text-emerald-700'
                 "
                 @click="emit('update:filterStatus', status)"
             >
@@ -78,12 +83,21 @@ const filters: FarmStatusFilter[] = ['All', ...FARM_STATUS_OPTIONS]
             </button>
         </div>
 
-        <p v-if="selected" class="text-[11px] text-gray-400">
-            Showing
-            <span class="font-mono font-medium text-gray-600">
-                {{ selected.farm_code }}
+        <div
+            v-if="selected"
+            class="flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-2.5 text-sm text-emerald-800"
+        >
+            <UIcon
+                name="i-lucide-panel-right-open"
+                class="size-4 shrink-0 text-emerald-700"
+            />
+            <span>
+                Showing
+                <span class="font-mono font-semibold">
+                    {{ selected.farm_code }}
+                </span>
+                in the detail panel.
             </span>
-            in the panel.
-        </p>
+        </div>
     </div>
 </template>

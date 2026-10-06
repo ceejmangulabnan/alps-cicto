@@ -1,22 +1,35 @@
 <script setup lang="ts">
+//@ts-nocheck
 const systemStats = [
     {
         label: 'Total System Users',
+
         val: '24',
+
         icon: 'i-lucide-users',
+
         color: '#2d6a2d',
     },
+
     {
         label: 'Database Records',
+
         val: '14,829',
+
         icon: 'i-lucide-database',
+
         color: '#1d6fa4',
     },
+
     { label: 'GIS Layers', val: '8', icon: 'i-lucide-map', color: '#0891b2' },
+
     {
         label: 'System Uptime',
+
         val: '99.9%',
+
         icon: 'i-lucide-activity',
+
         color: '#16a34a',
     },
 ]
@@ -24,27 +37,41 @@ const systemStats = [
 const settingsItems = [
     {
         icon: 'i-lucide-settings',
+
         label: 'System Configuration',
+
         desc: 'General settings, logos, org details',
     },
+
     {
         icon: 'i-lucide-map',
+
         label: 'GIS Layer Manager',
+
         desc: 'Manage basemaps and overlay layers',
     },
+
     {
         icon: 'i-lucide-bell',
+
         label: 'Alert & Notification Rules',
+
         desc: 'Configure thresholds and triggers',
     },
+
     {
         icon: 'i-lucide-database',
+
         label: 'Data Backup & Export',
+
         desc: 'Automated backups and data exports',
     },
+
     {
         icon: 'i-lucide-shield',
+
         label: 'Audit Logs',
+
         desc: 'User activity and system events',
     },
 ]
@@ -52,37 +79,61 @@ const settingsItems = [
 const users = ref([
     {
         name: 'Admin Reyes',
-        email: 'admin.reyes@sanfernando.gov.ph',
+
+        email: 'admin.reyes\@sanfernando.gov.ph',
+
         role: 'System Admin',
+
         status: 'Active',
+
         lastLogin: '2024-11-25 09:14',
     },
+
     {
         name: 'Engr. Jose Lim',
-        email: 'j.lim@sanfernando.gov.ph',
+
+        email: 'j.lim\@sanfernando.gov.ph',
+
         role: 'Agricultural Engineer',
+
         status: 'Active',
+
         lastLogin: '2024-11-25 08:32',
     },
+
     {
         name: 'Agri. Maria Santos',
-        email: 'm.santos@sanfernando.gov.ph',
+
+        email: 'm.santos\@sanfernando.gov.ph',
+
         role: 'Agriculture Technician',
+
         status: 'Active',
+
         lastLogin: '2024-11-24 14:52',
     },
+
     {
         name: 'Agri. Carlo Reyes',
-        email: 'c.reyes@sanfernando.gov.ph',
+
+        email: 'c.reyes\@sanfernando.gov.ph',
+
         role: 'Agriculture Technician',
+
         status: 'Active',
+
         lastLogin: '2024-11-24 11:20',
     },
+
     {
         name: 'Encoder Juan Cruz',
-        email: 'j.cruz@sanfernando.gov.ph',
+
+        email: 'j.cruz\@sanfernando.gov.ph',
+
         role: 'Data Encoder',
+
         status: 'Active',
+
         lastLogin: '2024-11-23 16:05',
     },
 ])
@@ -90,17 +141,25 @@ const users = ref([
 const systemInfo = [
     {
         label: 'System',
+
         val: 'ALPS v2.4.1 — Agricultural Land Profiling System',
+
         icon: 'i-lucide-info',
     },
+
     {
         label: 'Agency',
+
         val: 'City Agriculture Office, San Fernando, Pampanga',
+
         icon: 'i-lucide-building-2',
     },
+
     {
         label: 'Last Data Sync',
+
         val: 'November 25, 2024 · 06:00 AM (Automated)',
+
         icon: 'i-lucide-refresh-cw',
     },
 ]
@@ -111,398 +170,606 @@ const ROLE_STYLE: Record<
 > = {
     'System Admin': {
         bg: '#ede9fe',
+
         text: '#6d28d9',
+
         dot: '#7c3aed',
+
         avatar: '#7c3aed',
     },
+
     'Agricultural Engineer': {
         bg: '#dbeafe',
+
         text: '#1d4ed8',
+
         dot: '#2563eb',
+
         avatar: '#2563eb',
     },
+
     'Agriculture Technician': {
         bg: '#dcfce7',
+
         text: '#15803d',
+
         dot: '#16a34a',
+
         avatar: '#16a34a',
     },
+
     'Data Encoder': {
         bg: '#fef3c7',
+
         text: '#b45309',
+
         dot: '#d97706',
+
         avatar: '#d97706',
     },
 }
 
 const ROLE_FILTER_OPTIONS = [
     'All',
+
     'System Admin',
+
     'Agricultural Engineer',
+
     'Agriculture Technician',
+
     'Data Encoder',
 ]
 
 const filterRole = ref('All')
+
 const searchQuery = ref('')
 
 const filteredUsers = computed(() =>
     users.value.filter((u) => {
         const matchesRole =
             filterRole.value === 'All' || u.role === filterRole.value
+
         const q = searchQuery.value.trim().toLowerCase()
+
         const matchesSearch =
             !q ||
             u.name.toLowerCase().includes(q) ||
             u.email.toLowerCase().includes(q) ||
             u.role.toLowerCase().includes(q)
+
         return matchesRole && matchesSearch
     })
 )
 
 const MONTHS = [
     'Jan',
+
     'Feb',
+
     'Mar',
+
     'Apr',
+
     'May',
+
     'Jun',
+
     'Jul',
+
     'Aug',
+
     'Sep',
+
     'Oct',
+
     'Nov',
+
     'Dec',
 ]
 
 function lastLoginLabel(date: string) {
     if (!date.includes('-')) return date
+
     const [d, t] = date.split(' ')
+
     const parts = d.split('-')
+
     return `${MONTHS[parseInt(parts[1], 10) - 1]} ${parseInt(parts[2], 10)}, ${t}`
 }
 
 function initials(name: string) {
     return name
+
         .replace(/^(Engr\.|Agri\.)\s+/i, '')
+
         .split(' ')
+
         .map((w) => w[0])
+
         .slice(0, 2)
+
         .join('')
+
         .toUpperCase()
 }
 
 const showAddModal = ref(false)
+
 const userForm = reactive({
     name: '',
+
     email: '',
+
     role: 'Agriculture Technician',
+
     status: 'Active',
 })
 
 function addUser() {
     if (!userForm.name.trim() || !userForm.email.trim()) return
+
     users.value.unshift({
         name: userForm.name.trim(),
+
         email: userForm.email.trim(),
+
         role: userForm.role,
+
         status: userForm.status,
+
         lastLogin: 'Just now',
     })
+
     showAddModal.value = false
+
     userForm.name = ''
+
     userForm.email = ''
+
     userForm.role = 'Agriculture Technician'
+
     userForm.status = 'Active'
 }
 </script>
 
 <template>
-    <div class="space-y-6 p-4 sm:p-6">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">Administration</h1>
-                <p class="mt-0.5 text-sm text-gray-500">
-                    System users · Data management · GIS configuration
-                </p>
-            </div>
-            <button
-                type="button"
-                class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
-                @click="showAddModal = true"
-            >
-                <UIcon name="i-lucide-user-plus" class="size-3.5" />
-                Add User
-            </button>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div
+        class="min-h-full bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 p-4 sm:p-6 lg:p-8"
+    >
+        <div class="mx-auto max-w-[1800px] space-y-6">
+            <!-- Header -->
             <div
-                v-for="s in systemStats"
-                :key="s.label"
-                class="alps-card relative overflow-hidden p-5"
+                class="relative overflow-hidden rounded-3xl border border-emerald-100/80 bg-gradient-to-r from-white via-white to-emerald-50/70 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-6"
             >
                 <div
-                    class="absolute inset-x-0 top-0 h-0.5 opacity-70"
-                    :style="{
-                        backgroundImage: `linear-gradient(90deg, ${s.color}, transparent)`,
-                    }"
+                    class="pointer-events-none absolute -right-20 -top-24 size-64 rounded-full bg-emerald-300/15 blur-3xl"
                 />
-                <div
-                    class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg"
-                    :style="{ background: `${s.color}18` }"
-                >
-                    <UIcon
-                        :name="s.icon"
-                        class="size-[18px]"
-                        :style="{ color: s.color }"
-                    />
-                </div>
-                <div
-                    class="text-2xl font-bold font-sans"
-                    :style="{
-                        color: s.color,
-                    }"
-                >
-                    {{ s.val }}
-                </div>
-                <div class="text-xs text-gray-500">{{ s.label }}</div>
-            </div>
-        </div>
 
-        <!-- System Settings + User Table -->
-        <div class="grid grid-cols-12 gap-4">
-            <div class="col-span-12 space-y-4 md:col-span-4">
                 <div
-                    v-for="item in settingsItems"
-                    :key="item.label"
-                    class="alps-card group relative flex cursor-pointer items-center gap-3 overflow-hidden p-4 transition-colors hover:border-green-200"
+                    class="relative flex flex-wrap items-center justify-between gap-5"
                 >
-                    <div
-                        class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-[#2d6a2d] to-transparent opacity-0 transition-opacity group-hover:opacity-100"
-                    />
-                    <div
-                        class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-green-50"
-                    >
-                        <UIcon
-                            :name="item.icon"
-                            class="size-4 text-green-700"
-                        />
-                    </div>
-                    <div class="flex-1">
-                        <div class="text-xs font-semibold text-gray-700">
-                            {{ item.label }}
-                        </div>
-                        <div class="text-[10px] text-gray-400">
-                            {{ item.desc }}
-                        </div>
-                    </div>
-                    <UIcon
-                        name="i-lucide-chevron-right"
-                        class="absolute right-4 size-4 text-gray-300 transition-transform group-hover:translate-x-0.5 group-hover:text-green-600"
-                    />
-                </div>
-            </div>
-
-            <div class="alps-card col-span-12 overflow-hidden md:col-span-8">
-                <div
-                    class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4"
-                >
-                    <div class="flex items-center gap-2">
+                    <div class="flex min-w-0 items-start gap-4">
                         <div
-                            class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e8f5e8]"
+                            class="hidden size-12 shrink-0 items-center justify-center rounded-2xl bg-[#2d6a2d] text-white shadow-[0_8px_22px_rgba(45,106,45,0.22)] sm:flex"
                         >
                             <UIcon
-                                name="i-lucide-users"
-                                class="size-4 text-[#2d6a2d]"
+                                name="i-lucide-shield-check"
+                                class="size-6"
                             />
                         </div>
+
                         <div>
-                            <h3 class="text-sm font-semibold text-gray-700">
-                                System Users
-                            </h3>
-                            <p class="text-[11px] text-gray-400">
-                                {{ filteredUsers.length }} shown ·
-                                {{ users.length }} total
+                            <div class="mb-2 flex flex-wrap items-center gap-2">
+                                <span
+                                    class="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700"
+                                >
+                                    <span
+                                        class="size-1.5 rounded-full bg-emerald-500"
+                                    />
+                                    System Administration
+                                </span>
+
+                                <span
+                                    class="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 shadow-sm"
+                                >
+                                    {{ users.length }} system users
+                                </span>
+                            </div>
+
+                            <h1
+                                class="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl"
+                            >
+                                Administration
+                            </h1>
+
+                            <p
+                                class="mt-1.5 max-w-2xl text-sm text-slate-500 sm:text-base"
+                            >
+                                Manage system users, configuration, GIS
+                                settings, notifications, backups, and audit
+                                activity.
                             </p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <div class="relative">
+
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-2 rounded-xl bg-[#2d6a2d] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(45,106,45,0.22)] transition-all hover:-translate-y-0.5 hover:bg-[#1f5125] hover:shadow-[0_10px_24px_rgba(45,106,45,0.28)]"
+                        @click="showAddModal = true"
+                    >
+                        <UIcon name="i-lucide-user-plus" class="size-4.5" />
+                        Add User
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div
+                    v-for="s in systemStats"
+                    :key="s.label"
+                    class="group relative min-h-[190px] overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.055)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-100 hover:shadow-[0_18px_40px_rgba(15,23,42,0.10)] sm:p-6"
+                >
+                    <div
+                        class="absolute inset-x-0 top-0 h-1"
+                        :style="{
+                            backgroundImage: `linear-gradient(90deg, ${s.color}, ${s.color}55, transparent)`,
+                        }"
+                    />
+
+                    <div
+                        class="pointer-events-none absolute -right-12 -top-14 size-36 rounded-full opacity-[0.10] blur-2xl transition-transform duration-500 group-hover:scale-125"
+                        :style="{ backgroundColor: s.color }"
+                    />
+
+                    <div class="relative flex h-full flex-col">
+                        <div class="flex items-start justify-between gap-3">
+                            <div
+                                class="flex size-12 items-center justify-center rounded-2xl shadow-sm ring-1 ring-black/5"
+                                :style="{ background: `${s.color}18` }"
+                            >
+                                <UIcon
+                                    :name="s.icon"
+                                    class="size-5"
+                                    :style="{ color: s.color }"
+                                />
+                            </div>
+
+                            <span
+                                class="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 ring-1 ring-slate-100"
+                            >
+                                <span
+                                    class="size-1.5 rounded-full"
+                                    :style="{ backgroundColor: s.color }"
+                                />
+                                Live
+                            </span>
+                        </div>
+
+                        <div class="mt-5">
+                            <div
+                                class="text-3xl font-bold tracking-tight text-slate-950"
+                            >
+                                {{ s.val }}
+                            </div>
+                            <div
+                                class="mt-1 text-sm font-semibold text-slate-700"
+                            >
+                                {{ s.label }}
+                            </div>
+                        </div>
+
+                        <div
+                            class="mt-auto border-t border-slate-100 pt-3 text-xs text-slate-400"
+                        >
+                            {{
+                                s.label === 'Total System Users'
+                                    ? 'Registered application accounts'
+                                    : s.label === 'Database Records'
+                                      ? 'Current stored system records'
+                                      : s.label === 'GIS Layers'
+                                        ? 'Configured spatial data layers'
+                                        : 'Current system availability'
+                            }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings + Users -->
+            <div class="grid grid-cols-12 gap-4">
+                <!-- Settings -->
+                <div
+                    class="col-span-12 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.055)] lg:col-span-4"
+                >
+                    <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="flex size-10 items-center justify-center rounded-xl bg-emerald-50 text-[#2d6a2d] ring-1 ring-emerald-100"
+                            >
+                                <UIcon
+                                    name="i-lucide-settings"
+                                    class="size-4.5"
+                                />
+                            </div>
+                            <div>
+                                <h2
+                                    class="text-base font-bold tracking-tight text-slate-800"
+                                >
+                                    Administration Tools
+                                </h2>
+                                <p class="text-xs text-slate-500">
+                                    System configuration and management options.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 p-4 sm:p-5">
+                        <button
+                            v-for="item in settingsItems"
+                            :key="item.label"
+                            type="button"
+                            class="group flex w-full items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 text-left transition-all hover:border-emerald-200 hover:bg-emerald-50/40"
+                        >
+                            <div
+                                class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
+                            >
+                                <UIcon :name="item.icon" class="size-4.5" />
+                            </div>
+
+                            <div class="min-w-0 flex-1">
+                                <div
+                                    class="text-sm font-semibold text-slate-800"
+                                >
+                                    {{ item.label }}
+                                </div>
+                                <div
+                                    class="mt-0.5 text-xs leading-5 text-slate-500"
+                                >
+                                    {{ item.desc }}
+                                </div>
+                            </div>
+
+                            <UIcon
+                                name="i-lucide-chevron-right"
+                                class="size-4 shrink-0 text-slate-300 transition-all group-hover:translate-x-0.5 group-hover:text-emerald-600"
+                            />
+                        </button>
+                    </div>
+                </div>
+
+                <!-- System Users -->
+                <div
+                    class="col-span-12 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)] lg:col-span-8"
+                >
+                    <div
+                        class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6"
+                    >
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="flex size-10 items-center justify-center rounded-xl bg-emerald-50 text-[#2d6a2d] ring-1 ring-emerald-100"
+                            >
+                                <UIcon name="i-lucide-users" class="size-4.5" />
+                            </div>
+
+                            <div>
+                                <h2
+                                    class="text-base font-bold tracking-tight text-slate-800"
+                                >
+                                    System Users
+                                </h2>
+                                <p class="text-xs text-slate-500 sm:text-sm">
+                                    {{ filteredUsers.length }} shown ·
+                                    {{ users.length }} total
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="relative w-full sm:w-72">
                             <UIcon
                                 name="i-lucide-search"
-                                class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-gray-400"
+                                class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400"
                             />
                             <input
                                 v-model="searchQuery"
                                 type="text"
                                 placeholder="Search users…"
-                                class="w-44 rounded-full border border-gray-200 bg-white py-1.5 pl-8 pr-7 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                                class="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-9 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10"
                             />
                             <button
                                 v-if="searchQuery"
                                 type="button"
-                                class="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                                class="absolute right-2.5 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                                 @click="searchQuery = ''"
                             >
-                                <UIcon name="i-lucide-x" class="size-3" />
+                                <UIcon name="i-lucide-x" class="size-3.5" />
                             </button>
                         </div>
                     </div>
-                </div>
-                <div
-                    class="flex flex-wrap items-center gap-1.5 border-b border-gray-100 px-5 py-2.5"
-                >
-                    <button
-                        v-for="r in ROLE_FILTER_OPTIONS"
-                        :key="r"
-                        type="button"
-                        class="rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors"
-                        :class="
-                            filterRole === r
-                                ? 'border-[#2d6a2d] bg-[#2d6a2d] text-white shadow-sm'
-                                : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-                        "
-                        @click="filterRole = r"
+
+                    <div
+                        class="flex flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/60 px-5 py-3 sm:px-6"
                     >
-                        {{ r }}
-                    </button>
-                </div>
-                <div v-if="filteredUsers.length" class="overflow-x-auto">
-                    <table class="w-full min-w-[640px] text-xs">
-                        <thead class="border-b border-gray-100 bg-gray-50">
-                            <tr>
-                                <th
-                                    class="px-4 py-3 text-left font-semibold text-gray-600"
-                                >
-                                    Name
-                                </th>
-                                <th
-                                    class="px-4 py-3 text-left font-semibold text-gray-600"
-                                >
-                                    Email
-                                </th>
-                                <th
-                                    class="px-4 py-3 text-left font-semibold text-gray-600"
-                                >
-                                    Role
-                                </th>
-                                <th
-                                    class="px-4 py-3 text-left font-semibold text-gray-600"
-                                >
-                                    Status
-                                </th>
-                                <th
-                                    class="px-4 py-3 text-left font-semibold text-gray-600"
-                                >
-                                    Last Login
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="(u, i) in filteredUsers"
-                                :key="u.email"
-                                class="cursor-pointer border-b border-gray-50 last:border-0 hover:bg-gray-50/50"
-                                :class="
-                                    i % 2 === 1 ? 'bg-gray-50/40' : 'bg-white'
-                                "
+                        <button
+                            v-for="r in ROLE_FILTER_OPTIONS"
+                            :key="r"
+                            type="button"
+                            class="rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all"
+                            :class="
+                                filterRole === r
+                                    ? 'border-[#2d6a2d] bg-[#2d6a2d] text-white shadow-md shadow-green-900/10'
+                                    : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/50 hover:text-emerald-700'
+                            "
+                            @click="filterRole = r"
+                        >
+                            {{ r }}
+                        </button>
+                    </div>
+
+                    <div v-if="filteredUsers.length" class="overflow-x-auto">
+                        <table class="w-full min-w-[760px] text-sm">
+                            <thead
+                                class="border-b border-slate-100 bg-slate-50/70"
                             >
-                                <td class="px-4 py-3">
-                                    <div class="flex items-center gap-2">
+                                <tr
+                                    class="text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+                                >
+                                    <th class="px-5 py-3.5 text-left">Name</th>
+                                    <th class="px-5 py-3.5 text-left">Email</th>
+                                    <th class="px-5 py-3.5 text-left">Role</th>
+                                    <th class="px-5 py-3.5 text-left">
+                                        Status
+                                    </th>
+                                    <th class="px-5 py-3.5 text-left">
+                                        Last Login
+                                    </th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                <tr
+                                    v-for="u in filteredUsers"
+                                    :key="u.email"
+                                    class="border-b border-slate-100 bg-white transition-colors last:border-0 hover:bg-emerald-50/40"
+                                >
+                                    <td class="px-5 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <span
+                                                class="flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white shadow-sm ring-2 ring-white"
+                                                :style="{
+                                                    background:
+                                                        ROLE_STYLE[u.role]
+                                                            .avatar,
+                                                }"
+                                            >
+                                                {{ initials(u.name) }}
+                                            </span>
+
+                                            <span
+                                                class="font-semibold text-slate-800"
+                                            >
+                                                {{ u.name }}
+                                            </span>
+                                        </div>
+                                    </td>
+
+                                    <td class="px-5 py-4 text-slate-600">
+                                        {{ u.email }}
+                                    </td>
+
+                                    <td class="px-5 py-4">
                                         <span
-                                            class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white"
+                                            class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
                                             :style="{
                                                 background:
-                                                    ROLE_STYLE[u.role].avatar,
+                                                    ROLE_STYLE[u.role].bg,
+                                                color: ROLE_STYLE[u.role].text,
                                             }"
                                         >
-                                            {{ initials(u.name) }}
+                                            <span
+                                                class="size-1.5 rounded-full"
+                                                :style="{
+                                                    background:
+                                                        ROLE_STYLE[u.role].dot,
+                                                }"
+                                            />
+                                            {{ u.role }}
                                         </span>
-                                        <span class="font-medium text-gray-800">
-                                            {{ u.name }}
-                                        </span>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-3 text-gray-500">
-                                    {{ u.email }}
-                                </td>
-                                <td class="px-4 py-3">
-                                    <span
-                                        class="rounded px-2 py-0.5 text-[10px] font-semibold"
-                                        :style="{
-                                            background: ROLE_STYLE[u.role].bg,
-                                            color: ROLE_STYLE[u.role].text,
-                                        }"
-                                    >
-                                        {{ u.role }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <span
-                                        class="inline-flex items-center gap-1.5 text-[10px] font-medium"
-                                        :style="{
-                                            color: ROLE_STYLE[u.role].dot,
-                                        }"
-                                    >
+                                    </td>
+
+                                    <td class="px-5 py-4">
                                         <span
-                                            class="h-1.5 w-1.5 rounded-full"
-                                            style="background: #16a34a"
-                                        />
-                                        {{ u.status }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3 font-mono text-gray-400">
-                                    {{ lastLoginLabel(u.lastLogin) }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div
-                    v-else
-                    class="flex flex-col items-center justify-center px-5 py-12 text-center"
-                >
+                                            class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"
+                                        >
+                                            <span
+                                                class="size-1.5 rounded-full bg-emerald-500"
+                                            />
+                                            {{ u.status }}
+                                        </span>
+                                    </td>
+
+                                    <td
+                                        class="px-5 py-4 font-mono text-xs text-slate-500"
+                                    >
+                                        {{ lastLoginLabel(u.lastLogin) }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
                     <div
-                        class="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-gray-50"
+                        v-else
+                        class="flex flex-col items-center justify-center px-5 py-14 text-center"
                     >
-                        <UIcon
-                            name="i-lucide-user-x"
-                            class="size-5 text-gray-400"
-                        />
-                    </div>
-                    <div class="text-xs font-medium text-gray-500">
-                        No users found
-                    </div>
-                    <div class="mt-0.5 text-[11px] text-gray-400">
-                        Try a different search term or role filter.
+                        <div
+                            class="mb-3 flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-300"
+                        >
+                            <UIcon name="i-lucide-user-x" class="size-6" />
+                        </div>
+                        <div class="text-base font-semibold text-slate-700">
+                            No users found
+                        </div>
+                        <div class="mt-1 text-sm text-slate-400">
+                            Try a different search term or role filter.
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- System Info -->
-        <div
-            class="alps-card grid grid-cols-1 divide-y divide-gray-100 md:grid-cols-3 md:divide-x md:divide-y-0"
-        >
+            <!-- System Information -->
             <div
-                v-for="info in systemInfo"
-                :key="info.label"
-                class="flex items-start gap-3 p-4"
+                class="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
             >
-                <div
-                    class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100"
-                >
-                    <UIcon :name="info.icon" class="size-4 text-gray-600" />
-                </div>
-                <div>
-                    <div
-                        class="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400"
-                    >
-                        {{ info.label }}
+                <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex size-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600"
+                        >
+                            <UIcon name="i-lucide-server" class="size-4.5" />
+                        </div>
+
+                        <div>
+                            <h2
+                                class="text-base font-bold tracking-tight text-slate-800"
+                            >
+                                System Information
+                            </h2>
+                            <p class="text-xs text-slate-500">
+                                Current application and synchronization details.
+                            </p>
+                        </div>
                     </div>
-                    <div class="text-xs font-medium text-gray-700">
-                        {{ info.val }}
+                </div>
+
+                <div
+                    class="grid grid-cols-1 divide-y divide-slate-100 md:grid-cols-3 md:divide-x md:divide-y-0"
+                >
+                    <div
+                        v-for="info in systemInfo"
+                        :key="info.label"
+                        class="flex items-start gap-3 p-5 sm:p-6"
+                    >
+                        <div
+                            class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600"
+                        >
+                            <UIcon :name="info.icon" class="size-4.5" />
+                        </div>
+
+                        <div>
+                            <div
+                                class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400"
+                            >
+                                {{ info.label }}
+                            </div>
+                            <div
+                                class="text-sm font-semibold leading-6 text-slate-700"
+                            >
+                                {{ info.val }}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -513,42 +780,45 @@ function addUser() {
     <Teleport to="body">
         <div
             v-if="showAddModal"
-            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-sm sm:items-center"
             @click.self="showAddModal = false"
         >
             <div
-                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl font-sans"
+                class="w-full max-w-md overflow-hidden rounded-3xl border border-white/70 bg-white p-6 font-sans shadow-[0_24px_70px_rgba(15,23,42,0.28)] ring-1 ring-slate-900/5 sm:p-7"
             >
-                <div class="mb-5 flex items-start justify-between">
+                <div class="mb-6 flex items-start justify-between gap-4">
                     <div class="flex items-center gap-3">
                         <span
-                            class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-[#e0f0fb] text-[#1d6ab3]"
-                            style="box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12)"
+                            class="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#e0f0fb] text-[#1d6ab3] ring-1 ring-blue-100"
                         >
                             <UIcon name="i-lucide-user-plus" class="size-5" />
                         </span>
+
                         <div>
-                            <h3 class="text-lg font-bold text-gray-900">
+                            <h3
+                                class="text-xl font-bold tracking-tight text-slate-950"
+                            >
                                 Add User
                             </h3>
-                            <p class="text-xs text-gray-500">
+                            <p class="text-sm text-slate-500">
                                 Register a new system user account.
                             </p>
                         </div>
                     </div>
+
                     <button
                         type="button"
-                        class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+                        class="flex size-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
                         @click="showAddModal = false"
                     >
                         <UIcon name="i-lucide-x" class="size-4" />
                     </button>
                 </div>
 
-                <form class="space-y-4" @submit.prevent="addUser">
+                <form class="space-y-5" @submit.prevent="addUser">
                     <div>
                         <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
+                            class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                         >
                             Full Name
                         </label>
@@ -557,12 +827,13 @@ function addUser() {
                             type="text"
                             required
                             placeholder="e.g. Agri. Ana Fernandez"
-                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                         />
                     </div>
+
                     <div>
                         <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
+                            class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                         >
                             Email
                         </label>
@@ -571,19 +842,21 @@ function addUser() {
                             type="email"
                             required
                             placeholder="name@sanfernando.gov.ph"
-                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                         />
                     </div>
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Role
                             </label>
+
                             <select
                                 v-model="userForm.role"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                             >
                                 <option
                                     v-for="r in [
@@ -599,34 +872,40 @@ function addUser() {
                                 </option>
                             </select>
                         </div>
+
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Status
                             </label>
+
                             <select
                                 v-model="userForm.status"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                             >
                                 <option value="Active">Active</option>
                                 <option value="Inactive">Inactive</option>
                             </select>
                         </div>
                     </div>
-                    <div class="flex justify-end gap-2 pt-2">
+
+                    <div
+                        class="flex justify-end gap-2 border-t border-slate-100 pt-5"
+                    >
                         <button
                             type="button"
-                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
                             @click="showAddModal = false"
                         >
                             Cancel
                         </button>
+
                         <button
                             type="submit"
-                            class="flex items-center gap-1.5 rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
+                            class="flex items-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#1f5125]"
                         >
-                            <UIcon name="i-lucide-user-plus" class="size-3.5" />
+                            <UIcon name="i-lucide-user-plus" class="size-4" />
                             Add User
                         </button>
                     </div>

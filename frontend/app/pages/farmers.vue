@@ -1,4 +1,5 @@
 <script setup lang="ts">
+//@ts-nocheck
 import type { TableColumn, TableRow } from '@nuxt/ui'
 import type { TableMeta } from '@tanstack/vue-table'
 import type { Farmer, FarmerStatus } from '~/composables/useFarmersApi'
@@ -432,6 +433,7 @@ const summaryCards = computed(() => [
     {
         label: 'Total Farmers',
         val: farmers.value.length,
+        hint: 'Registered farmer profiles',
         color: '#2d6a2d',
         bg: '#e8f5e8',
         icon: 'i-lucide-users',
@@ -439,6 +441,7 @@ const summaryCards = computed(() => [
     {
         label: 'Barangays Covered',
         val: barangaysByParcels.value.length,
+        hint: 'Based on parcel locations',
         color: '#1d6fa4',
         bg: '#e0f0fb',
         icon: 'i-lucide-map-pin',
@@ -446,15 +449,17 @@ const summaryCards = computed(() => [
     {
         label: 'Registered Parcels',
         val: parcels.value.length,
+        hint: 'Linked agricultural parcels',
         color: '#16a34a',
         bg: '#dcfce7',
-        icon: 'i-lucide-layers',
+        icon: 'i-lucide-layers-3',
     },
     {
         label: 'Total Registered Area',
         val: `${parcels.value
             .reduce((a, p) => a + p.area_hectares, 0)
             .toFixed(1)} ha`,
+        hint: 'Mapped agricultural coverage',
         color: '#ca8a04',
         bg: '#fef3c7',
         icon: 'i-lucide-wheat',
@@ -679,392 +684,696 @@ onMounted(async () => {
 
 <template>
     <!-- Farmer Detail View -->
-    <div v-if="selectedFarmer" class="p-4 sm:p-6">
-        <div class="w-full">
+    <div
+        v-if="selectedFarmer"
+        class="min-h-full bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 p-4 sm:p-6 lg:p-8"
+    >
+        <div class="mx-auto max-w-[1800px] space-y-6">
+            <!-- Back -->
             <button
                 type="button"
-                class="mb-6 flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
+                class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/50 hover:text-emerald-700"
                 @click="backToRegistry"
             >
-                <UIcon name="i-lucide-arrow-left" class="size-3.5" />
+                <UIcon name="i-lucide-arrow-left" class="size-4" />
                 Back to Farmers Registry
             </button>
 
-            <!-- Profile Header -->
-            <div class="alps-card mb-5 p-4 sm:p-6">
-                <div class="flex flex-col items-start gap-5 sm:flex-row">
-                    <div
-                        class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-[#5cba5c] to-[#2f7d2f] text-xl font-bold text-white shadow-lg shadow-black/10"
-                    >
-                        {{ initials(selectedFarmer.name) }}
-                    </div>
-                    <div class="min-w-0 flex-1">
+            <!-- Profile Hero -->
+            <div
+                class="relative overflow-hidden rounded-3xl border border-emerald-100/80 bg-gradient-to-r from-white via-white to-emerald-50/70 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-6 lg:p-7"
+            >
+                <div
+                    class="pointer-events-none absolute -right-20 -top-24 size-64 rounded-full bg-emerald-300/15 blur-3xl"
+                />
+
+                <div
+                    class="relative flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between"
+                >
+                    <div class="flex min-w-0 flex-1 flex-col gap-5 sm:flex-row">
                         <div
-                            class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+                            class="flex size-20 shrink-0 items-center justify-center rounded-3xl text-2xl font-extrabold text-white shadow-[0_12px_30px_rgba(15,23,42,0.15)] ring-4 ring-white"
+                            :style="{
+                                backgroundColor: avatarColor(selectedFarmer.name),
+                            }"
                         >
-                            <div>
-                                <div class="flex items-center gap-3">
-                                    <h2 class="text-xl font-bold text-gray-900">
-                                        {{ selectedFarmer.name }}
-                                    </h2>
+                            {{ initials(selectedFarmer.name) }}
+                        </div>
+
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span
+                                    class="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-emerald-700"
+                                >
                                     <span
-                                        class="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1"
+                                        class="size-1.5 rounded-full bg-emerald-500"
+                                    />
+                                    Farmer Profile
+                                </span>
+
+                                <span
+                                    class="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
+                                    :class="
+                                        selectedFarmer.farmer_status === 'Active'
+                                            ? 'bg-green-50 text-green-700 ring-green-100'
+                                            : selectedFarmer.farmer_status ===
+                                                'Inactive'
+                                              ? 'bg-slate-100 text-slate-600 ring-slate-200'
+                                              : 'bg-amber-50 text-amber-700 ring-amber-100'
+                                    "
+                                >
+                                    <span
+                                        class="size-1.5 rounded-full"
                                         :class="
-                                            selectedFarmer.farmer_status ===
-                                            'Active'
-                                                ? 'bg-green-50 text-green-700 ring-green-100'
+                                            selectedFarmer.farmer_status === 'Active'
+                                                ? 'bg-green-500'
                                                 : selectedFarmer.farmer_status ===
                                                     'Inactive'
-                                                  ? 'bg-gray-50 text-gray-600 ring-gray-200'
-                                                  : 'bg-amber-50 text-amber-700 ring-amber-100'
+                                                  ? 'bg-slate-400'
+                                                  : 'bg-amber-500'
                                         "
-                                    >
-                                        <span
-                                            class="h-1.5 w-1.5 rounded-full"
-                                            :class="
-                                                selectedFarmer.farmer_status ===
-                                                'Active'
-                                                    ? 'bg-green-500'
-                                                    : selectedFarmer.farmer_status ===
-                                                        'Inactive'
-                                                      ? 'bg-gray-400'
-                                                      : 'bg-amber-500'
-                                            "
-                                        ></span>
-                                        {{ selectedFarmer.farmer_status }}
-                                    </span>
-                                </div>
-                                <div class="mt-1 flex items-center gap-3">
-                                    <span
-                                        class="font-mono text-xs text-gray-600"
-                                    >
-                                        {{ selectedFarmer.farmer_code }}
-                                    </span>
-                                    <span class="text-xs text-gray-400">
-                                        {{ farmerBarangay(selectedFarmer) }}
-                                    </span>
-                                </div>
+                                    />
+                                    {{ selectedFarmer.farmer_status }}
+                                </span>
                             </div>
-                            <div class="flex flex-wrap gap-2">
-                                <button
-                                    type="button"
-                                    class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                                    @click="openEditModal(selectedFarmer)"
-                                >
-                                    Edit Profile
-                                </button>
-                                <button
-                                    type="button"
-                                    class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524]"
-                                    @click="openAssistModal(selectedFarmer)"
-                                >
-                                    Add Assistance
-                                </button>
-                            </div>
-                        </div>
-                        <div
-                            class="mt-4 grid grid-cols-2 gap-4 border-t border-gray-100 pt-4 lg:grid-cols-4"
-                        >
-                            <div
-                                v-for="field in profileFields"
-                                :key="field.label"
-                                class="text-xs"
+
+                            <h1
+                                class="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl"
                             >
-                                <div class="mb-0.5 text-gray-400">
-                                    {{ field.label }}
-                                </div>
-                                <div
-                                    class="flex items-center gap-1 font-medium text-gray-700"
+                                {{ selectedFarmer.name }}
+                            </h1>
+
+                            <div
+                                class="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-500"
+                            >
+                                <span
+                                    class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-600"
                                 >
                                     <UIcon
-                                        :name="field.icon"
-                                        class="size-2.75 text-gray-400"
+                                        name="i-lucide-badge-check"
+                                        class="size-3.5"
                                     />
-                                    {{ field.val }}
-                                </div>
+                                    {{ selectedFarmer.farmer_code }}
+                                </span>
+
+                                <span
+                                    class="inline-flex items-center gap-1.5"
+                                >
+                                    <UIcon
+                                        name="i-lucide-map-pin"
+                                        class="size-4 text-slate-400"
+                                    />
+                                    {{ farmerBarangay(selectedFarmer) }}
+                                </span>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
+                            @click="openEditModal(selectedFarmer)"
+                        >
+                            <UIcon name="i-lucide-pencil" class="size-4" />
+                            Edit Profile
+                        </button>
+
+                        <button
+                            type="button"
+                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_6px_16px_rgba(45,106,45,0.22)] transition-all hover:-translate-y-0.5 hover:bg-[#1f5125] hover:shadow-[0_8px_20px_rgba(45,106,45,0.28)]"
+                            @click="openAssistModal(selectedFarmer)"
+                        >
+                            <UIcon name="i-lucide-hand-heart" class="size-4" />
+                            Add Assistance
+                        </button>
+                    </div>
+                </div>
+
+                <div
+                    class="relative mt-6 grid grid-cols-1 gap-3 border-t border-slate-100 pt-5 sm:grid-cols-2 xl:grid-cols-4"
+                >
+                    <div
+                        v-for="field in profileFields"
+                        :key="field.label"
+                        class="rounded-2xl border border-slate-100 bg-white/70 p-4"
+                    >
+                        <div
+                            class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-400"
+                        >
+                            <UIcon
+                                :name="field.icon"
+                                class="size-3.5 text-emerald-600"
+                            />
+                            {{ field.label }}
+                        </div>
+
+                        <div class="text-sm font-semibold text-slate-800">
+                            {{ field.val }}
+                        </div>
+                    </div>
+
+                    <div
+                        class="rounded-2xl border border-slate-100 bg-white/70 p-4"
+                    >
+                        <div
+                            class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-400"
+                        >
+                            <UIcon
+                                name="i-lucide-phone"
+                                class="size-3.5 text-emerald-600"
+                            />
+                            Contact
+                        </div>
+
+                        <div class="text-sm font-semibold text-slate-800">
+                            {{ selectedFarmer.contact || 'Not provided' }}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Stats Row -->
-            <div class="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <!-- Stats -->
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <div
                     v-for="stat in detailStats"
                     :key="stat.label"
-                    class="alps-card relative overflow-hidden p-4"
+                    class="group relative min-h-[190px] overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.055)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-100 hover:shadow-[0_18px_40px_rgba(15,23,42,0.10)] sm:p-6"
                 >
                     <div
-                        class="absolute inset-x-0 top-0 h-0.5 opacity-70"
+                        class="absolute inset-x-0 top-0 h-1"
                         :style="{
-                            backgroundImage: `linear-gradient(90deg, ${stat.color}, transparent)`,
+                            backgroundImage: `linear-gradient(90deg, ${stat.color}, ${stat.color}55, transparent)`,
                         }"
                     />
+
                     <div
-                        class="mb-2 flex h-8 w-8 items-center justify-center rounded-lg"
-                        :style="{ background: stat.bg }"
-                    >
-                        <UIcon
-                            :name="stat.icon"
-                            class="size-4"
-                            :style="{ color: stat.color }"
-                        />
+                        class="pointer-events-none absolute -right-12 -top-14 size-36 rounded-full opacity-[0.10] blur-2xl transition-transform duration-500 group-hover:scale-125"
+                        :style="{ backgroundColor: stat.color }"
+                    />
+
+                    <div class="relative flex h-full flex-col">
+                        <div class="flex items-start justify-between">
+                            <div
+                                class="flex size-12 items-center justify-center rounded-2xl shadow-sm ring-1 ring-black/5"
+                                :style="{ background: stat.bg }"
+                            >
+                                <UIcon
+                                    :name="stat.icon"
+                                    class="size-5"
+                                    :style="{ color: stat.color }"
+                                />
+                            </div>
+
+                            <span
+                                class="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 ring-1 ring-slate-100"
+                            >
+                                <span
+                                    class="size-1.5 rounded-full"
+                                    :style="{ backgroundColor: stat.color }"
+                                />
+                                Live
+                            </span>
+                        </div>
+
+                        <div class="mt-5">
+                            <div
+                                class="text-3xl font-bold tracking-tight text-slate-950"
+                            >
+                                {{ stat.val }}
+                            </div>
+                            <div
+                                class="mt-1 text-sm font-semibold text-slate-700"
+                            >
+                                {{ stat.label }}
+                            </div>
+                        </div>
+
+                        <div
+                            class="mt-auto border-t border-slate-100 pt-3 text-xs text-slate-400"
+                        >
+                            {{
+                                stat.label === 'Total Parcels'
+                                    ? 'Parcels assigned to this farmer'
+                                    : stat.label === 'Total Area'
+                                      ? 'Combined registered area'
+                                      : stat.label === 'Cultivated Parcels'
+                                        ? 'Currently cultivated parcels'
+                                        : 'Parcels requiring attention'
+                            }}
+                        </div>
                     </div>
-                    <div class="text-xl font-bold text-gray-900">
-                        {{ stat.val }}
-                    </div>
-                    <div class="text-xs text-gray-500">{{ stat.label }}</div>
                 </div>
             </div>
 
-            <!-- Parcels -->
-            <div class="alps-card p-5">
-                <h3 class="mb-4 text-sm font-semibold text-gray-700">
-                    Registered Parcels
-                </h3>
-                <div
-                    v-if="selectedFarmerParcels.length === 0"
-                    class="py-8 text-center text-xs text-gray-400"
+            <!-- Main Detail Grid -->
+            <div class="grid grid-cols-12 gap-4">
+                <!-- Parcels -->
+                <section
+                    class="col-span-12 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)] xl:col-span-7"
                 >
-                    No parcels registered for this farmer.
-                </div>
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full min-w-[560px] text-xs">
-                        <thead>
-                            <tr class="border-b border-gray-100 text-gray-400">
-                                <th class="pb-2 text-left font-medium">
-                                    Parcel Code
-                                </th>
-                                <th class="pb-2 text-left font-medium">
-                                    Barangay
-                                </th>
-                                <th class="pb-2 text-right font-medium">
-                                    Area (ha)
-                                </th>
-                                <th class="pb-2 text-left font-medium">
-                                    Land Status
-                                </th>
-                                <th class="pb-2 text-left font-medium">
-                                    Current Use
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="p in selectedFarmerParcels"
-                                :key="p.parcel_code"
-                                class="border-b border-gray-50 last:border-0 hover:bg-gray-50/50"
+                    <div
+                        class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6"
+                    >
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="flex size-10 items-center justify-center rounded-xl bg-emerald-50 text-[#2d6a2d] ring-1 ring-emerald-100"
                             >
-                                <td class="py-2.5 font-mono text-gray-700">
-                                    {{ p.parcel_code }}
-                                </td>
-                                <td class="py-2.5 text-gray-600">
-                                    {{ p.barangay }}
-                                </td>
-                                <td class="py-2.5 text-right font-mono">
-                                    {{ p.area_hectares }}
-                                </td>
-                                <td class="py-2.5">
-                                    <span
-                                        :class="
-                                            parcelStatusClass(p.land_status)
-                                        "
-                                        class="rounded px-2 py-0.5 text-[10px] font-medium"
+                                <UIcon
+                                    name="i-lucide-layers"
+                                    class="size-4.5"
+                                />
+                            </div>
+
+                            <div>
+                                <h2
+                                    class="text-base font-bold tracking-tight text-slate-800"
+                                >
+                                    Registered Parcels
+                                </h2>
+                                <p class="text-xs text-slate-500 sm:text-sm">
+                                    Land assignments and current parcel use.
+                                </p>
+                            </div>
+                        </div>
+
+                        <span
+                            class="rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700"
+                        >
+                            {{ selectedFarmerParcels.length }} records
+                        </span>
+                    </div>
+
+                    <div
+                        v-if="selectedFarmerParcels.length === 0"
+                        class="flex flex-col items-center justify-center px-6 py-14 text-center"
+                    >
+                        <div
+                            class="mb-3 flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-300"
+                        >
+                            <UIcon name="i-lucide-layers" class="size-6" />
+                        </div>
+                        <div class="text-base font-semibold text-slate-700">
+                            No parcels registered
+                        </div>
+                        <p class="mt-1 max-w-sm text-sm text-slate-400">
+                            This farmer has no parcel assignments yet.
+                        </p>
+                    </div>
+
+                    <div v-else class="overflow-x-auto">
+                        <table class="w-full min-w-[700px] text-sm">
+                            <thead
+                                class="border-b border-slate-100 bg-slate-50/70"
+                            >
+                                <tr
+                                    class="text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+                                >
+                                    <th class="px-5 py-3.5 text-left">
+                                        Parcel Code
+                                    </th>
+                                    <th class="px-5 py-3.5 text-left">
+                                        Barangay
+                                    </th>
+                                    <th class="px-5 py-3.5 text-right">
+                                        Area (ha)
+                                    </th>
+                                    <th class="px-5 py-3.5 text-left">
+                                        Land Status
+                                    </th>
+                                    <th class="px-5 py-3.5 text-left">
+                                        Current Use
+                                    </th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                <tr
+                                    v-for="p in selectedFarmerParcels"
+                                    :key="p.parcel_code"
+                                    class="border-b border-slate-100 bg-white transition-colors last:border-0 hover:bg-emerald-50/40"
+                                >
+                                    <td class="px-5 py-4">
+                                        <NuxtLink
+                                            :to="`/parcels/${p.parcel_code}`"
+                                            class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-700"
+                                        >
+                                            {{ p.parcel_code }}
+                                            <UIcon
+                                                name="i-lucide-arrow-up-right"
+                                                class="size-3"
+                                            />
+                                        </NuxtLink>
+                                    </td>
+
+                                    <td class="px-5 py-4 text-slate-600">
+                                        <span
+                                            class="flex items-center gap-1.5"
+                                        >
+                                            <UIcon
+                                                name="i-lucide-map-pin"
+                                                class="size-3.5 text-slate-400"
+                                            />
+                                            {{ p.barangay }}
+                                        </span>
+                                    </td>
+
+                                    <td
+                                        class="px-5 py-4 text-right font-mono font-semibold text-slate-800"
                                     >
-                                        {{ p.land_status }}
-                                    </span>
-                                </td>
-                                <td class="py-2.5 text-gray-600">
-                                    {{ p.current_use ?? '—' }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                                        {{ Number(p.area_hectares).toFixed(2) }}
+                                    </td>
 
-            <!-- Assistance -->
-            <div class="alps-card mt-5 p-5">
-                <div class="mb-4 flex items-baseline justify-between gap-3">
-                    <h3
-                        class="flex items-center gap-2 text-sm font-semibold text-gray-700"
-                    >
-                        <UIcon
-                            name="i-lucide-hand-heart"
-                            class="size-3.5 text-gray-400"
-                        />
-                        Assistance Received
-                    </h3>
-                    <span
-                        v-if="selectedFarmerAssistance.length > 0"
-                        class="text-xs text-gray-400"
-                    >
-                        {{ selectedFarmerAssistance.length }} record(s) ·
-                        {{ peso(selectedFarmerAssistanceTotal) }} total
-                    </span>
-                </div>
-                <div
-                    v-if="selectedFarmerAssistance.length === 0"
-                    class="py-8 text-center text-xs text-gray-400"
+                                    <td class="px-5 py-4">
+                                        <span
+                                            :class="
+                                                parcelStatusClass(p.land_status)
+                                            "
+                                            class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
+                                        >
+                                            {{ p.land_status }}
+                                        </span>
+                                    </td>
+
+                                    <td class="px-5 py-4 text-slate-600">
+                                        {{ p.current_use ?? '—' }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Assistance -->
+                <section
+                    class="col-span-12 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)] xl:col-span-5"
                 >
-                    No assistance recorded for this farmer yet.
-                </div>
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full min-w-[560px] text-xs">
-                        <thead>
-                            <tr class="border-b border-gray-100 text-gray-400">
-                                <th class="pb-2 text-left font-medium">Ref</th>
-                                <th class="pb-2 text-left font-medium">
-                                    Program
-                                </th>
-                                <th class="pb-2 text-left font-medium">Date</th>
-                                <th class="pb-2 text-right font-medium">
-                                    Value
-                                </th>
-                                <th class="pb-2 text-left font-medium">
-                                    Status
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="a in selectedFarmerAssistance"
-                                :key="a.documentId"
-                                class="border-b border-gray-50 last:border-0 hover:bg-gray-50/50"
+                    <div
+                        class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6"
+                    >
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="flex size-10 items-center justify-center rounded-xl bg-violet-50 text-violet-700 ring-1 ring-violet-100"
                             >
-                                <td class="py-2.5 font-mono text-gray-400">
-                                    {{ a.reference_code || '—' }}
-                                </td>
-                                <td class="py-2.5">
+                                <UIcon
+                                    name="i-lucide-hand-heart"
+                                    class="size-4.5"
+                                />
+                            </div>
+
+                            <div>
+                                <h2
+                                    class="text-base font-bold tracking-tight text-slate-800"
+                                >
+                                    Assistance Received
+                                </h2>
+                                <p class="text-xs text-slate-500 sm:text-sm">
+                                    Program support and release history.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div
+                            v-if="selectedFarmerAssistance.length > 0"
+                            class="text-right"
+                        >
+                            <div
+                                class="text-sm font-bold text-emerald-700"
+                            >
+                                {{ peso(selectedFarmerAssistanceTotal) }}
+                            </div>
+                            <div class="text-xs text-slate-400">
+                                {{ selectedFarmerAssistance.length }} record(s)
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        v-if="selectedFarmerAssistance.length === 0"
+                        class="flex flex-col items-center justify-center px-6 py-14 text-center"
+                    >
+                        <div
+                            class="mb-3 flex size-12 items-center justify-center rounded-2xl bg-violet-50 text-violet-300"
+                        >
+                            <UIcon
+                                name="i-lucide-hand-heart"
+                                class="size-6"
+                            />
+                        </div>
+                        <div class="text-base font-semibold text-slate-700">
+                            No assistance recorded
+                        </div>
+                        <p class="mt-1 max-w-sm text-sm text-slate-400">
+                            Assistance released to this farmer will appear here.
+                        </p>
+                    </div>
+
+                    <div
+                        v-else
+                        class="max-h-[430px] divide-y divide-slate-100 overflow-y-auto"
+                    >
+                        <div
+                            v-for="a in selectedFarmerAssistance"
+                            :key="a.documentId"
+                            class="p-5 transition-colors hover:bg-emerald-50/30"
+                        >
+                            <div
+                                class="flex items-start justify-between gap-3"
+                            >
+                                <div class="min-w-0">
                                     <div
-                                        class="font-medium text-gray-800"
-                                        :title="a.program"
+                                        class="flex flex-wrap items-center gap-2"
+                                    >
+                                        <span
+                                            class="font-mono text-xs font-semibold text-slate-400"
+                                        >
+                                            {{ a.reference_code || '—' }}
+                                        </span>
+
+                                        <span
+                                            :class="
+                                                ASSISTANCE_STATUS_STYLE[
+                                                    a.status ?? 'Scheduled'
+                                                ]
+                                            "
+                                            class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
+                                        >
+                                            <span
+                                                class="size-1.5 rounded-full"
+                                                :style="{
+                                                    background:
+                                                        ASSISTANCE_STATUS_DOT[
+                                                            a.status ??
+                                                                'Scheduled'
+                                                        ],
+                                                }"
+                                            />
+                                            {{ a.status ?? '—' }}
+                                        </span>
+                                    </div>
+
+                                    <div
+                                        class="mt-2 text-sm font-semibold text-slate-800"
                                     >
                                         {{ a.program }}
                                     </div>
-                                    <!-- Items are free text and often long, so they
-                                         sit under the program rather than taking a
-                                         column that would force a scrollbar. -->
-                                    <div
+
+                                    <p
                                         v-if="a.items"
-                                        class="mt-0.5 max-w-xs truncate text-[10px] text-gray-400"
+                                        class="mt-1 line-clamp-2 text-xs leading-5 text-slate-500"
                                         :title="a.items"
                                     >
                                         {{ a.items }}
-                                    </div>
-                                </td>
-                                <td class="py-2.5 text-gray-500">
-                                    <span class="flex items-center gap-1">
-                                        <UIcon
-                                            name="i-lucide-calendar"
-                                            class="size-[10px] text-gray-400"
-                                        />
-                                        {{ a.date ?? '—' }}
-                                    </span>
-                                </td>
-                                <td
-                                    class="py-2.5 text-right font-mono font-medium text-green-700"
+                                    </p>
+                                </div>
+
+                                <div
+                                    class="shrink-0 text-right font-mono text-sm font-bold text-emerald-700"
                                 >
                                     {{ peso(a.value) }}
-                                </td>
-                                <td class="py-2.5 text-gray-500">
-                                    <span
-                                        :class="
-                                            ASSISTANCE_STATUS_STYLE[
-                                                a.status ?? 'Scheduled'
-                                            ]
-                                        "
-                                        class="flex w-fit items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-medium"
-                                    >
-                                        <span
-                                            class="h-1.5 w-1.5 rounded-full"
-                                            :style="{
-                                                background:
-                                                    ASSISTANCE_STATUS_DOT[
-                                                        a.status ?? 'Scheduled'
-                                                    ],
-                                            }"
-                                        />
-                                        {{ a.status ?? '—' }}
-                                    </span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                                </div>
+                            </div>
+
+                            <div
+                                class="mt-3 flex items-center gap-1.5 text-xs text-slate-400"
+                            >
+                                <UIcon
+                                    name="i-lucide-calendar"
+                                    class="size-3.5"
+                                />
+                                {{ a.date ?? '—' }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        class="border-t border-slate-100 bg-slate-50/60 px-5 py-4"
+                    >
+                        <button
+                            type="button"
+                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[#1f5125]"
+                            @click="openAssistModal(selectedFarmer)"
+                        >
+                            <UIcon name="i-lucide-plus" class="size-4" />
+                            Record Assistance
+                        </button>
+                    </div>
+                </section>
             </div>
         </div>
     </div>
 
     <!-- Farmers Registry List -->
-    <div v-else class="p-4 sm:p-6">
-        <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">
-                    Farmers Registry
-                </h1>
-                <p class="mt-0.5 text-sm text-gray-500">
-                    Registered farmers · {{ farmers.length }} total
-                </p>
+    <div v-else class="min-h-full bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 p-4 sm:p-6 lg:p-8">
+        <div
+            class="relative mb-7 overflow-hidden rounded-3xl border border-emerald-100/80 bg-gradient-to-r from-white via-white to-emerald-50/70 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-6"
+        >
+            <div
+                class="pointer-events-none absolute -right-20 -top-24 size-64 rounded-full bg-emerald-300/15 blur-3xl"
+            />
+            <div class="relative flex flex-wrap items-center justify-between gap-5">
+                <div class="flex min-w-0 items-start gap-4">
+                    <div
+                        class="hidden size-12 shrink-0 items-center justify-center rounded-2xl bg-[#2d6a2d] text-white shadow-[0_8px_22px_rgba(45,106,45,0.22)] sm:flex"
+                    >
+                        <UIcon name="i-lucide-users" class="size-6" />
+                    </div>
+                    <div>
+                        <div class="mb-2 flex flex-wrap items-center gap-2">
+                            <span
+                                class="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700"
+                            >
+                                <span class="size-1.5 rounded-full bg-emerald-500" />
+                                Farmer Information Management
+                            </span>
+                            <span
+                                class="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 shadow-sm"
+                            >
+                                {{ farmers.length }} registered
+                            </span>
+                        </div>
+                        <h1 class="text-3xl font-bold tracking-tight text-slate-950">
+                            Farmers Registry
+                        </h1>
+                        <p class="mt-1.5 max-w-2xl text-sm text-slate-500 sm:text-base">
+                            Manage farmer profiles, parcel assignments, coverage, and assistance records.
+                        </p>
+                    </div>
+                </div>
+
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-2 rounded-xl bg-[#245c2a] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(45,106,45,0.22)] transition-all hover:-translate-y-0.5 hover:bg-[#1f5125] hover:shadow-[0_10px_24px_rgba(45,106,45,0.28)]"
+                    @click="showRegisterModal = true"
+                >
+                    <UIcon name="i-lucide-user-plus" class="size-4.5" />
+                    Register Farmer
+                </button>
             </div>
-            <button
-                type="button"
-                class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-sm font-medium text-white hover:bg-[#245524]"
-                @click="showRegisterModal = true"
-            >
-                + Register Farmer
-            </button>
         </div>
 
         <!-- Summary Cards -->
-        <div class="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div class="mb-7 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div
                 v-for="card in summaryCards"
                 :key="card.label"
-                class="alps-card relative overflow-hidden p-4"
+                class="group relative min-h-[190px] overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.055)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-100 hover:shadow-[0_18px_40px_rgba(15,23,42,0.10)] sm:p-6"
             >
+                <!-- Accent rail -->
                 <div
-                    class="absolute inset-x-0 top-0 h-0.5 opacity-70"
+                    class="absolute inset-x-0 top-0 h-1"
                     :style="{
-                        backgroundImage: `linear-gradient(90deg, ${card.color}, transparent)`,
+                        backgroundImage: `linear-gradient(90deg, ${card.color}, ${card.color}55, transparent)`,
                     }"
                 />
+
+                <!-- Decorative accent -->
                 <div
-                    class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg"
-                    :style="{ background: card.bg }"
-                >
-                    <UIcon
-                        :name="card.icon"
-                        class="size-4.5"
-                        :style="{ color: card.color }"
-                    />
+                    class="pointer-events-none absolute -right-12 -top-14 size-36 rounded-full opacity-[0.10] blur-2xl transition-transform duration-500 group-hover:scale-125"
+                    :style="{ backgroundColor: card.color }"
+                />
+
+                <div class="relative flex h-full flex-col">
+                    <div class="flex items-start justify-between gap-3">
+                        <div
+                            class="flex size-12 items-center justify-center rounded-2xl shadow-sm ring-1 ring-black/5 transition-all duration-300 group-hover:-rotate-3 group-hover:scale-110"
+                            :style="{ background: card.bg }"
+                        >
+                            <UIcon
+                                :name="card.icon"
+                                class="size-5"
+                                :style="{ color: card.color }"
+                            />
+                        </div>
+
+                        <span
+                            class="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 ring-1 ring-slate-100"
+                        >
+                            <span
+                                class="size-1.5 rounded-full"
+                                :style="{ backgroundColor: card.color }"
+                            />
+                            Live
+                        </span>
+                    </div>
+
+                    <div class="mt-5">
+                        <div
+                            class="font-sans text-3xl font-bold tracking-tight text-slate-950"
+                        >
+                            {{ card.val }}
+                        </div>
+                        <div class="mt-1 text-sm font-semibold text-slate-700">
+                            {{ card.label }}
+                        </div>
+                    </div>
+
+                    <div
+                        class="mt-auto flex items-center gap-2 border-t border-slate-100 pt-3 text-xs leading-5 text-slate-400"
+                    >
+                        <UIcon
+                            name="i-lucide-circle-check"
+                            class="size-3.5"
+                            :style="{ color: card.color }"
+                        />
+                        <span>{{ card.hint }}</span>
+                    </div>
                 </div>
-                <div
-                    class="mb-1 text-xl font-bold font-sans"
-                    :style="{
-                        color: card.color,
-                    }"
-                >
-                    {{ card.val }}
-                </div>
-                <div class="text-xs text-gray-500">{{ card.label }}</div>
             </div>
         </div>
 
         <!-- Filters -->
-        <div class="mb-5 space-y-3">
-            <div class="flex items-center gap-3">
-                <div class="relative max-w-xs flex-1">
+        <div
+            class="mb-7 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
+        >
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
+                <div class="flex items-center gap-3">
+                    <div class="flex size-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                        <UIcon name="i-lucide-search-check" class="size-4.5" />
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold tracking-tight text-slate-800">Find Farmers</h2>
+                        <p class="text-xs text-slate-500">Search the registry or filter by barangay.</p>
+                    </div>
+                </div>
+                <div class="hidden items-center gap-1.5 text-sm font-medium text-slate-500 sm:flex">
+                    <UIcon name="i-lucide-filter" class="size-3.5" />
+                    {{ filtered.length }} of {{ farmers.length }} farmers
+                </div>
+            </div>
+
+            <div class="p-4 sm:p-5">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div class="relative w-full max-w-md flex-1">
                     <UIcon
                         name="i-lucide-search"
-                        class="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-gray-400"
+                        class="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400"
                     />
                     <input
                         v-model="search"
                         type="text"
-                        placeholder="Search name or Farmer Code..."
-                        class="w-full rounded-full border border-gray-200 bg-white py-2 pl-8 pr-8 text-xs shadow-sm focus:outline-none focus:border-[#2d6a2d] focus:ring-1 focus:ring-green-500"
+                        placeholder="Search farmer name or code..."
+                        class="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-9 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10"
                     />
                     <UButton
                         v-if="search"
@@ -1076,36 +1385,53 @@ onMounted(async () => {
                     </UButton>
                 </div>
                 <div
-                    class="ml-auto flex items-center gap-1.5 text-xs text-gray-400"
+                    class="flex items-center gap-1.5 text-sm font-medium text-slate-500 sm:ml-auto"
                 >
                     <UIcon name="i-lucide-filter" class="size-3" />
                     {{ filtered.length }} of {{ farmers.length }} farmers
                 </div>
             </div>
-            <div class="flex flex-wrap items-center gap-1.5">
+            <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
                 <button
                     v-for="b in ['All', ...barangaysByParcels]"
                     :key="b"
                     type="button"
-                    class="rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors"
+                    class="rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all"
                     :class="
                         filterBarangay === b
-                            ? 'border-[#2d6a2d] bg-[#2d6a2d] text-white shadow-sm'
-                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                            ? 'border-[#2d6a2d] bg-[#2d6a2d] text-white shadow-md shadow-green-900/10'
+                            : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/50 hover:text-emerald-700'
                     "
                     @click="filterBarangay = b"
                 >
                     {{ b }}
                 </button>
             </div>
+            </div>
         </div>
 
         <!-- Table -->
-        <div class="alps-card">
+        <div class="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+            <div class="border-b border-slate-100 px-6 py-4">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-base font-bold tracking-tight text-slate-800">Farmer Directory</h2>
+                        <p class="mt-1 text-xs text-slate-500 sm:text-sm">Select a farmer to view profile, parcels, and assistance history.</p>
+                    </div>
+                    <div class="hidden rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 sm:block">
+                        {{ filtered.length }} records
+                    </div>
+                </div>
+            </div>
             <UTable
                 :data="filtered"
                 :columns="columns"
                 :meta="farmerTableMeta"
+                :ui="{
+                    th: 'bg-slate-50/70 px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500',
+                    td: 'px-4 py-3.5 text-sm text-slate-600',
+                    tr: 'border-b border-slate-100 last:border-0 hover:bg-emerald-50/40'
+                }"
                 :loading="loading"
                 :get-row-id="(row: FarmerRow) => row.documentId"
                 @select="onFarmerSelect"
@@ -1113,20 +1439,20 @@ onMounted(async () => {
                 <template #name-cell="{ row }">
                     <div class="flex items-center gap-2.5">
                         <span
-                            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white shadow-sm ring-2 ring-white"
                             :style="{
                                 backgroundColor: avatarColor(row.original.name),
                             }"
                         >
                             {{ initials(row.original.name) }}
                         </span>
-                        <span class="font-medium text-gray-800">
+                        <span class="font-medium text-slate-800">
                             {{ row.original.name }}
                         </span>
                     </div>
                 </template>
                 <template #barangay-cell="{ row }">
-                    <span class="flex items-center gap-1">
+                    <span class="flex items-center gap-1.5">
                         <UIcon
                             name="i-lucide-map-pin"
                             class="size-2.5 text-gray-400"
@@ -1138,7 +1464,7 @@ onMounted(async () => {
                     <div
                         class="flex items-center justify-end gap-1.5 opacity-0 transition-opacity group-hover:opacity-100"
                     >
-                        <span class="text-[10px] font-semibold text-[#2d6a2d]">
+                        <span class="text-sm font-semibold text-[#245c2a]">
                             View
                         </span>
                         <UIcon
@@ -1190,41 +1516,41 @@ onMounted(async () => {
     <Teleport to="body">
         <div
             v-if="showRegisterModal"
-            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-sm sm:items-center"
             @click.self="showRegisterModal = false"
         >
             <div
-                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl font-sans"
+                class="w-full max-w-md overflow-hidden rounded-3xl border border-white/70 bg-white p-6 font-sans shadow-[0_24px_70px_rgba(15,23,42,0.28)] ring-1 ring-slate-900/5 sm:p-7"
             >
-                <div class="mb-5 flex items-start justify-between">
+                <div class="mb-6 flex items-start justify-between gap-4">
                     <div>
-                        <h3 class="text-lg font-bold text-gray-900">
+                        <h3 class="text-xl font-bold tracking-tight text-slate-950">
                             Register Farmer
                         </h3>
-                        <p class="text-xs text-gray-500">
+                        <p class="text-sm text-slate-500">
                             The farmer code is generated automatically.
                         </p>
                     </div>
                     <button
                         type="button"
-                        class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+                        class="flex size-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
                         @click="showRegisterModal = false"
                     >
                         <UIcon name="i-lucide-x" class="size-4" />
                     </button>
                 </div>
 
-                <form class="space-y-4" @submit.prevent="submitRegister">
+                <form class="space-y-5" @submit.prevent="submitRegister">
                     <div>
                         <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
+                            class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                         >
                             Status
                         </label>
                         <select
                             v-model="registerForm.status"
                             :disabled="registering"
-                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:opacity-60"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:opacity-60"
                         >
                             <option value="Active">Active</option>
                             <option value="Inactive">Inactive</option>
@@ -1234,7 +1560,7 @@ onMounted(async () => {
 
                     <div>
                         <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
+                            class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                         >
                             Full Name
                         </label>
@@ -1243,13 +1569,13 @@ onMounted(async () => {
                             type="text"
                             :disabled="registering"
                             placeholder="e.g. Juan Dela Cruz"
-                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:opacity-60"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:opacity-60"
                         />
                     </div>
 
                     <div>
                         <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
+                            class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                         >
                             Contact Number
                         </label>
@@ -1258,7 +1584,7 @@ onMounted(async () => {
                             type="text"
                             :disabled="registering"
                             placeholder="09XX XXX XXXX"
-                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:opacity-60"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:opacity-60"
                         />
                     </div>
 
@@ -1270,12 +1596,12 @@ onMounted(async () => {
                     </p>
 
                     <div
-                        class="flex justify-end gap-2 border-t border-gray-100 pt-4"
+                        class="flex justify-end gap-2 border-t border-slate-100 pt-5"
                     >
                         <button
                             type="button"
                             :disabled="registering"
-                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-60"
+                            class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-60"
                             @click="showRegisterModal = false"
                         >
                             Cancel
@@ -1283,7 +1609,7 @@ onMounted(async () => {
                         <button
                             type="submit"
                             :disabled="registering"
-                            class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524] disabled:opacity-60"
+                            class="rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#1f5125] disabled:opacity-60"
                         >
                             <span
                                 v-if="registering"
@@ -1307,35 +1633,35 @@ onMounted(async () => {
     <Teleport to="body">
         <div
             v-if="showEditModal"
-            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-sm sm:items-center"
             @click.self="showEditModal = false"
         >
             <div
-                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl font-sans"
+                class="w-full max-w-md overflow-hidden rounded-3xl border border-white/70 bg-white p-6 font-sans shadow-[0_24px_70px_rgba(15,23,42,0.28)] ring-1 ring-slate-900/5 sm:p-7"
             >
-                <div class="mb-5 flex items-start justify-between">
+                <div class="mb-6 flex items-start justify-between gap-4">
                     <div>
-                        <h3 class="text-lg font-bold text-gray-900">
+                        <h3 class="text-xl font-bold tracking-tight text-slate-950">
                             Edit Profile
                         </h3>
-                        <p class="text-xs text-gray-500">
+                        <p class="text-sm text-slate-500">
                             Update the farmer's details.
                         </p>
                     </div>
                     <button
                         type="button"
-                        class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+                        class="flex size-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
                         @click="showEditModal = false"
                     >
                         <UIcon name="i-lucide-x" class="size-4" />
                     </button>
                 </div>
 
-                <form class="space-y-4" @submit.prevent="submitEdit">
+                <form class="space-y-5" @submit.prevent="submitEdit">
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Farmer Code
                             </label>
@@ -1343,18 +1669,18 @@ onMounted(async () => {
                                 :value="editForm.farmer_code"
                                 type="text"
                                 readonly
-                                class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 font-mono text-xs text-gray-900"
+                                class="w-full rounded-xl border border-slate-200 bg-slate-100 px-3.5 py-2.5 font-mono text-sm font-semibold text-slate-600"
                             />
                         </div>
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Status
                             </label>
                             <select
                                 v-model="editForm.status"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                             >
                                 <option value="Active">Active</option>
                                 <option value="Inactive">Inactive</option>
@@ -1365,7 +1691,7 @@ onMounted(async () => {
 
                     <div>
                         <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
+                            class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                         >
                             Full Name
                         </label>
@@ -1373,14 +1699,14 @@ onMounted(async () => {
                             v-model="editForm.name"
                             type="text"
                             placeholder="e.g. Juan Dela Cruz"
-                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                         />
                     </div>
 
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Contact Number
                             </label>
@@ -1388,18 +1714,18 @@ onMounted(async () => {
                                 v-model="editForm.contact"
                                 type="text"
                                 placeholder="09XX XXX XXXX"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                             />
                         </div>
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Barangay of Residence
                             </label>
                             <select
                                 v-model="editForm.residence_barangay"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                             >
                                 <option value="">Not specified</option>
                                 <option
@@ -1417,11 +1743,11 @@ onMounted(async () => {
                         {{ editError }}
                     </p>
                     <div
-                        class="flex justify-end gap-2 border-t border-gray-100 pt-4"
+                        class="flex justify-end gap-2 border-t border-slate-100 pt-5"
                     >
                         <button
                             type="button"
-                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                            class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
                             :disabled="editing"
                             @click="showEditModal = false"
                         >
@@ -1429,7 +1755,7 @@ onMounted(async () => {
                         </button>
                         <button
                             type="submit"
-                            class="rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524] disabled:opacity-50"
+                            class="rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#1f5125] disabled:opacity-50"
                             :disabled="editing"
                         >
                             <span v-if="editing">Saving...</span>
@@ -1445,14 +1771,14 @@ onMounted(async () => {
     <Teleport to="body">
         <div
             v-if="showAssistModal"
-            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm sm:items-center"
+            class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/45 p-4 backdrop-blur-sm sm:items-center"
             @click.self="closeAssistModal"
         >
             <div
-                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl font-sans"
+                class="w-full max-w-md overflow-hidden rounded-3xl border border-white/70 bg-white p-6 font-sans shadow-[0_24px_70px_rgba(15,23,42,0.28)] ring-1 ring-slate-900/5 sm:p-7"
             >
-                <div class="mb-5 flex items-start justify-between">
-                    <div class="flex items-center gap-3">
+                <div class="mb-6 flex items-start justify-between gap-4">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
                         <div
                             class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8f5e8]"
                         >
@@ -1462,10 +1788,10 @@ onMounted(async () => {
                             />
                         </div>
                         <div>
-                            <h3 class="text-lg font-bold text-gray-900">
+                            <h3 class="text-xl font-bold tracking-tight text-slate-950">
                                 Record Assistance
                             </h3>
-                            <p class="text-xs text-gray-500">
+                            <p class="text-sm text-slate-500">
                                 For
                                 {{ selectedFarmer?.name }}
                                 ({{ selectedFarmer?.farmer_code }})
@@ -1474,18 +1800,18 @@ onMounted(async () => {
                     </div>
                     <button
                         type="button"
-                        class="rounded p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
+                        class="flex size-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
                         @click="closeAssistModal"
                     >
                         <UIcon name="i-lucide-x" class="size-4" />
                     </button>
                 </div>
 
-                <form class="space-y-4" @submit.prevent="submitAssist">
+                <form class="space-y-5" @submit.prevent="submitAssist">
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Program
                                 <span class="text-red-500">*</span>
@@ -1495,7 +1821,7 @@ onMounted(async () => {
                                 type="text"
                                 list="assist-program-options-farmer"
                                 placeholder="e.g. Rice Seed Subsidy"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                             />
                             <datalist id="assist-program-options-farmer">
                                 <option
@@ -1507,13 +1833,13 @@ onMounted(async () => {
                         </div>
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Barangay
                             </label>
                             <select
                                 v-model="assistForm.barangayDocumentId"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                             >
                                 <option value="">Not specified</option>
                                 <option
@@ -1536,7 +1862,7 @@ onMounted(async () => {
 
                     <div>
                         <label
-                            class="mb-1 block text-xs font-medium text-gray-600"
+                            class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                         >
                             Items
                         </label>
@@ -1544,14 +1870,14 @@ onMounted(async () => {
                             v-model="assistForm.items"
                             rows="2"
                             placeholder="e.g. 4 bags certified rice seed (40 kg), 1 bag fertilizer"
-                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                         ></textarea>
                     </div>
 
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Value (₱)
                             </label>
@@ -1561,12 +1887,12 @@ onMounted(async () => {
                                 step="1"
                                 min="0"
                                 placeholder="0.00"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                             />
                         </div>
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Date
                                 <span class="text-red-500">*</span>
@@ -1574,18 +1900,18 @@ onMounted(async () => {
                             <input
                                 v-model="assistForm.date"
                                 type="date"
-                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                             />
                         </div>
                         <div>
                             <label
-                                class="mb-1 block text-xs font-medium text-gray-600"
+                                class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
                                 Status
                             </label>
                             <select
                                 v-model="assistForm.status"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                             >
                                 <option
                                     v-for="s in ASSISTANCE_STATUS_OPTIONS"
@@ -1606,11 +1932,11 @@ onMounted(async () => {
                     </p>
 
                     <div
-                        class="flex justify-end gap-2 border-t border-gray-100 pt-4"
+                        class="flex justify-end gap-2 border-t border-slate-100 pt-5"
                     >
                         <button
                             type="button"
-                            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
                             :disabled="recordingAssist"
                             @click="closeAssistModal"
                         >
@@ -1618,7 +1944,7 @@ onMounted(async () => {
                         </button>
                         <button
                             type="submit"
-                            class="flex items-center gap-2 rounded-lg bg-[#2d6a2d] px-4 py-2 text-xs font-medium text-white hover:bg-[#245524] disabled:cursor-not-allowed disabled:opacity-60"
+                            class="flex items-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#1f5125] disabled:cursor-not-allowed disabled:opacity-60"
                             :disabled="!canRecordAssist"
                         >
                             <UIcon

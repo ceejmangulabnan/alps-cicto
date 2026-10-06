@@ -1,153 +1,364 @@
 <template>
-    <main class="login-shell">
-        <section class="brand-panel">
-            <div class="brand-panel__image" aria-hidden="true"></div>
-            <div class="brand-panel__wash" aria-hidden="true"></div>
+    <main
+        class="relative min-h-screen overflow-hidden bg-[#f4f8f4]"
+    >
+        <!-- Background -->
+        <div
+            class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(45,106,45,0.14),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(29,111,164,0.12),transparent_30%)]"
+            aria-hidden="true"
+        />
+        <div
+            class="absolute left-[-120px] top-[-100px] size-[320px] rounded-full bg-emerald-300/10 blur-3xl"
+            aria-hidden="true"
+        />
+        <div
+            class="absolute bottom-[-130px] right-[-100px] size-[360px] rounded-full bg-blue-300/10 blur-3xl"
+            aria-hidden="true"
+        />
 
-            <div class="brand-panel__content">
-                <header class="brand-lockup">
-                    <div class="brand-mark">
-                        <UIcon name="i-lucide-leaf" class="size-6" />
-                    </div>
-                    <div>
-                        <p class="brand-name">ALPS</p>
-                        <p class="brand-subtitle">
-                            Agricultural Land Profiling System
-                        </p>
-                    </div>
-                </header>
+        <div
+            class="relative mx-auto flex min-h-screen w-full max-w-[1500px] items-center justify-center px-4 py-6 sm:px-6 lg:px-8"
+        >
+            <section
+                class="grid w-full max-w-6xl overflow-hidden rounded-[32px] border border-white/80 bg-white shadow-[0_30px_90px_rgba(15,23,42,0.14)] ring-1 ring-slate-900/5 lg:grid-cols-[1.08fr_0.92fr]"
+            >
+                <!-- Visual / Welcome Panel -->
+                <div
+                    class="relative min-h-[300px] overflow-hidden bg-[#143c29] lg:min-h-[720px]"
+                >
+                    <div
+                        class="absolute inset-0 bg-cover bg-center"
+                        style="background-image: url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1600&q=88')"
+                        aria-hidden="true"
+                    />
+                    <div
+                        class="absolute inset-0 bg-gradient-to-br from-[#0f3423]/96 via-[#1b5e3d]/84 to-[#2d6a2d]/72"
+                        aria-hidden="true"
+                    />
 
-                <div class="brand-panel__message">
-                    <p class="eyebrow">City Agriculture Office</p>
-                    <h1>See the land.<br /><em>Grow the future.</em></h1>
-                    <p class="brand-description">
-                        A single source of truth for agricultural land
-                        inventory, monitoring, and smarter decisions across San
-                        Fernando, Pampanga.
-                    </p>
-                </div>
-            </div>
+                    <div
+                        class="absolute -right-16 top-10 size-56 rounded-full bg-white/5 blur-2xl"
+                        aria-hidden="true"
+                    />
 
-            <p class="brand-panel__footer">OFFICE OF THE CITY AGRICULTURE</p>
-        </section>
+                    <div
+                        class="relative z-10 flex h-full min-h-[300px] flex-col justify-between p-6 sm:p-8 lg:p-10 xl:p-12"
+                    >
+                        <!-- Brand -->
+                        <div class="flex items-center justify-between gap-4">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white backdrop-blur"
+                                >
+                                    <UIcon name="i-lucide-leaf" class="size-6" />
+                                </div>
+                                <div>
+                                    <div
+                                        class="text-lg font-extrabold tracking-[0.14em] text-white"
+                                    >
+                                        ALPS
+                                    </div>
+                                    <div
+                                        class="mt-0.5 text-[11px] font-medium text-white/65"
+                                    >
+                                        Agricultural Land Profiling System
+                                    </div>
+                                </div>
+                            </div>
 
-        <section class="form-panel">
-            <div class="form-panel__inner">
-                <div class="mobile-brand-lockup">
-                    <div class="brand-mark brand-mark--small">
-                        <UIcon name="i-lucide-leaf" class="size-5" />
-                    </div>
-                    <div>
-                        <p class="brand-name">ALPS</p>
-                        <p class="brand-subtitle">
-                            Agricultural Land Profiling System
-                        </p>
-                    </div>
-                </div>
+                            <span
+                                class="hidden rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70 backdrop-blur sm:inline-flex"
+                            >
+                                City Agriculture Office
+                            </span>
+                        </div>
 
-                <div class="form-heading">
-                    <p class="form-kicker">Secure access</p>
-                    <h2>Welcome back</h2>
-                    <p>Sign in to continue to your agricultural dashboard.</p>
-                </div>
+                        <!-- Main Message -->
+                        <div class="max-w-xl py-10 lg:py-0">
+                            <div
+                                class="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-200/20 bg-amber-100/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-200"
+                            >
+                                <span class="size-1.5 rounded-full bg-amber-300" />
+                                Smart Agricultural Land Management
+                            </div>
 
-                <form class="login-form" @submit.prevent="handleSubmit">
-                    <UFormField label="Username or Email" name="identifier">
-                        <UInput
-                            v-model="identifier"
-                            class="w-full"
-                            type="text"
-                            placeholder="Enter your username or email"
-                            icon="i-lucide-user-round"
-                            size="xl"
-                            autocomplete="username"
-                        />
-                    </UFormField>
+                            <h1
+                                class="text-4xl font-bold leading-tight tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl"
+                            >
+                                Manage agricultural data with clarity.
+                            </h1>
 
-                    <UFormField label="Password" name="password">
-                        <UInput
-                            v-model="password"
-                            class="w-full"
-                            :type="showPassword ? 'text' : 'password'"
-                            placeholder="Enter your password"
-                            icon="i-lucide-lock-keyhole"
-                            size="xl"
-                            autocomplete="current-password"
-                        >
-                            <template #trailing>
-                                <button
-                                    type="button"
-                                    class="password-toggle"
-                                    :aria-label="
-                                        showPassword
-                                            ? 'Hide password'
-                                            : 'Show password'
-                                    "
-                                    @click="showPassword = !showPassword"
+                            <p
+                                class="mt-5 max-w-lg text-sm leading-7 text-white/70 sm:text-base"
+                            >
+                                Map farms, monitor land use, track crop activity,
+                                manage farmer records, and support better planning
+                                across San Fernando, Pampanga.
+                            </p>
+
+                            <div
+                                class="mt-7 hidden grid-cols-3 gap-3 sm:grid"
+                            >
+                                <div
+                                    class="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur"
                                 >
                                     <UIcon
-                                        :name="
+                                        name="i-lucide-map-pinned"
+                                        class="size-5 text-emerald-200"
+                                    />
+                                    <div class="mt-3 text-sm font-semibold text-white">
+                                        GIS Mapping
+                                    </div>
+                                    <div class="mt-1 text-xs text-white/50">
+                                        Farms & parcels
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur"
+                                >
+                                    <UIcon
+                                        name="i-lucide-sprout"
+                                        class="size-5 text-emerald-200"
+                                    />
+                                    <div class="mt-3 text-sm font-semibold text-white">
+                                        Crop Monitoring
+                                    </div>
+                                    <div class="mt-1 text-xs text-white/50">
+                                        Planting & harvests
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur"
+                                >
+                                    <UIcon
+                                        name="i-lucide-chart-no-axes-combined"
+                                        class="size-5 text-emerald-200"
+                                    />
+                                    <div class="mt-3 text-sm font-semibold text-white">
+                                        Analytics
+                                    </div>
+                                    <div class="mt-1 text-xs text-white/50">
+                                        Reports & risks
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            class="hidden items-center justify-between border-t border-white/10 pt-5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/35 lg:flex"
+                        >
+                            <span>Office of the City Agriculture</span>
+                            <span>San Fernando, Pampanga</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Login Panel -->
+                <div
+                    class="flex items-center justify-center bg-white p-6 sm:p-8 lg:p-10 xl:p-12"
+                >
+                    <div class="w-full max-w-md">
+                        <!-- Mobile Logo -->
+                        <div
+                            class="mb-7 flex items-center gap-3 lg:hidden"
+                        >
+                            <div
+                                class="flex size-11 items-center justify-center rounded-2xl bg-[#2d6a2d] text-white shadow-sm"
+                            >
+                                <UIcon name="i-lucide-leaf" class="size-5" />
+                            </div>
+                            <div>
+                                <div
+                                    class="text-lg font-extrabold tracking-[0.14em] text-slate-900"
+                                >
+                                    ALPS
+                                </div>
+                                <div class="text-xs text-slate-500">
+                                    Agricultural Land Profiling System
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-8">
+                            <span
+                                class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-emerald-700 ring-1 ring-emerald-100"
+                            >
+                                <span class="size-1.5 rounded-full bg-emerald-500" />
+                                Secure login
+                            </span>
+
+                            <h2
+                                class="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl"
+                            >
+                                Sign in to ALPS
+                            </h2>
+
+                            <p class="mt-2 text-sm leading-6 text-slate-500">
+                                Use your authorized City Agriculture Office account.
+                            </p>
+                        </div>
+
+                        <form class="space-y-5" @submit.prevent="handleSubmit">
+                            <div>
+                                <label
+                                    class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                                >
+                                    Username or Email
+                                </label>
+
+                                <div class="relative">
+                                    <UIcon
+                                        name="i-lucide-user-round"
+                                        class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400"
+                                    />
+                                    <input
+                                        v-model="identifier"
+                                        type="text"
+                                        autocomplete="username"
+                                        placeholder="Enter your username or email"
+                                        class="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label
+                                    class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                                >
+                                    Password
+                                </label>
+
+                                <div class="relative">
+                                    <UIcon
+                                        name="i-lucide-lock-keyhole"
+                                        class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400"
+                                    />
+
+                                    <input
+                                        v-model="password"
+                                        :type="showPassword ? 'text' : 'password'"
+                                        autocomplete="current-password"
+                                        placeholder="Enter your password"
+                                        class="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-3 pl-10 pr-11 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10"
+                                    />
+
+                                    <button
+                                        type="button"
+                                        class="absolute right-2.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-emerald-700"
+                                        :aria-label="
                                             showPassword
-                                                ? 'i-lucide-eye-off'
-                                                : 'i-lucide-eye'
+                                                ? 'Hide password'
+                                                : 'Show password'
                                         "
+                                        @click="showPassword = !showPassword"
+                                    >
+                                        <UIcon
+                                            :name="
+                                                showPassword
+                                                    ? 'i-lucide-eye-off'
+                                                    : 'i-lucide-eye'
+                                            "
+                                            class="size-4"
+                                        />
+                                    </button>
+                                </div>
+                            </div>
+
+                        
+                            <div
+                                v-if="authError"
+                                class="flex items-start gap-2 rounded-xl border border-red-100 bg-red-50 px-3.5 py-3 text-sm text-red-700"
+                                role="alert"
+                            >
+                                <UIcon
+                                    name="i-lucide-circle-alert"
+                                    class="mt-0.5 size-4 shrink-0"
+                                />
+                                <span>{{ authError }}</span>
+                            </div>
+
+                            <button
+                                type="submit"
+                                class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(45,106,45,0.20)] transition-all hover:-translate-y-0.5 hover:bg-[#1f5125] hover:shadow-[0_14px_30px_rgba(45,106,45,0.24)] disabled:cursor-not-allowed disabled:opacity-60"
+                                :disabled="loading"
+                            >
+                                <UIcon
+                                    v-if="loading"
+                                    name="i-lucide-loader-2"
+                                    class="size-4 animate-spin"
+                                />
+                                <UIcon
+                                    v-else
+                                    name="i-lucide-log-in"
+                                    class="size-4"
+                                />
+                                {{ loading ? 'Signing in...' : 'Sign in' }}
+                            </button>
+                        </form>
+
+                        <div
+                            class="mt-7 rounded-2xl border border-slate-100 bg-slate-50/70 px-4 py-3.5"
+                        >
+                            <div class="flex items-start gap-3">
+                                <div
+                                    class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700"
+                                >
+                                    <UIcon
+                                        name="i-lucide-shield-check"
                                         class="size-4"
                                     />
-                                </button>
-                            </template>
-                        </UInput>
-                    </UFormField>
+                                </div>
 
-                    <div class="form-options">
-                        <UCheckbox
-                            v-model="rememberMe"
-                            label="Keep me signed in"
-                        />
-                        <a href="#" class="forgot-link" @click.prevent
-                            >Forgot password?</a
-                        >
+                                <div>
+                                    <div class="text-sm font-semibold text-slate-700">
+                                        Protected access
+                                    </div>
+                                    <p class="mt-0.5 text-xs leading-5 text-slate-500">
+                                        Authorized personnel only. System activity may
+                                        be logged for security and audit purposes.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 text-center">
+                            <div
+                                class="inline-flex items-center gap-2 text-xs font-semibold text-emerald-700"
+                            >
+                                <span
+                                    class="size-1.5 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.10)]"
+                                />
+                                System operational
+                            </div>
+
+                            <div
+                                class="mt-3 flex flex-wrap items-center justify-center gap-2 text-[11px] text-slate-400"
+                            >
+                                <span>© 2026 City of San Fernando, Pampanga</span>
+                                <span class="hidden size-1 rounded-full bg-slate-300 sm:inline-block" />
+                                <span
+                                    class="rounded-full bg-slate-100 px-2 py-0.5 font-mono font-semibold text-slate-500"
+                                >
+                                    v{{ appVersion }}
+                                </span>
+                            </div>
+                        </div>
                     </div>
-
-                    <UButton
-                        type="submit"
-                        block
-                        size="xl"
-                        color="primary"
-                        class="submit-button justify-center"
-                        :loading="loading"
-                    >
-                        Sign in to ALPS
-                    </UButton>
-
-                    <p
-                        v-if="authError"
-                        class="form-feedback form-feedback--error"
-                        role="alert"
-                    >
-                        <UIcon name="i-lucide-circle-alert" class="size-4" />
-                        {{ authError }}
-                    </p>
-                </form>
-
-                <div class="form-footer">
-                    <div class="status-line">System operational</div>
-                    <p>
-                        Authorized personnel only. Activity is monitored and
-                        protected.
-                    </p>
-                    <p class="copyright">
-                        © 2026 City of San Fernando, Pampanga
-                    </p>
                 </div>
-            </div>
-        </section>
+            </section>
+        </div>
     </main>
 </template>
 
 <script setup lang="ts">
+//@ts-nocheck
 definePageMeta({ middleware: 'guest', layout: false })
 
 const auth = useAuth()
+const config = useRuntimeConfig()
+const appVersion = config.public.appVersion
 
 const identifier = ref('')
 const password = ref('')
@@ -171,450 +382,3 @@ const handleSubmit = async () => {
     }
 }
 </script>
-
-<style scoped>
-.login-shell {
-    min-height: 100vh;
-    display: grid;
-    grid-template-columns: minmax(420px, 0.92fr) minmax(520px, 1.08fr);
-    background: #f7f9f5;
-}
-
-.brand-panel {
-    position: relative;
-    min-height: 100vh;
-    overflow: hidden;
-    color: white;
-    background: #164a32;
-}
-
-.brand-panel__image,
-.brand-panel__wash {
-    position: absolute;
-    inset: 0;
-}
-
-.brand-panel__image {
-    background-image: url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1400&q=85');
-    background-position: center;
-    background-size: cover;
-    filter: saturate(0.82);
-}
-
-.brand-panel__wash {
-    background: linear-gradient(
-        145deg,
-        rgba(7, 44, 28, 0.96) 0%,
-        rgba(12, 75, 45, 0.8) 48%,
-        rgba(21, 68, 44, 0.64) 100%
-    );
-}
-
-.brand-panel__content {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    min-height: 100vh;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: clamp(2rem, 5vw, 4.5rem);
-}
-
-.brand-lockup,
-.mobile-brand-lockup {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-}
-
-.brand-mark {
-    display: grid;
-    width: 3.2rem;
-    height: 3.2rem;
-    flex-shrink: 0;
-    place-items: center;
-    border: 1px solid rgba(255, 255, 255, 0.34);
-    border-radius: 0.9rem;
-    color: #fff;
-    background: rgba(255, 255, 255, 0.14);
-    box-shadow: 0 10px 22px rgba(3, 31, 20, 0.16);
-}
-
-.brand-name {
-    margin: 0;
-    color: #fff;
-    font-size: 1.2rem;
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    line-height: 1.1;
-}
-
-.brand-subtitle {
-    margin: 0.3rem 0 0;
-    color: rgba(255, 255, 255, 0.72);
-    font-size: 0.67rem;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    line-height: 1.3;
-}
-
-.brand-panel__message {
-    width: 100%;
-    max-width: 35rem;
-    margin-top: auto;
-    margin-bottom: auto;
-    text-align: left;
-}
-
-.eyebrow,
-.form-kicker {
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    justify-content: flex-start;
-    margin: 0 0 1rem;
-    color: #f5c95d;
-    font-size: 0.7rem;
-    font-weight: 800;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-}
-
-.eyebrow span,
-.status-line span {
-    width: 0.45rem;
-    height: 0.45rem;
-    border-radius: 999px;
-    background: currentColor;
-    box-shadow: 0 0 0 0.22rem rgba(245, 201, 93, 0.18);
-}
-
-.brand-panel h1 {
-    margin: 0;
-    color: #fff;
-    font-size: clamp(2.8rem, 4.6vw, 4.8rem);
-    font-weight: 700;
-    letter-spacing: -0.045em;
-    line-height: 0.98;
-}
-
-.brand-panel h1 em {
-    color: #e8f2d8;
-    font-style: normal;
-}
-
-.brand-description {
-    max-width: 32rem;
-    margin: 1.65rem 0 0;
-    color: rgba(255, 255, 255, 0.78);
-    font-size: 0.98rem;
-    line-height: 1.7;
-}
-
-.insight-strip {
-    display: flex;
-    align-items: center;
-    max-width: 37rem;
-    margin-top: 3.5rem;
-    padding: 1.1rem 1.35rem;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 0.85rem;
-    background: rgba(3, 35, 21, 0.25);
-    backdrop-filter: blur(10px);
-}
-
-.insight-item {
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    color: #f5c95d;
-}
-
-.insight-item div {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-}
-
-.insight-item strong {
-    color: #fff;
-    font-size: 0.75rem;
-    font-weight: 700;
-}
-
-.insight-item span {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.67rem;
-}
-
-.insight-divider {
-    width: 1px;
-    height: 2rem;
-    margin: 0 1.4rem;
-    background: rgba(255, 255, 255, 0.2);
-}
-
-.brand-panel__footer {
-    position: absolute;
-    right: clamp(2rem, 5vw, 4.5rem);
-    bottom: 1.45rem;
-    margin: 0;
-    color: rgba(255, 255, 255, 0.45);
-    font-size: 0.58rem;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-}
-
-.form-panel {
-    display: grid;
-    min-height: 100vh;
-    place-items: center;
-    padding: 3rem clamp(2rem, 7vw, 8rem);
-    background: #f7f9f5;
-}
-
-.form-panel__inner {
-    width: 100%;
-    max-width: 28rem;
-}
-
-.mobile-brand-lockup {
-    display: none;
-}
-
-.form-heading {
-    margin-bottom: 2rem;
-}
-
-.form-kicker {
-    margin-bottom: 0.65rem;
-    color: #28734e;
-}
-
-.form-heading h2 {
-    margin: 0;
-    color: #183328;
-    font-size: clamp(2rem, 3vw, 2.65rem);
-    font-weight: 750;
-    letter-spacing: -0.04em;
-    line-height: 1.05;
-}
-
-.form-heading > p:last-child {
-    margin: 0.8rem 0 0;
-    color: #69766d;
-    font-size: 0.9rem;
-    line-height: 1.6;
-}
-
-.login-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.35rem;
-}
-
-.login-form :deep(label) {
-    color: #32463a;
-    font-size: 0.78rem;
-    font-weight: 700;
-}
-
-.login-form :deep(input) {
-    border-color: #d8e1d8;
-    background: rgba(255, 255, 255, 0.78);
-    color: #183328 !important;
-    caret-color: #28734e;
-    box-shadow: 0 3px 9px rgba(33, 62, 43, 0.03);
-}
-
-.login-form :deep(input::placeholder) {
-    color: #8b988f !important;
-    opacity: 1;
-}
-
-.login-form :deep(input:focus) {
-    border-color: #4c9c6b;
-    box-shadow: 0 0 0 3px rgba(76, 156, 107, 0.15);
-}
-
-.password-toggle {
-    display: grid;
-    padding: 0.2rem;
-    border: 0;
-    color: #849289;
-    cursor: pointer;
-    place-items: center;
-    background: transparent;
-}
-
-.password-toggle:hover {
-    color: #28734e;
-}
-
-.form-options {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: -0.35rem;
-}
-
-.form-options :deep(label) {
-    color: #66756b;
-    font-size: 0.76rem;
-    font-weight: 500;
-}
-
-.forgot-link {
-    color: #28734e;
-    font-size: 0.76rem;
-    font-weight: 700;
-    text-decoration: none;
-}
-
-.forgot-link:hover {
-    color: #164a32;
-    text-decoration: underline;
-}
-
-.submit-button {
-    margin-top: 0.25rem;
-    box-shadow: 0 10px 18px rgba(36, 112, 73, 0.18);
-}
-
-.form-feedback {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    margin: -0.45rem 0 0;
-    color: #28734e;
-    font-size: 0.75rem;
-}
-
-.form-feedback--error {
-    color: #c74b35;
-}
-
-.form-feedback--success {
-    color: #28734e;
-}
-
-.form-footer {
-    margin-top: 5.5rem;
-    color: #8a978e;
-    font-size: 0.67rem;
-    line-height: 1.6;
-    text-align: center;
-}
-
-.status-line {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.55rem;
-    margin-bottom: 0.55rem;
-    color: #548866;
-    font-weight: 700;
-}
-
-.status-line span {
-    width: 0.4rem;
-    height: 0.4rem;
-    color: #4eaf6e;
-    box-shadow: 0 0 0 0.2rem rgba(78, 175, 110, 0.14);
-}
-
-.form-footer p {
-    margin: 0;
-}
-
-.copyright {
-    margin-top: 1.15rem !important;
-    color: #a6afa8;
-}
-
-@media (max-width: 900px) {
-    .login-shell {
-        display: block;
-    }
-
-    .brand-panel {
-        min-height: 23rem;
-    }
-
-    .brand-panel__content {
-        min-height: 23rem;
-        padding: 2rem;
-    }
-
-    .brand-panel__message {
-        padding-top: 3rem;
-    }
-
-    .brand-panel h1 {
-        font-size: clamp(2.5rem, 9vw, 4rem);
-    }
-
-    .brand-description,
-    .insight-strip,
-    .brand-panel__footer {
-        display: none;
-    }
-
-    .form-panel {
-        min-height: calc(100vh - 23rem);
-        padding: 3.5rem 2rem;
-    }
-}
-
-@media (max-width: 520px) {
-    .brand-panel {
-        min-height: 15rem;
-    }
-
-    .brand-panel__content {
-        min-height: 15rem;
-        padding: 1.5rem;
-    }
-
-    .brand-lockup,
-    .brand-panel__message {
-        display: none;
-    }
-
-    .mobile-brand-lockup {
-        display: flex;
-        margin-bottom: 2.5rem;
-    }
-
-    .brand-mark--small {
-        width: 2.6rem;
-        height: 2.6rem;
-        border-color: #cdded0;
-        color: #fff;
-        background: #e8f2e8;
-    }
-
-    .mobile-brand-lockup .brand-name {
-        color: #183328;
-    }
-
-    .mobile-brand-lockup .brand-subtitle {
-        color: #77847a;
-    }
-
-    .form-panel {
-        display: block;
-        min-height: calc(100vh - 15rem);
-        padding: 2.5rem 1.5rem;
-    }
-
-    .form-heading {
-        margin-bottom: 1.75rem;
-    }
-
-    .form-footer {
-        margin-top: 4rem;
-    }
-}
-</style>

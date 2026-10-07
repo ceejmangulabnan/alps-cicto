@@ -1,5 +1,6 @@
 <script setup lang="ts">
 //@ts-nocheck
+import type { TableColumn } from '@nuxt/ui'
 import type {
     RiskParcelStatus,
     RiskSeverity,
@@ -294,6 +295,41 @@ const statusFilterOptions = ['All', ...riskStatusOptions] as const
 type StatusFilter = (typeof statusFilterOptions)[number]
 const filterStatus = ref<StatusFilter>('All')
 const search = ref('')
+
+
+/**
+ * The risk-report table's columns.
+ *
+ * Every sortable value is a flat string except Observed, which sorts on its
+ * raw `string | null` via accessorFn, and none of the columns starts on
+ * descending because nothing here is numeric.
+ */
+const columns: TableColumn<RiskRow>[] = [
+    { accessorKey: 'documentId', header: sortHeader('ID') },
+    {
+        accessorKey: 'riskType',
+        header: sortHeader('Risk Type'),
+        meta: { class: { td: 'font-semibold text-slate-800' } },
+    },
+    { accessorKey: 'parcel_code', header: sortHeader('Parcel') },
+    { accessorKey: 'farmerName', header: sortHeader('Farmer') },
+    {
+        id: 'observed',
+        accessorFn: (row) => row.observedAt ?? '',
+        header: sortHeader('Observed'),
+        meta: { class: { td: 'text-slate-600' } },
+    },
+    { accessorKey: 'severity', header: sortHeader('Severity') },
+    { accessorKey: 'parcelStatus', header: sortHeader('Status') },
+    {
+        // Buttons, not data: nothing to sort on.
+        id: 'actions',
+        header: 'Actions',
+        enableSorting: false,
+        enableHiding: false,
+        meta: { class: { th: 'text-right' } },
+    },
+]
 
 const filteredReports = computed(() =>
     riskReports.value.filter((row) => {
@@ -1166,171 +1202,191 @@ async function confirmDelete() {
                     </span>
                 </div>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full min-w-[980px] text-sm">
-                        <thead class="border-b border-slate-100 bg-slate-50/70">
-                            <tr class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                <th class="px-5 py-3.5 text-left">ID</th>
-                                <th class="px-5 py-3.5 text-left">Risk Type</th>
-                                <th class="px-5 py-3.5 text-left">Parcel</th>
-                                <th class="px-5 py-3.5 text-left">Farmer</th>
-                                <th class="px-5 py-3.5 text-left">Observed</th>
-                                <th class="px-5 py-3.5 text-left">Severity</th>
-                                <th class="px-5 py-3.5 text-left">Status</th>
-                                <th class="px-5 py-3.5 text-right">Actions</th>
-                            </tr>
-                        </thead>
+                    <div class="overflow-x-auto">
+                        <UTable
+                            :data="filteredReports"
+                            :columns="columns"
+                            :loading="loading"
+                            :get-row-id="(row: RiskRow) => row.documentId"
+                            :ui="{
+                                th: 'bg-slate-50/70 px-5 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500',
+                                td: 'px-5 py-4 text-sm',
+                                tr: 'border-b border-slate-100 last:border-0 hover:bg-red-50/30',
+                            }"
+                        >
+                            <template #documentId-cell="{ row }">
+                                <span
+                                    class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-500"
+                                >
+                                    {{ shortId(row.original.documentId) }}
+                                </span>
+                            </template>
 
-                        <tbody>
-                            <tr v-if="loading">
-                                <td colspan="8" class="px-5 py-12 text-center text-sm text-slate-400">
-                                    <span class="inline-flex items-center gap-2">
-                                        <UIcon
-                                            name="i-lucide-loader-circle"
-                                            class="size-4 animate-spin"
-                                        />
-                                        Loading risk reports...
+                            <template #riskType-cell="{ row }">
+                                {{ row.original.riskType }}
+                            </template>
+
+                            <template #parcel_code-cell="{ row }">
+                                <NuxtLink
+                                    :to="`/parcels/${row.original.parcel_code}`"
+                                    class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-600 transition hover:bg-red-50 hover:text-red-700"
+                                >
+                                    {{ row.original.parcel_code }}
+                                </NuxtLink>
+                                <div class="mt-1 text-xs text-slate-400">
+                                    {{ row.original.barangay || '—' }} ·
+                                    {{ row.original.area }} ha
+                                </div>
+                            </template>
+
+                            <template #farmerName-cell="{ row }">
+                                <div class="flex items-center gap-2.5">
+                                    <span
+                                        class="flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white shadow-sm ring-2 ring-white"
+                                        :style="{
+                                            backgroundColor: avatarColor(
+                                                row.original.farmerName
+                                            ),
+                                        }"
+                                    >
+                                        {{ initials(row.original.farmerName) }}
                                     </span>
-                                </td>
-                            </tr>
+                                    <span
+                                        class="font-medium text-slate-700"
+                                    >
+                                        {{ row.original.farmerName }}
+                                    </span>
+                                </div>
+                            </template>
 
-                            <tr v-else-if="riskReports.length === 0">
-                                <td colspan="8" class="px-5 py-14 text-center">
-                                    <div class="flex flex-col items-center gap-2">
+                            <template #observed-cell="{ row }">
+                                {{ row.original.observedAt ?? '—' }}
+                            </template>
+
+                            <template #severity-cell="{ row }">
+                                <span
+                                    :class="
+                                        SEVERITY_STYLE[
+                                            row.original.severity
+                                        ]
+                                    "
+                                    class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
+                                >
+                                    <span
+                                        class="h-1.5 w-1.5 rounded-full"
+                                        :style="{
+                                            background:
+                                                SEVERITY_DOT[
+                                                    row.original.severity
+                                                ],
+                                        }"
+                                    />
+                                    {{ row.original.severity }}
+                                </span>
+                            </template>
+
+                            <template #parcelStatus-cell="{ row }">
+                                <span
+                                    :class="
+                                        STATUS_STYLE[
+                                            row.original.parcelStatus
+                                        ]
+                                    "
+                                    class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
+                                >
+                                    <span
+                                        class="h-1.5 w-1.5 rounded-full"
+                                        :style="{
+                                            background:
+                                                STATUS_DOT[
+                                                    row.original.parcelStatus
+                                                ],
+                                        }"
+                                    />
+                                    {{ row.original.parcelStatus }}
+                                </span>
+                            </template>
+
+                            <template #actions-cell="{ row }">
+                                <div
+                                    class="flex items-center justify-end gap-2"
+                                >
+                                    <button
+                                        type="button"
+                                        title="Edit report"
+                                        class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                                        @click="openEdit(row.original)"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-pencil"
+                                            class="size-3.5"
+                                        />
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        title="Delete report"
+                                        class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                        @click="askDelete(row.original)"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-trash-2"
+                                            class="size-3.5"
+                                        />
+                                    </button>
+                                </div>
+                            </template>
+
+                            <template #loading>
+                                <span class="inline-flex items-center gap-2">
+                                    <UIcon
+                                        name="i-lucide-loader-circle"
+                                        class="size-4 animate-spin"
+                                    />
+                                    Loading risk reports...
+                                </span>
+                            </template>
+
+                            <template #empty>
+                                <div
+                                    v-if="riskReports.length === 0"
+                                    class="px-5 py-14 text-center"
+                                >
+                                    <div
+                                        class="flex flex-col items-center gap-2"
+                                    >
                                         <div
                                             class="flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-300"
                                         >
-                                            <UIcon name="i-lucide-alert-triangle" class="size-6" />
+                                            <UIcon
+                                                name="i-lucide-alert-triangle"
+                                                class="size-6"
+                                            />
                                         </div>
-                                        <p class="text-base font-semibold text-slate-700">
+                                        <p
+                                            class="text-base font-semibold text-slate-700"
+                                        >
                                             No risk reports filed yet
                                         </p>
-                                        <p class="max-w-sm text-sm text-slate-400">
-                                            Generate the first risk report against a parcel to begin monitoring.
+                                        <p
+                                            class="max-w-sm text-sm text-slate-400"
+                                        >
+                                            Generate the first risk report
+                                            against a parcel to begin
+                                            monitoring.
                                         </p>
                                     </div>
-                                </td>
-                            </tr>
+                                </div>
 
-                            <tr v-else-if="filteredReports.length === 0">
-                                <td colspan="8" class="px-5 py-12 text-center text-sm text-slate-400">
+                                <div
+                                    v-else
+                                    class="px-5 py-12 text-center text-sm text-slate-400"
+                                >
                                     No risk reports match the current filters.
-                                </td>
-                            </tr>
-
-                            <tr
-                                v-for="row in filteredReports"
-                                v-else
-                                :key="row.documentId"
-                                class="border-b border-slate-100 bg-white transition-colors last:border-0 hover:bg-red-50/30"
-                            >
-                                <td class="px-5 py-4">
-                                    <span
-                                        class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-500"
-                                    >
-                                        {{ shortId(row.documentId) }}
-                                    </span>
-                                </td>
-
-                                <td class="px-5 py-4 font-semibold text-slate-800">
-                                    {{ row.riskType }}
-                                </td>
-
-                                <td class="px-5 py-4">
-                                    <NuxtLink
-                                        :to="`/parcels/${row.parcel_code}`"
-                                        class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-600 transition hover:bg-red-50 hover:text-red-700"
-                                    >
-                                        {{ row.parcel_code }}
-                                    </NuxtLink>
-                                    <div class="mt-1 text-xs text-slate-400">
-                                        {{ row.barangay || '—' }} · {{ row.area }} ha
-                                    </div>
-                                </td>
-
-                                <td class="px-5 py-4">
-                                    <div class="flex items-center gap-2.5">
-                                        <span
-                                            class="flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white shadow-sm ring-2 ring-white"
-                                            :style="{
-                                                backgroundColor: avatarColor(
-                                                    row.farmerName
-                                                ),
-                                            }"
-                                        >
-                                            {{ initials(row.farmerName) }}
-                                        </span>
-                                        <span class="font-medium text-slate-700">
-                                            {{ row.farmerName }}
-                                        </span>
-                                    </div>
-                                </td>
-
-                                <td class="px-5 py-4 text-slate-600">
-                                    {{ row.observedAt ?? '—' }}
-                                </td>
-
-                                <td class="px-5 py-4">
-                                    <span
-                                        :class="SEVERITY_STYLE[row.severity]"
-                                        class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
-                                    >
-                                        <span
-                                            class="h-1.5 w-1.5 rounded-full"
-                                            :style="{
-                                                background: SEVERITY_DOT[row.severity],
-                                            }"
-                                        />
-                                        {{ row.severity }}
-                                    </span>
-                                </td>
-
-                                <td class="px-5 py-4">
-                                    <span
-                                        :class="STATUS_STYLE[row.parcelStatus]"
-                                        class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
-                                    >
-                                        <span
-                                            class="h-1.5 w-1.5 rounded-full"
-                                            :style="{
-                                                background: STATUS_DOT[row.parcelStatus],
-                                            }"
-                                        />
-                                        {{ row.parcelStatus }}
-                                    </span>
-                                </td>
-
-                                <td class="px-5 py-4">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <button
-                                            type="button"
-                                            title="Edit report"
-                                            class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
-                                            @click="openEdit(row)"
-                                        >
-                                            <UIcon
-                                                name="i-lucide-pencil"
-                                                class="size-3.5"
-                                            />
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            title="Delete report"
-                                            class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                                            @click="askDelete(row)"
-                                        >
-                                            <UIcon
-                                                name="i-lucide-trash-2"
-                                                class="size-3.5"
-                                            />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                                </div>
+                            </template>
+                        </UTable>
+                    </div>
             </div>
         </div>
     </div>

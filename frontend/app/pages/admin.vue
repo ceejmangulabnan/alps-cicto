@@ -1,5 +1,6 @@
 <script setup lang="ts">
 //@ts-nocheck
+import type { TableColumn } from '@nuxt/ui'
 const systemStats = [
     {
         label: 'Total System Users',
@@ -241,6 +242,24 @@ const filteredUsers = computed(() =>
         return matchesRole && matchesSearch
     })
 )
+
+type AdminUser = (typeof users.value)[number]
+
+/**
+ * The system-user table's columns.
+ *
+ * Every field is a string, including `lastLogin`, whose "YYYY-MM-DD HH:mm"
+ * form sorts correctly as text — so no column needs `sortDescFirst`. That flag
+ * is what stops TanStack peeking at the first row and starting a numeric column
+ * on descending while the string columns start on ascending.
+ */
+const columns: TableColumn<AdminUser>[] = [
+    { accessorKey: 'name', header: sortHeader('Name') },
+    { accessorKey: 'email', header: sortHeader('Email') },
+    { accessorKey: 'role', header: sortHeader('Role') },
+    { accessorKey: 'status', header: sortHeader('Status') },
+    { accessorKey: 'lastLogin', header: sortHeader('Last Login') },
+]
 
 const MONTHS = [
     'Jan',
@@ -608,113 +627,107 @@ function addUser() {
                         </button>
                     </div>
 
-                    <div v-if="filteredUsers.length" class="overflow-x-auto">
-                        <table class="w-full min-w-[760px] text-sm">
-                            <thead
-                                class="border-b border-slate-100 bg-slate-50/70"
-                            >
-                                <tr
-                                    class="text-[11px] font-semibold uppercase tracking-wide text-slate-500"
-                                >
-                                    <th class="px-5 py-3.5 text-left">Name</th>
-                                    <th class="px-5 py-3.5 text-left">Email</th>
-                                    <th class="px-5 py-3.5 text-left">Role</th>
-                                    <th class="px-5 py-3.5 text-left">
-                                        Status
-                                    </th>
-                                    <th class="px-5 py-3.5 text-left">
-                                        Last Login
-                                    </th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                <tr
-                                    v-for="u in filteredUsers"
-                                    :key="u.email"
-                                    class="border-b border-slate-100 bg-white transition-colors last:border-0 hover:bg-emerald-50/40"
-                                >
-                                    <td class="px-5 py-4">
-                                        <div class="flex items-center gap-3">
-                                            <span
-                                                class="flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white shadow-sm ring-2 ring-white"
-                                                :style="{
-                                                    background:
-                                                        ROLE_STYLE[u.role]
-                                                            .avatar,
-                                                }"
-                                            >
-                                                {{ initials(u.name) }}
-                                            </span>
-
-                                            <span
-                                                class="font-semibold text-slate-800"
-                                            >
-                                                {{ u.name }}
-                                            </span>
-                                        </div>
-                                    </td>
-
-                                    <td class="px-5 py-4 text-slate-600">
-                                        {{ u.email }}
-                                    </td>
-
-                                    <td class="px-5 py-4">
-                                        <span
-                                            class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
-                                            :style="{
-                                                background:
-                                                    ROLE_STYLE[u.role].bg,
-                                                color: ROLE_STYLE[u.role].text,
-                                            }"
-                                        >
-                                            <span
-                                                class="size-1.5 rounded-full"
-                                                :style="{
-                                                    background:
-                                                        ROLE_STYLE[u.role].dot,
-                                                }"
-                                            />
-                                            {{ u.role }}
-                                        </span>
-                                    </td>
-
-                                    <td class="px-5 py-4">
-                                        <span
-                                            class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"
-                                        >
-                                            <span
-                                                class="size-1.5 rounded-full bg-emerald-500"
-                                            />
-                                            {{ u.status }}
-                                        </span>
-                                    </td>
-
-                                    <td
-                                        class="px-5 py-4 font-mono text-xs text-slate-500"
-                                    >
-                                        {{ lastLoginLabel(u.lastLogin) }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div
-                        v-else
-                        class="flex flex-col items-center justify-center px-5 py-14 text-center"
-                    >
-                        <div
-                            class="mb-3 flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-300"
+                    <div class="overflow-x-auto">
+                        <UTable
+                            :data="filteredUsers"
+                            :columns="columns"
+                            :get-row-id="(u: AdminUser) => u.email"
+                            :ui="{
+                                th: 'bg-slate-50/70 px-5 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500',
+                                td: 'px-5 py-4 text-sm text-slate-600',
+                                tr: 'border-b border-slate-100 last:border-0 hover:bg-emerald-50/40',
+                            }"
                         >
-                            <UIcon name="i-lucide-user-x" class="size-6" />
-                        </div>
-                        <div class="text-base font-semibold text-slate-700">
-                            No users found
-                        </div>
-                        <div class="mt-1 text-sm text-slate-400">
-                            Try a different search term or role filter.
-                        </div>
+                            <template #name-cell="{ row }">
+                                <div class="flex items-center gap-3">
+                                    <span
+                                        class="flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white shadow-sm ring-2 ring-white"
+                                        :style="{
+                                            background:
+                                                ROLE_STYLE[row.original.role]
+                                                    .avatar,
+                                        }"
+                                    >
+                                        {{ initials(row.original.name) }}
+                                    </span>
+
+                                    <span
+                                        class="font-semibold text-slate-800"
+                                    >
+                                        {{ row.original.name }}
+                                    </span>
+                                </div>
+                            </template>
+
+                            <template #email-cell="{ row }">
+                                {{ row.original.email }}
+                            </template>
+
+                            <template #role-cell="{ row }">
+                                <span
+                                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
+                                    :style="{
+                                        background: ROLE_STYLE[row.original.role]
+                                            .bg,
+                                        color: ROLE_STYLE[row.original.role]
+                                            .text,
+                                    }"
+                                >
+                                    <span
+                                        class="size-1.5 rounded-full"
+                                        :style="{
+                                            background:
+                                                ROLE_STYLE[row.original.role]
+                                                    .dot,
+                                        }"
+                                    />
+                                    {{ row.original.role }}
+                                </span>
+                            </template>
+
+                            <template #status-cell="{ row }">
+                                <span
+                                    class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"
+                                >
+                                    <span
+                                        class="size-1.5 rounded-full bg-emerald-500"
+                                    />
+                                    {{ row.original.status }}
+                                </span>
+                            </template>
+
+                            <template #lastLogin-cell="{ row }">
+                                <span class="font-mono text-xs text-slate-500">
+                                    {{ lastLoginLabel(row.original.lastLogin) }}
+                                </span>
+                            </template>
+
+                            <!-- No error state: an empty list is the only failure
+                                 mode this client-side filter can produce. -->
+                            <template #empty>
+                                <div
+                                    class="flex flex-col items-center justify-center px-5 py-14 text-center"
+                                >
+                                    <div
+                                        class="mb-3 flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-300"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-user-x"
+                                            class="size-6"
+                                        />
+                                    </div>
+                                    <div
+                                        class="text-base font-semibold text-slate-700"
+                                    >
+                                        No users found
+                                    </div>
+                                    <div class="mt-1 text-sm text-slate-400">
+                                        Try a different search term or role
+                                        filter.
+                                    </div>
+                                </div>
+                            </template>
+                        </UTable>
                     </div>
                 </div>
             </div>

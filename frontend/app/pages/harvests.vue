@@ -1,5 +1,6 @@
 <script setup lang="ts">
 //@ts-nocheck
+import type { TableColumn } from '@nuxt/ui'
 import type { HarvestRow } from '~/composables/useCycleRegistry'
 
 import { useFarmRecordsApi } from '~/composables/useFarmRecordsApi'
@@ -445,6 +446,71 @@ const filterStatus = ref<StatusFilter>('All')
 const search = ref('')
 
 
+
+
+/**
+ * The harvest table's columns.
+ *
+ * Most of these columns earn their `accessorFn`: Farmer and Crop combine two
+ * source fields, ID disappears behind `shortId`, and Status is derived. The two
+ * numbers (Area, Production) sort on the raw values so TanStack compares
+ * numerically; `sortDescFirst: false` on both stops TanStack peeking at the
+ * first row and starting them on descending while the text columns start on
+ * ascending.
+ */
+const columns: TableColumn<HarvestRow>[] = [
+    { accessorKey: 'documentId', header: sortHeader('ID') },
+    {
+        id: 'farmer',
+        accessorFn: (row) => row.farmerNames.join(' '),
+        header: sortHeader('Farmer'),
+    },
+    { accessorKey: 'crop', header: sortHeader('Crop') },
+    { accessorKey: 'parcel_code', header: sortHeader('Parcel') },
+    {
+        accessorKey: 'barangay',
+        header: sortHeader('Barangay'),
+        meta: { class: { td: 'text-slate-600' } },
+    },
+    {
+        id: 'area',
+        accessorFn: (row) => row.area_hectares,
+        header: sortHeader('Area (ha)', { align: 'right' }),
+        sortDescFirst: false,
+        meta: {
+            class: {
+                th: 'text-right',
+                td: 'text-right font-mono font-semibold text-slate-700',
+            },
+        },
+    },
+    {
+        id: 'production',
+        accessorFn: (row) => row.production_kg ?? 0,
+        header: sortHeader('Production (kg)', { align: 'right' }),
+        sortDescFirst: false,
+        meta: { class: { th: 'text-right', td: 'text-right' } },
+    },
+    {
+        id: 'date',
+        accessorFn: (row) => row.harvest_date ?? '',
+        header: sortHeader('Date'),
+        meta: { class: { td: 'text-slate-600' } },
+    },
+    {
+        id: 'status',
+        accessorFn: (row) => harvestStatus(row),
+        header: sortHeader('Status'),
+    },
+    {
+        // Buttons, not data: nothing to sort on.
+        id: 'actions',
+        header: 'Actions',
+        enableSorting: false,
+        enableHiding: false,
+        meta: { class: { th: 'text-right' } },
+    },
+]
 
 const filtered = computed(() =>
 
@@ -1264,217 +1330,251 @@ async function confirmDelete() {
                     </div>
 
                     <div class="overflow-x-auto">
-                        <table class="w-full min-w-[1100px] text-sm">
-                            <thead class="border-b border-slate-100 bg-slate-50/70">
-                                <tr class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                    <th class="px-5 py-3.5 text-left">ID</th>
-                                    <th class="px-5 py-3.5 text-left">Farmer</th>
-                                    <th class="px-5 py-3.5 text-left">Crop</th>
-                                    <th class="px-5 py-3.5 text-left">Parcel</th>
-                                    <th class="px-5 py-3.5 text-left">Barangay</th>
-                                    <th class="px-5 py-3.5 text-right">Area (ha)</th>
-                                    <th class="px-5 py-3.5 text-right">Production (kg)</th>
-                                    <th class="px-5 py-3.5 text-left">Date</th>
-                                    <th class="px-5 py-3.5 text-left">Status</th>
-                                    <th class="px-5 py-3.5 text-right">Actions</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                <tr v-if="loading">
-                                    <td colspan="10" class="px-5 py-12 text-center text-sm text-slate-400">
-                                        <span class="inline-flex items-center gap-2">
-                                            <UIcon
-                                                name="i-lucide-loader-circle"
-                                                class="size-4 animate-spin"
-                                            />
-                                            Loading harvests...
-                                        </span>
-                                    </td>
-                                </tr>
-
-                                <tr v-else-if="loadError">
-                                    <td colspan="10" class="px-5 py-12 text-center">
-                                        <p class="text-sm text-red-600">{{ loadError }}</p>
-                                        <button
-                                            type="button"
-                                            class="mt-2 text-sm font-semibold text-green-700 underline"
-                                            @click="load"
-                                        >
-                                            Try again
-                                        </button>
-                                    </td>
-                                </tr>
-
-                                <tr v-else-if="harvests.length === 0">
-                                    <td colspan="10" class="px-5 py-14 text-center">
-                                        <div class="flex flex-col items-center gap-2">
-                                            <div
-                                                class="flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-300"
-                                            >
-                                                <UIcon name="i-lucide-wheat" class="size-6" />
-                                            </div>
-                                            <p class="text-base font-semibold text-slate-700">
-                                                No harvests recorded yet
-                                            </p>
-                                            <p class="max-w-sm text-sm text-slate-400">
-                                                Record the first harvest against a planted parcel to begin production tracking.
-                                            </p>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <tr v-else-if="filtered.length === 0">
-                                    <td colspan="10" class="px-5 py-12 text-center text-sm text-slate-400">
-                                        No harvests match the current search or status filter.
-                                    </td>
-                                </tr>
-
-                                <tr
-                                    v-for="h in filtered"
-                                    v-else
-                                    :key="h.documentId"
-                                    class="border-b border-slate-100 bg-white transition-colors last:border-0 hover:bg-emerald-50/40"
+                        <UTable
+                            :data="filtered"
+                            :columns="columns"
+                            :loading="loading"
+                            :get-row-id="(h: HarvestRow) => h.documentId"
+                            :ui="{
+                                th: 'bg-slate-50/70 px-5 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500',
+                                td: 'px-5 py-4 text-sm',
+                                tr: 'border-b border-slate-100 last:border-0 hover:bg-emerald-50/40',
+                            }"
+                        >
+                            <template #documentId-cell="{ row }">
+                                <span
+                                    class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-500"
                                 >
-                                    <td class="px-5 py-4">
-                                        <span
-                                            class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-500"
+                                    {{ shortId(row.original.documentId) }}
+                                </span>
+                            </template>
+
+                            <template #farmer-cell="{ row }">
+                                <div class="flex items-center gap-3">
+                                    <span
+                                        class="flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white shadow-sm ring-2 ring-white"
+                                        :style="{
+                                            backgroundColor: avatarColor(
+                                                row.original.farmerNames[0] ??
+                                                    ''
+                                            ),
+                                        }"
+                                    >
+                                        {{
+                                            initials(
+                                                row.original.farmerNames[0] ??
+                                                    ''
+                                            )
+                                        }}
+                                    </span>
+
+                                    <div class="min-w-0">
+                                        <div
+                                            class="truncate font-medium text-slate-800"
                                         >
-                                            {{ shortId(h.documentId) }}
-                                        </span>
-                                    </td>
-
-                                    <td class="px-5 py-4">
-                                        <div class="flex items-center gap-3">
-                                            <span
-                                                class="flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white shadow-sm ring-2 ring-white"
-                                                :style="{
-                                                    backgroundColor: avatarColor(
-                                                        h.farmerNames[0] ?? ''
-                                                    ),
-                                                }"
-                                            >
-                                                {{ initials(h.farmerNames[0] ?? '') }}
-                                            </span>
-
-                                            <div class="min-w-0">
-                                                <div class="truncate font-medium text-slate-800">
-                                                    {{ farmerLabel(h.farmerNames) }}
-                                                </div>
-                                                <div
-                                                    v-if="h.variety"
-                                                    class="mt-0.5 text-xs text-slate-400"
-                                                >
-                                                    Variety: {{ h.variety }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-
-                                    <td class="px-5 py-4">
-                                        <div class="flex items-center gap-2">
-                                            <span
-                                                class="h-2.5 w-2.5 shrink-0 rounded-full"
-                                                :style="{
-                                                    background:
-                                                        CROP_COLORS[h.crop] ??
-                                                        '#94a3b8',
-                                                }"
-                                            />
-                                            <span class="font-semibold text-slate-700">
-                                                {{ h.crop || '—' }}
-                                            </span>
-                                        </div>
-                                    </td>
-
-                                    <td class="px-5 py-4">
-                                        <NuxtLink
-                                            :to="`/parcels/${h.parcel_code}`"
-                                            class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-700"
-                                        >
-                                            {{ h.parcel_code }}
-                                        </NuxtLink>
-                                    </td>
-
-                                    <td class="px-5 py-4 text-slate-600">
-                                        <span class="flex items-center gap-1.5">
-                                            <UIcon
-                                                name="i-lucide-map-pin"
-                                                class="size-3.5 text-slate-400"
-                                            />
-                                            {{ h.barangay }}
-                                        </span>
-                                    </td>
-
-                                    <td class="px-5 py-4 text-right font-mono font-semibold text-slate-700">
-                                        {{ h.area_hectares.toFixed(1) }}
-                                    </td>
-
-                                    <td class="px-5 py-4 text-right">
-                                        <div class="font-mono font-semibold text-slate-900">
-                                            {{ num(h.production_kg) }}
+                                            {{
+                                                farmerLabel(
+                                                    row.original.farmerNames
+                                                )
+                                            }}
                                         </div>
                                         <div
-                                            v-if="h.yield_per_hectare != null"
+                                            v-if="row.original.variety"
                                             class="mt-0.5 text-xs text-slate-400"
                                         >
-                                            {{ num(h.yield_per_hectare) }} kg/ha
+                                            Variety: {{
+                                                row.original.variety
+                                            }}
                                         </div>
-                                    </td>
+                                    </div>
+                                </div>
+                            </template>
 
-                                    <td class="px-5 py-4 text-slate-600">
-                                        {{ h.harvest_date ?? '—' }}
-                                    </td>
+                            <template #crop-cell="{ row }">
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="h-2.5 w-2.5 shrink-0 rounded-full"
+                                        :style="{
+                                            background:
+                                                CROP_COLORS[
+                                                    row.original.crop
+                                                ] ?? '#94a3b8',
+                                        }"
+                                    />
+                                    <span
+                                        class="font-semibold text-slate-700"
+                                    >
+                                        {{ row.original.crop || '—' }}
+                                    </span>
+                                </div>
+                            </template>
 
-                                    <td class="px-5 py-4">
-                                        <span
-                                            :class="
-                                                statusClass(
-                                                    statusBackground(
-                                                        harvestStatus(h)
+                            <template #parcel_code-cell="{ row }">
+                                <NuxtLink
+                                    :to="`/parcels/${row.original.parcel_code}`"
+                                    class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-700"
+                                >
+                                    {{ row.original.parcel_code }}
+                                </NuxtLink>
+                            </template>
+
+                            <template #barangay-cell="{ row }">
+                                <span class="flex items-center gap-1.5">
+                                    <UIcon
+                                        name="i-lucide-map-pin"
+                                        class="size-3.5 text-slate-400"
+                                    />
+                                    {{ row.original.barangay }}
+                                </span>
+                            </template>
+
+                            <template #area-cell="{ row }">
+                                {{ row.original.area_hectares.toFixed(1) }}
+                            </template>
+
+                            <template #production-cell="{ row }">
+                                <div
+                                    class="font-mono font-semibold text-slate-900"
+                                >
+                                    {{ num(row.original.production_kg) }}
+                                </div>
+                                <div
+                                    v-if="
+                                        row.original.yield_per_hectare != null
+                                    "
+                                    class="mt-0.5 text-xs text-slate-400"
+                                >
+                                    {{
+                                        num(row.original.yield_per_hectare)
+                                    }}
+                                    kg/ha
+                                </div>
+                            </template>
+
+                            <template #date-cell="{ row }">
+                                {{ row.original.harvest_date ?? '—' }}
+                            </template>
+
+                            <template #status-cell="{ row }">
+                                <span
+                                    :class="
+                                        statusClass(
+                                            statusBackground(
+                                                harvestStatus(row.original)
+                                            )
+                                        )
+                                    "
+                                    class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
+                                >
+                                    <span
+                                        class="h-1.5 w-1.5 rounded-full"
+                                        :style="{
+                                            backgroundColor: statusDot(
+                                                statusBackground(
+                                                    harvestStatus(
+                                                        row.original
                                                     )
                                                 )
-                                            "
-                                            class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
+                                            ),
+                                        }"
+                                    />
+                                    {{ harvestStatus(row.original) }}
+                                </span>
+                            </template>
+
+                            <template #actions-cell="{ row }">
+                                <div
+                                    class="flex items-center justify-end gap-2"
+                                >
+                                    <button
+                                        type="button"
+                                        class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                                        title="Edit harvest"
+                                        @click="openEdit(row.original)"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-pencil"
+                                            class="size-3.5"
+                                        />
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                        title="Delete harvest"
+                                        @click="askDelete(row.original)"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-trash-2"
+                                            class="size-3.5"
+                                        />
+                                    </button>
+                                </div>
+                            </template>
+
+                            <template #loading>
+                                <span class="inline-flex items-center gap-2">
+                                    <UIcon
+                                        name="i-lucide-loader-circle"
+                                        class="size-4 animate-spin"
+                                    />
+                                    Loading harvests...
+                                </span>
+                            </template>
+
+                            <template #empty>
+                                <div v-if="loadError" class="px-5 py-12 text-center">
+                                    <p class="text-sm text-red-600">
+                                        {{ loadError }}
+                                    </p>
+                                    <button
+                                        type="button"
+                                        class="mt-2 text-sm font-semibold text-green-700 underline"
+                                        @click="load"
+                                    >
+                                        Try again
+                                    </button>
+                                </div>
+
+                                <div
+                                    v-else-if="harvests.length === 0"
+                                    class="px-5 py-14 text-center"
+                                >
+                                    <div
+                                        class="flex flex-col items-center gap-2"
+                                    >
+                                        <div
+                                            class="flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-300"
                                         >
-                                            <span
-                                                class="h-1.5 w-1.5 rounded-full"
-                                                :style="{
-                                                    backgroundColor: statusDot(
-                                                        statusBackground(
-                                                            harvestStatus(h)
-                                                        )
-                                                    ),
-                                                }"
+                                            <UIcon
+                                                name="i-lucide-wheat"
+                                                class="size-6"
                                             />
-                                            {{ harvestStatus(h) }}
-                                        </span>
-                                    </td>
-
-                                    <td class="px-5 py-4">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <button
-                                                type="button"
-                                                class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
-                                                title="Edit harvest"
-                                                @click="openEdit(h)"
-                                            >
-                                                <UIcon name="i-lucide-pencil" class="size-3.5" />
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                                                title="Delete harvest"
-                                                @click="askDelete(h)"
-                                            >
-                                                <UIcon name="i-lucide-trash-2" class="size-3.5" />
-                                            </button>
                                         </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                        <p
+                                            class="text-base font-semibold text-slate-700"
+                                        >
+                                            No harvests recorded yet
+                                        </p>
+                                        <p
+                                            class="max-w-sm text-sm text-slate-400"
+                                        >
+                                            Record the first harvest against a
+                                            planted parcel to begin production
+                                            tracking.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div
+                                    v-else
+                                    class="px-5 py-12 text-center text-sm text-slate-400"
+                                >
+                                    No harvests match the current search or
+                                    status filter.
+                                </div>
+                            </template>
+                        </UTable>
                     </div>
                 </div>
             </div>

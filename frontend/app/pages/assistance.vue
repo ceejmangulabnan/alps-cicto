@@ -1,5 +1,6 @@
 <script setup lang="ts">
 //@ts-nocheck
+import type { TableColumn } from '@nuxt/ui'
 import {
     ASSISTANCE_STATUS_OPTIONS,
     useAssistanceApi,
@@ -181,6 +182,50 @@ const filtered = computed(() =>
         return match && status
     })
 )
+
+const columns: TableColumn<AssistanceRow>[] = [
+    { accessorKey: 'reference_code', header: sortHeader('Ref') },
+    { accessorKey: 'program', header: sortHeader('Program') },
+    { accessorKey: 'recipient', header: sortHeader('Recipient') },
+    {
+        accessorKey: 'barangay',
+        header: sortHeader('Barangay'),
+        meta: { class: { td: 'text-slate-600' } },
+    },
+    {
+        accessorKey: 'items',
+        header: sortHeader('Items'),
+        meta: { class: { td: 'max-w-xs truncate text-slate-600' } },
+    },
+    {
+        // The one numeric field: without sortDescFirst TanStack would peek at
+        // the first row and start it descending-first while the string columns
+        // start on ascending.
+        accessorKey: 'value',
+        header: sortHeader('Value (₱)', { align: 'right' }),
+        sortDescFirst: false,
+        meta: {
+            class: {
+                th: 'text-right',
+                td: 'text-right font-mono font-semibold text-emerald-700',
+            },
+        },
+    },
+    {
+        accessorKey: 'date',
+        header: sortHeader('Date'),
+        meta: { class: { td: 'text-slate-600' } },
+    },
+    { accessorKey: 'status', header: sortHeader('Status') },
+    {
+        // Buttons, not data: nothing to sort on.
+        id: 'actions',
+        header: 'Actions',
+        enableSorting: false,
+        enableHiding: false,
+        meta: { class: { th: 'text-right' } },
+    },
+]
 
 onMounted(() => {
     load()
@@ -740,258 +785,235 @@ async function confirmDelete() {
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full min-w-[1040px] text-sm">
-                        <thead class="border-b border-slate-100 bg-slate-50/70">
-                            <tr
-                                class="text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+                    <UTable
+                        :data="filtered"
+                        :columns="columns"
+                        :loading="loading"
+                        :get-row-id="(a: AssistanceRow) => a.documentId"
+                        :ui="{
+                            th: 'bg-slate-50/70 px-5 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500',
+                            td: 'px-5 py-4 text-sm',
+                            tr: 'border-b border-slate-100 last:border-0 hover:bg-emerald-50/40',
+                        }"
+                    >
+                        <template #reference_code-cell="{ row }">
+                            <span
+                                class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-500"
                             >
-                                <th class="px-5 py-3.5 text-left">Ref</th>
-                                <th class="px-5 py-3.5 text-left">Program</th>
-                                <th class="px-5 py-3.5 text-left">Recipient</th>
-                                <th class="px-5 py-3.5 text-left">Barangay</th>
-                                <th class="px-5 py-3.5 text-left">Items</th>
-                                <th class="px-5 py-3.5 text-right">
-                                    Value (₱)
-                                </th>
-                                <th class="px-5 py-3.5 text-left">Date</th>
-                                <th class="px-5 py-3.5 text-left">Status</th>
-                                <th class="px-5 py-3.5 text-right">Actions</th>
-                            </tr>
-                        </thead>
+                                {{ row.original.reference_code }}
+                            </span>
+                        </template>
 
-                        <tbody>
-                            <tr v-if="loading">
-                                <td
-                                    colspan="9"
-                                    class="px-5 py-12 text-center text-sm text-slate-400"
-                                >
-                                    <span
-                                        class="inline-flex items-center gap-2"
-                                    >
-                                        <UIcon
-                                            name="i-lucide-loader-circle"
-                                            class="size-4 animate-spin"
-                                        />
-                                        Loading assistance records...
-                                    </span>
-                                </td>
-                            </tr>
-
-                            <tr v-else-if="loadError">
-                                <td colspan="9" class="px-5 py-12 text-center">
-                                    <p class="text-sm text-red-600">
-                                        {{ loadError }}
-                                    </p>
-                                    <button
-                                        type="button"
-                                        class="mt-2 text-sm font-semibold text-green-700 underline"
-                                        @click="load"
-                                    >
-                                        Try again
-                                    </button>
-                                </td>
-                            </tr>
-
-                            <tr v-else-if="programs.length === 0">
-                                <td colspan="9" class="px-5 py-14 text-center">
-                                    <div
-                                        class="flex flex-col items-center gap-2"
-                                    >
-                                        <div
-                                            class="flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-300"
-                                        >
-                                            <UIcon
-                                                name="i-lucide-hand-heart"
-                                                class="size-6"
-                                            />
-                                        </div>
-                                        <p
-                                            class="text-base font-semibold text-slate-700"
-                                        >
-                                            No assistance recorded yet
-                                        </p>
-                                        <p
-                                            class="max-w-sm text-sm text-slate-400"
-                                        >
-                                            Record the first assistance entry
-                                            for a registered farmer.
-                                        </p>
-                                    </div>
-                                </td>
-                            </tr>
-
-                            <tr v-else-if="filtered.length === 0">
-                                <td
-                                    colspan="9"
-                                    class="px-5 py-12 text-center text-sm text-slate-400"
-                                >
-                                    No assistance records match the current
-                                    search or status filter.
-                                </td>
-                            </tr>
-
-                            <tr
-                                v-for="a in filtered"
-                                v-else
-                                :key="a.documentId"
-                                class="border-b border-slate-100 bg-white transition-colors last:border-0 hover:bg-emerald-50/40"
+                        <template #program-cell="{ row }">
+                            <span
+                                class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
+                                :style="{
+                                    background: `${programColor(row.original.program)}1a`,
+                                    color: programColor(row.original.program),
+                                }"
                             >
-                                <td class="px-5 py-4">
-                                    <span
-                                        class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-500"
-                                    >
-                                        {{ a.reference_code }}
-                                    </span>
-                                </td>
+                                <span
+                                    class="h-1.5 w-1.5 rounded-full"
+                                    :style="{
+                                        background: programColor(
+                                            row.original.program
+                                        ),
+                                    }"
+                                />
+                                {{ row.original.program }}
+                            </span>
+                        </template>
 
-                                <td class="px-5 py-4">
+                        <template #recipient-cell="{ row }">
+                            <div class="flex items-center gap-3">
+                                <span
+                                    class="flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white shadow-sm ring-2 ring-white"
+                                    :style="{
+                                        backgroundColor: avatarColor(
+                                            row.original.recipient
+                                        ),
+                                    }"
+                                >
+                                    {{ initials(row.original.recipient) }}
+                                </span>
+
+                                <span class="min-w-0">
                                     <span
-                                        class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
-                                        :style="{
-                                            background: `${programColor(a.program)}1a`,
-                                            color: programColor(a.program),
+                                        class="block truncate font-medium text-slate-800"
+                                    >
+                                        {{ row.original.recipient }}
+                                    </span>
+
+                                    <NuxtLink
+                                        v-if="row.original.farmerDocumentId"
+                                        :to="{
+                                            path: '/farmers',
+                                            query: {
+                                                farmer:
+                                                    row.original
+                                                        .farmerDocumentId,
+                                            },
                                         }"
+                                        class="mt-0.5 block font-mono text-xs text-slate-400 underline-offset-2 hover:text-[#2d6a2d] hover:underline"
+                                        :title="`Open ${row.original.recipient}'s profile`"
                                     >
-                                        <span
-                                            class="h-1.5 w-1.5 rounded-full"
-                                            :style="{
-                                                background: programColor(
-                                                    a.program
-                                                ),
-                                            }"
-                                        />
-                                        {{ a.program }}
-                                    </span>
-                                </td>
+                                        {{ row.original.farmer_code }}
+                                    </NuxtLink>
 
-                                <td class="px-5 py-4">
-                                    <div class="flex items-center gap-3">
-                                        <span
-                                            class="flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white shadow-sm ring-2 ring-white"
-                                            :style="{
-                                                backgroundColor: avatarColor(
-                                                    a.recipient
-                                                ),
-                                            }"
-                                        >
-                                            {{ initials(a.recipient) }}
-                                        </span>
-
-                                        <span class="min-w-0">
-                                            <span
-                                                class="block truncate font-medium text-slate-800"
-                                            >
-                                                {{ a.recipient }}
-                                            </span>
-
-                                            <NuxtLink
-                                                v-if="a.farmerDocumentId"
-                                                :to="{
-                                                    path: '/farmers',
-                                                    query: {
-                                                        farmer: a.farmerDocumentId,
-                                                    },
-                                                }"
-                                                class="mt-0.5 block font-mono text-xs text-slate-400 underline-offset-2 hover:text-[#2d6a2d] hover:underline"
-                                                :title="`Open ${a.recipient}'s profile`"
-                                            >
-                                                {{ a.farmer_code }}
-                                            </NuxtLink>
-
-                                            <span
-                                                v-else
-                                                class="mt-0.5 block font-mono text-xs text-slate-400"
-                                            >
-                                                {{ a.farmer_code || '—' }}
-                                            </span>
-                                        </span>
-                                    </div>
-                                </td>
-
-                                <td class="px-5 py-4 text-slate-600">
-                                    <span class="flex items-center gap-1.5">
-                                        <UIcon
-                                            name="i-lucide-map-pin"
-                                            class="size-3.5 text-slate-400"
-                                        />
-                                        {{ a.barangay || '—' }}
-                                    </span>
-                                </td>
-
-                                <td
-                                    class="max-w-xs truncate px-5 py-4 text-slate-600"
-                                    :title="a.items"
-                                >
-                                    {{ a.items || '—' }}
-                                </td>
-
-                                <td
-                                    class="px-5 py-4 text-right font-mono font-semibold text-emerald-700"
-                                >
-                                    {{ peso(a.value) }}
-                                </td>
-
-                                <td class="px-5 py-4 text-slate-600">
-                                    <span class="flex items-center gap-1.5">
-                                        <UIcon
-                                            name="i-lucide-calendar"
-                                            class="size-3.5 text-slate-400"
-                                        />
-                                        {{ a.date ?? '—' }}
-                                    </span>
-                                </td>
-
-                                <td class="px-5 py-4">
                                     <span
-                                        :class="
-                                            STATUS_STYLE[a.status] ||
-                                            'status-idle'
-                                        "
-                                        class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
+                                        v-else
+                                        class="mt-0.5 block font-mono text-xs text-slate-400"
                                     >
-                                        <span
-                                            class="h-1.5 w-1.5 rounded-full"
-                                            :style="{
-                                                background:
-                                                    STATUS_DOT[a.status],
-                                            }"
-                                        />
-                                        {{ a.status }}
+                                        {{ row.original.farmer_code || '—' }}
                                     </span>
-                                </td>
+                                </span>
+                            </div>
+                        </template>
 
-                                <td class="px-5 py-4">
+                        <template #barangay-cell="{ row }">
+                            <span class="flex items-center gap-1.5">
+                                <UIcon
+                                    name="i-lucide-map-pin"
+                                    class="size-3.5 text-slate-400"
+                                />
+                                {{ row.original.barangay || '—' }}
+                            </span>
+                        </template>
+
+                        <template #items-cell="{ row }">
+                            <span :title="row.original.items">
+                                {{ row.original.items || '—' }}
+                            </span>
+                        </template>
+
+                        <template #value-cell="{ row }">
+                            {{ peso(row.original.value) }}
+                        </template>
+
+                        <template #date-cell="{ row }">
+                            <span class="flex items-center gap-1.5">
+                                <UIcon
+                                    name="i-lucide-calendar"
+                                    class="size-3.5 text-slate-400"
+                                />
+                                {{ row.original.date ?? '—' }}
+                            </span>
+                        </template>
+
+                        <template #status-cell="{ row }">
+                            <span
+                                :class="
+                                    STATUS_STYLE[row.original.status] ||
+                                    'status-idle'
+                                "
+                                class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
+                            >
+                                <span
+                                    class="h-1.5 w-1.5 rounded-full"
+                                    :style="{
+                                        background:
+                                            STATUS_DOT[row.original.status],
+                                    }"
+                                />
+                                {{ row.original.status }}
+                            </span>
+                        </template>
+
+                        <template #actions-cell="{ row }">
+                            <div
+                                class="flex items-center justify-end gap-2"
+                            >
+                                <button
+                                    type="button"
+                                    title="Edit assistance"
+                                    class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                                    @click="openEditModal(row.original)"
+                                >
+                                    <UIcon
+                                        name="i-lucide-pencil"
+                                        class="size-3.5"
+                                    />
+                                </button>
+
+                                <button
+                                    type="button"
+                                    title="Delete assistance"
+                                    class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                    @click="askDelete(row.original)"
+                                >
+                                    <UIcon
+                                        name="i-lucide-trash-2"
+                                        class="size-3.5"
+                                    />
+                                </button>
+                            </div>
+                        </template>
+
+                        <template #loading>
+                            <span class="inline-flex items-center gap-2">
+                                <UIcon
+                                    name="i-lucide-loader-circle"
+                                    class="size-4 animate-spin"
+                                />
+                                Loading assistance records...
+                            </span>
+                        </template>
+
+                        <template #empty>
+                            <div
+                                v-if="loadError"
+                                class="px-5 py-12 text-center"
+                            >
+                                <p class="text-sm text-red-600">
+                                    {{ loadError }}
+                                </p>
+                                <button
+                                    type="button"
+                                    class="mt-2 text-sm font-semibold text-green-700 underline"
+                                    @click="load"
+                                >
+                                    Try again
+                                </button>
+                            </div>
+
+                            <div
+                                v-else-if="programs.length === 0"
+                                class="px-5 py-14 text-center"
+                            >
+                                <div
+                                    class="flex flex-col items-center gap-2"
+                                >
                                     <div
-                                        class="flex items-center justify-end gap-2"
+                                        class="flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-300"
                                     >
-                                        <button
-                                            type="button"
-                                            title="Edit assistance"
-                                            class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
-                                            @click="openEditModal(a)"
-                                        >
-                                            <UIcon
-                                                name="i-lucide-pencil"
-                                                class="size-3.5"
-                                            />
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            title="Delete assistance"
-                                            class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                                            @click="askDelete(a)"
-                                        >
-                                            <UIcon
-                                                name="i-lucide-trash-2"
-                                                class="size-3.5"
-                                            />
-                                        </button>
+                                        <UIcon
+                                            name="i-lucide-hand-heart"
+                                            class="size-6"
+                                        />
                                     </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                    <p
+                                        class="text-base font-semibold text-slate-700"
+                                    >
+                                        No assistance recorded yet
+                                    </p>
+                                    <p
+                                        class="max-w-sm text-sm text-slate-400"
+                                    >
+                                        Record the first assistance entry for a
+                                        registered farmer.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div
+                                v-else
+                                class="px-5 py-12 text-center text-sm text-slate-400"
+                            >
+                                No assistance records match the current search
+                                or status filter.
+                            </div>
+                        </template>
+                    </UTable>
                 </div>
             </div>
         </div>

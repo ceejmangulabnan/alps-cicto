@@ -1,5 +1,6 @@
 <script setup lang="ts">
 //@ts-nocheck
+import type { TableColumn } from '@nuxt/ui'
 import type {
     InspectionStatus,
     ParcelInspectionPhoto,
@@ -225,6 +226,45 @@ const statusFilterOptions = [
 type StatusFilter = (typeof statusFilterOptions)[number]
 const filterStatus = ref<StatusFilter>('All')
 const search = ref('')
+
+
+/**
+ * The inspection table's columns.
+ *
+ * All the sortable values live flat on the row except the date, which sorts on
+ * its raw `string | null` via accessorFn. Risk and Status sort on the label
+ * strings, which is the order officers actually expect to scan in. The last
+ * column holds the action buttons, not data, so it opts out of sorting.
+ */
+const columns: TableColumn<InspectionRow>[] = [
+    { accessorKey: 'documentId', header: sortHeader('ID') },
+    { accessorKey: 'inspection_type', header: sortHeader('Type') },
+    { accessorKey: 'parcel_code', header: sortHeader('Parcel') },
+    {
+        accessorKey: 'barangay',
+        header: sortHeader('Barangay'),
+        meta: { class: { td: 'text-slate-600' } },
+    },
+    {
+        id: 'date',
+        accessorFn: (row) => row.date ?? '',
+        header: sortHeader('Date'),
+    },
+    {
+        accessorKey: 'inspector',
+        header: sortHeader('Inspector'),
+        meta: { class: { td: 'text-slate-600' } },
+    },
+    { accessorKey: 'riskLevel', header: sortHeader('Risk') },
+    { accessorKey: 'status', header: sortHeader('Status') },
+    {
+        // Buttons, not data: nothing to sort on, and the header stays empty.
+        id: 'actions',
+        enableSorting: false,
+        enableHiding: false,
+        meta: { class: { th: 'text-right' } },
+    },
+]
 
 const filtered = computed(() =>
     inspections.value.filter((row) => {
@@ -937,229 +977,204 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onDetailKeydown))
                         </div>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full min-w-[1040px] text-sm">
-                            <thead
-                                class="border-b border-slate-100 bg-slate-50/70"
-                            >
-                                <tr
-                                    class="text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+                        <UTable
+                            :data="filtered"
+                            :columns="columns"
+                            :loading="loading"
+                            :get-row-id="(row: InspectionRow) => row.documentId"
+                            :ui="{
+                                th: 'bg-slate-50/70 px-5 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500',
+                                td: 'px-5 py-4 text-sm',
+                                tr: 'border-b border-slate-100 last:border-0 hover:bg-emerald-50/40',
+                            }"
+                        >
+                            <template #documentId-cell="{ row }">
+                                <span
+                                    class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-500"
+                                    >{{ shortId(row.original.documentId) }}</span
                                 >
-                                    <th class="px-5 py-3.5 text-left">ID</th>
-                                    <th class="px-5 py-3.5 text-left">Type</th>
-                                    <th class="px-5 py-3.5 text-left">
-                                        Parcel
-                                    </th>
-                                    <th class="px-5 py-3.5 text-left">
-                                        Barangay
-                                    </th>
-                                    <th class="px-5 py-3.5 text-left">Date</th>
-                                    <th class="px-5 py-3.5 text-left">
-                                        Inspector
-                                    </th>
-                                    <th class="px-5 py-3.5 text-left">Risk</th>
-                                    <th class="px-5 py-3.5 text-left">
-                                        Status
-                                    </th>
-                                    <th class="px-5 py-3.5 text-right"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Loading -->
-                                <tr v-if="loading">
-                                    <td
-                                        colspan="9"
-                                        class="px-5 py-12 text-center text-sm text-slate-400"
+                            </template>
+
+                            <template #inspection_type-cell="{ row }">
+                                <span
+                                    class="inline-flex w-fit items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-600"
+                                >
+                                    <UIcon
+                                        name="i-lucide-tags"
+                                        class="size-3.5"
+                                    />
+                                    {{ row.original.inspection_type }}
+                                </span>
+                            </template>
+
+                            <template #parcel_code-cell="{ row }">
+                                <NuxtLink
+                                    :to="`/parcels/${row.original.parcel_code}`"
+                                    class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-700"
+                                >
+                                    {{ row.original.parcel_code }}
+                                </NuxtLink>
+                            </template>
+
+                            <template #barangay-cell="{ row }">
+                                {{ row.original.barangay }}
+                            </template>
+
+                            <template #date-cell="{ row }">
+                                <div class="text-gray-500">
+                                    {{ row.original.date ?? '—' }}
+                                </div>
+                                <div
+                                    v-if="row.original.photos.length > 0"
+                                    class="mt-1 flex items-center gap-1 text-xs text-slate-400"
+                                >
+                                    <UIcon
+                                        name="i-lucide-camera"
+                                        class="size-3.5"
+                                    />
+                                    {{ row.original.photos.length }}
+                                </div>
+                            </template>
+
+                            <template #inspector-cell="{ row }">
+                                {{ row.original.inspector || '—' }}
+                            </template>
+
+                            <template #riskLevel-cell="{ row }">
+                                <span
+                                    :class="RISK_STYLE[row.original.riskLevel]"
+                                    class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
+                                >
+                                    <span
+                                        class="h-1.5 w-1.5 rounded-full"
+                                        :style="{
+                                            background:
+                                                RISK_DOT[
+                                                    row.original.riskLevel
+                                                ],
+                                        }"
+                                    />
+                                    {{ row.original.riskLevel }}
+                                </span>
+                            </template>
+
+                            <template #status-cell="{ row }">
+                                <span
+                                    :class="STATUS_STYLE[row.original.status]"
+                                    class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
+                                >
+                                    <span
+                                        class="h-1.5 w-1.5 rounded-full"
+                                        :style="{
+                                            background:
+                                                STATUS_DOT[
+                                                    row.original.status
+                                                ],
+                                        }"
+                                    />
+                                    {{ row.original.status }}
+                                </span>
+                            </template>
+
+                            <template #actions-cell="{ row }">
+                                <div
+                                    class="flex items-center justify-end gap-2"
+                                >
+                                    <button
+                                        type="button"
+                                        title="View details"
+                                        class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                                        @click="openDetail(row.original)"
                                     >
-                                        <span
-                                            class="inline-flex items-center gap-2"
+                                        <UIcon
+                                            name="i-lucide-eye"
+                                            class="size-3.5"
+                                        />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                                        @click="openEdit(row.original)"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-pencil"
+                                            class="size-3.5"
+                                        />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                        @click="askDelete(row.original)"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-trash"
+                                            class="size-3.5"
+                                        />
+                                    </button>
+                                </div>
+                            </template>
+
+                            <template #loading>
+                                <span class="inline-flex items-center gap-2">
+                                    <UIcon
+                                        name="i-lucide-loader-circle"
+                                        class="size-4 animate-spin"
+                                    />
+                                    Loading inspections...
+                                </span>
+                            </template>
+
+                            <template #empty>
+                                <div v-if="loadError" class="px-5 py-12 text-center">
+                                    <p class="text-red-600">
+                                        {{ loadError }}
+                                    </p>
+                                    <button
+                                        type="button"
+                                        class="mt-2 text-xs font-medium text-green-700 underline"
+                                        @click="load"
+                                    >
+                                        Try again
+                                    </button>
+                                </div>
+
+                                <div
+                                    v-else-if="inspections.length === 0"
+                                    class="px-5 py-12 text-center text-sm text-slate-400"
+                                >
+                                    <div
+                                        class="flex flex-col items-center gap-2"
+                                    >
+                                        <div
+                                            class="flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-300"
                                         >
                                             <UIcon
-                                                name="i-lucide-loader-circle"
-                                                class="size-4 animate-spin"
+                                                name="i-lucide-clipboard-check"
+                                                class="size-6"
                                             />
-                                            Loading inspections...
-                                        </span>
-                                    </td>
-                                </tr>
-                                <!-- Failed -->
-                                <tr v-else-if="loadError">
-                                    <td
-                                        colspan="9"
-                                        class="px-5 py-12 text-center"
-                                    >
-                                        <p class="text-red-600">
-                                            {{ loadError }}
+                                        </div>
+                                        <p
+                                            class="text-base font-semibold text-slate-700"
+                                        >
+                                            No inspections recorded yet
                                         </p>
-                                        <button
-                                            type="button"
-                                            class="mt-2 text-xs font-medium text-green-700 underline"
-                                            @click="load"
+                                        <p
+                                            class="max-w-sm text-sm text-slate-400"
                                         >
-                                            Try again
-                                        </button>
-                                    </td>
-                                </tr>
-                                <!-- Loaded but nothing to show -->
-                                <tr v-else-if="inspections.length === 0">
-                                    <td
-                                        colspan="9"
-                                        class="px-5 py-12 text-center text-sm text-slate-400"
-                                    >
-                                        <div
-                                            class="flex flex-col items-center gap-2"
-                                        >
-                                            <div
-                                                class="flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-300"
-                                            >
-                                                <UIcon
-                                                    name="i-lucide-clipboard-check"
-                                                    class="size-6"
-                                                />
-                                            </div>
-                                            <p
-                                                class="text-base font-semibold text-slate-700"
-                                            >
-                                                No inspections recorded yet
-                                            </p>
-                                            <p
-                                                class="max-w-sm text-sm text-slate-400"
-                                            >
-                                                Log the first inspection against
-                                                a parcel to begin field
-                                                monitoring.
-                                            </p>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr v-else-if="filtered.length === 0">
-                                    <td
-                                        colspan="9"
-                                        class="px-5 py-12 text-center text-sm text-slate-400"
-                                    >
-                                        No inspections match this search.
-                                    </td>
-                                </tr>
-                                <tr
-                                    v-for="row in filtered"
-                                    :key="row.documentId"
-                                    class="border-b border-slate-100 bg-white transition-colors last:border-0 hover:bg-emerald-50/40"
+                                            Log the first inspection against a
+                                            parcel to begin field monitoring.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div
+                                    v-else
+                                    class="px-5 py-12 text-center text-sm text-slate-400"
                                 >
-                                    <td class="px-5 py-4">
-                                        <span
-                                            class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-500"
-                                            >{{ shortId(row.documentId) }}</span
-                                        >
-                                    </td>
-                                    <td class="px-5 py-4">
-                                        <span
-                                            class="inline-flex w-fit items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-600"
-                                        >
-                                            <UIcon
-                                                name="i-lucide-tags"
-                                                class="size-3.5"
-                                            />
-                                            {{ row.inspection_type }}
-                                        </span>
-                                    </td>
-                                    <td class="px-5 py-4">
-                                        <NuxtLink
-                                            :to="`/parcels/${row.parcel_code}`"
-                                            class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-700"
-                                        >
-                                            {{ row.parcel_code }}
-                                        </NuxtLink>
-                                    </td>
-                                    <td class="px-5 py-4 text-slate-600">
-                                        {{ row.barangay }}
-                                    </td>
-                                    <td class="px-5 py-4">
-                                        <div class="text-gray-500">
-                                            {{ row.date ?? '—' }}
-                                        </div>
-                                        <div
-                                            v-if="row.photos.length > 0"
-                                            class="mt-1 flex items-center gap-1 text-xs text-slate-400"
-                                        >
-                                            <UIcon
-                                                name="i-lucide-camera"
-                                                class="size-3.5"
-                                            />
-                                            {{ row.photos.length }}
-                                        </div>
-                                    </td>
-                                    <td class="px-5 py-4 text-slate-600">
-                                        {{ row.inspector || '—' }}
-                                    </td>
-                                    <td class="px-5 py-4">
-                                        <span
-                                            :class="RISK_STYLE[row.riskLevel]"
-                                            class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
-                                        >
-                                            <span
-                                                class="h-1.5 w-1.5 rounded-full"
-                                                :style="{
-                                                    background:
-                                                        RISK_DOT[row.riskLevel],
-                                                }"
-                                            />
-                                            {{ row.riskLevel }}
-                                        </span>
-                                    </td>
-                                    <td class="px-5 py-4">
-                                        <span
-                                            :class="STATUS_STYLE[row.status]"
-                                            class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
-                                        >
-                                            <span
-                                                class="h-1.5 w-1.5 rounded-full"
-                                                :style="{
-                                                    background:
-                                                        STATUS_DOT[row.status],
-                                                }"
-                                            />
-                                            {{ row.status }}
-                                        </span>
-                                    </td>
-                                    <td class="px-5 py-4">
-                                        <div
-                                            class="flex items-center justify-end gap-2"
-                                        >
-                                            <button
-                                                type="button"
-                                                title="View details"
-                                                class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
-                                                @click="openDetail(row)"
-                                            >
-                                                <UIcon
-                                                    name="i-lucide-eye"
-                                                    class="size-3.5"
-                                                />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
-                                                @click="openEdit(row)"
-                                            >
-                                                <UIcon
-                                                    name="i-lucide-pencil"
-                                                    class="size-3.5"
-                                                />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                                                @click="askDelete(row)"
-                                            >
-                                                <UIcon
-                                                    name="i-lucide-trash"
-                                                    class="size-3.5"
-                                                />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                    No inspections match this search.
+                                </div>
+                            </template>
+                        </UTable>
                     </div>
                 </div>
             </div>

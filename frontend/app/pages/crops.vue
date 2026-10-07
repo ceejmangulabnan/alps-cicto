@@ -1,5 +1,6 @@
 <script setup lang="ts">
 //@ts-nocheck
+import type { TableColumn } from '@nuxt/ui'
 import type { CycleRow } from '~/composables/useCycleRegistry'
 
 import type { ParcelCrop } from '~/composables/useFarmParcelApi'
@@ -211,6 +212,69 @@ const filterStatus = ref<StatusFilter>('All')
 const search = ref('')
 
 
+
+
+/**
+ * The planting-cycle table's columns.
+ *
+ * Nothing worth sorting here is a flat field: the crop name, both dates and the
+ * status all hang off the nested `cycle`, Farmer is a join over two source
+ * fields, and Area is the parcel's own number. Each therefore uses `accessorFn`
+ * to give TanStack a flat value, because a `accessorKey` pointing at a dotted
+ * path reads `undefined` and every row would sort as equal.
+ *
+ * `sortDescFirst: false` on Area stops TanStack peeking at the first row and
+ * starting the one number on descending while the text columns start on
+ * ascending — the same click doing opposite things depending on the column.
+ */
+const columns: TableColumn<CycleRow>[] = [
+    {
+        id: 'farmer',
+        accessorFn: (row) => row.farmerNames.join(' '),
+        header: sortHeader('Farmer'),
+    },
+    {
+        id: 'crop',
+        accessorFn: (row) => row.cycle.crop?.name ?? '',
+        header: sortHeader('Crop / Variety'),
+    },
+    { accessorKey: 'parcel_code', header: sortHeader('Parcel') },
+    {
+        id: 'area',
+        accessorFn: (row) => row.area_hectares,
+        header: sortHeader('Area', { align: 'right' }),
+        sortDescFirst: false,
+        meta: {
+            class: {
+                th: 'text-right',
+                td: 'text-right font-mono font-semibold text-slate-800',
+            },
+        },
+    },
+    {
+        id: 'planted',
+        accessorFn: (row) => row.cycle.planting_date ?? '',
+        header: sortHeader('Planted'),
+    },
+    {
+        id: 'harvest',
+        accessorFn: (row) => row.cycle.expected_harvest ?? '',
+        header: sortHeader('Harvest'),
+    },
+    {
+        id: 'status',
+        accessorFn: (row) => cycleStatus(row),
+        header: sortHeader('Status'),
+    },
+    {
+        // Buttons, not data: nothing to sort on.
+        id: 'actions',
+        header: 'Actions',
+        enableSorting: false,
+        enableHiding: false,
+        meta: { class: { th: 'text-right' } },
+    },
+]
 
 const filtered = computed(() =>
 
@@ -1229,221 +1293,248 @@ async function confirmDelete() {
                     </div>
 
                     <div class="overflow-x-auto">
-                        <table class="w-full min-w-[900px] text-sm">
-                            <thead class="border-b border-slate-100 bg-slate-50/70">
-                                <tr class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                    <th class="px-5 py-3.5 text-left">Farmer</th>
-                                    <th class="px-5 py-3.5 text-left">Crop / Variety</th>
-                                    <th class="px-5 py-3.5 text-left">Parcel</th>
-                                    <th class="px-5 py-3.5 text-right">Area</th>
-                                    <th class="px-5 py-3.5 text-left">Planted</th>
-                                    <th class="px-5 py-3.5 text-left">Harvest</th>
-                                    <th class="px-5 py-3.5 text-left">Status</th>
-                                    <th class="px-5 py-3.5 text-right">Actions</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                <tr v-if="loading">
-                                    <td colspan="8" class="px-5 py-12 text-center text-sm text-slate-400">
-                                        <span class="inline-flex items-center gap-2">
-                                            <UIcon
-                                                name="i-lucide-loader-circle"
-                                                class="size-4 animate-spin"
-                                            />
-                                            Loading planting cycles...
-                                        </span>
-                                    </td>
-                                </tr>
-
-                                <tr v-else-if="loadError">
-                                    <td colspan="8" class="px-5 py-12 text-center">
-                                        <p class="text-sm text-red-600">{{ loadError }}</p>
-                                        <button
-                                            type="button"
-                                            class="mt-2 text-sm font-semibold text-green-700 underline"
-                                            @click="load"
-                                        >
-                                            Try again
-                                        </button>
-                                    </td>
-                                </tr>
-
-                                <tr v-else-if="cycles.length === 0">
-                                    <td colspan="8" class="px-5 py-14 text-center">
-                                        <div class="flex flex-col items-center gap-2">
-                                            <div
-                                                class="flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-300"
-                                            >
-                                                <UIcon name="i-lucide-sprout" class="size-6" />
-                                            </div>
-                                            <p class="text-base font-semibold text-slate-700">
-                                                No planting cycles yet
-                                            </p>
-                                            <p class="max-w-sm text-sm text-slate-400">
-                                                Register the first planting cycle to begin tracking crops.
-                                            </p>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <tr v-else-if="filtered.length === 0">
-                                    <td colspan="8" class="px-5 py-12 text-center text-sm text-slate-400">
-                                        No cycles match the current search or status filter.
-                                    </td>
-                                </tr>
-
-                                <tr
-                                    v-for="p in filtered"
-                                    v-else
-                                    :key="p.cycle.documentId"
-                                    class="border-b border-slate-100 bg-white transition-colors last:border-0 hover:bg-emerald-50/40"
-                                >
-                                    <td class="px-5 py-4">
-                                        <div class="flex items-center gap-3">
-                                            <span
-                                                class="flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white shadow-sm ring-2 ring-white"
-                                                :style="{
-                                                    backgroundColor: avatarColor(
-                                                        p.farmerNames[0] ?? ''
-                                                    ),
-                                                }"
-                                            >
-                                                {{ initials(p.farmerNames[0] ?? '') }}
-                                            </span>
-                                            <div class="min-w-0">
-                                                <div class="truncate font-medium text-slate-800">
-                                                    {{ farmerLabel(p.farmerNames) }}
-                                                </div>
-                                                <div class="mt-0.5 text-xs text-slate-400">
-                                                    {{ p.barangay }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-
-                                    <td class="px-5 py-4">
-                                        <div class="flex items-center gap-2">
-                                            <span
-                                                class="h-2.5 w-2.5 shrink-0 rounded-full"
-                                                :style="{
-                                                    background:
-                                                        CROP_COLORS[
-                                                            p.cycle.crop?.name ?? ''
-                                                        ] ?? '#94a3b8',
-                                                }"
-                                            />
-                                            <span class="font-semibold text-slate-700">
-                                                {{ p.cycle.crop?.name ?? '—' }}
-                                            </span>
-                                        </div>
+                        <UTable
+                            :data="filtered"
+                            :columns="columns"
+                            :loading="loading"
+                            :get-row-id="(p: CycleRow) => p.cycle.documentId"
+                            :ui="{
+                                th: 'bg-slate-50/70 px-5 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500',
+                                td: 'px-5 py-4 text-sm',
+                                tr: 'border-b border-slate-100 last:border-0 hover:bg-emerald-50/40',
+                            }"
+                        >
+                            <template #farmer-cell="{ row }">
+                                <div class="flex items-center gap-3">
+                                    <span
+                                        class="flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white shadow-sm ring-2 ring-white"
+                                        :style="{
+                                            backgroundColor: avatarColor(
+                                                row.original.farmerNames[0] ??
+                                                    ''
+                                            ),
+                                        }"
+                                    >
+                                        {{
+                                            initials(
+                                                row.original.farmerNames[0] ??
+                                                    ''
+                                            )
+                                        }}
+                                    </span>
+                                    <div class="min-w-0">
                                         <div
-                                            v-if="p.cycle.variety"
-                                            class="mt-1 pl-4.5 text-xs italic text-slate-400"
+                                            class="truncate font-medium text-slate-800"
                                         >
-                                            {{ p.cycle.variety }}
-                                        </div>
-                                    </td>
-
-                                    <td class="px-5 py-4">
-                                        <NuxtLink
-                                            :to="`/parcels/${p.parcel_code}`"
-                                            class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-700"
-                                        >
-                                            {{ p.parcel_code }}
-                                        </NuxtLink>
-                                    </td>
-
-                                    <td class="px-5 py-4 text-right font-mono font-semibold text-slate-800">
-                                        {{ p.area_hectares.toFixed(1) }} ha
-                                    </td>
-
-                                    <td class="px-5 py-4 text-slate-600">
-                                        {{ p.cycle.planting_date ?? '—' }}
-                                    </td>
-
-                                    <td class="px-5 py-4">
-                                        <div class="text-slate-600">
-                                            {{ p.cycle.expected_harvest ?? '—' }}
-                                        </div>
-
-                                        <div
-                                            v-if="cycleStatus(p) === 'Harvested'"
-                                            class="mt-1 text-xs text-slate-400"
-                                        >
-                                            completed
-                                        </div>
-
-                                        <div
-                                            v-else-if="expectedHint(p).hasExpected"
-                                            :class="
-                                                expectedHint(p).urgent
-                                                    ? 'text-amber-600'
-                                                    : 'text-[#2d6a2d]'
-                                            "
-                                            class="mt-1 flex items-center gap-1 text-xs font-semibold"
-                                        >
-                                            <UIcon
-                                                name="i-lucide-hourglass"
-                                                class="size-3"
-                                            />
-                                            {{ expectedHint(p).text }}
-                                        </div>
-                                    </td>
-
-                                    <td class="px-5 py-4">
-                                        <span
-                                            :class="
-                                                statusClass(
-                                                    statusBackground(cycleStatus(p))
+                                            {{
+                                                farmerLabel(
+                                                    row.original.farmerNames
                                                 )
-                                            "
-                                            class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
-                                        >
-                                            <span
-                                                class="h-1.5 w-1.5 rounded-full"
-                                                :style="{
-                                                    backgroundColor: statusDot(
-                                                        statusBackground(
-                                                            cycleStatus(p)
-                                                        )
-                                                    ),
-                                                }"
-                                            />
-                                            {{ cycleStatus(p) }}
-                                        </span>
-                                    </td>
-
-                                    <td class="px-5 py-4">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <button
-                                                type="button"
-                                                class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
-                                                title="Edit planting cycle"
-                                                @click="openEdit(p)"
-                                            >
-                                                <UIcon
-                                                    name="i-lucide-pencil"
-                                                    class="size-3.5"
-                                                />
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                                                title="Delete planting cycle"
-                                                @click="askDelete(p)"
-                                            >
-                                                <UIcon
-                                                    name="i-lucide-trash-2"
-                                                    class="size-3.5"
-                                                />
-                                            </button>
+                                            }}
                                         </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                        <div
+                                            class="mt-0.5 text-xs text-slate-400"
+                                        >
+                                            {{ row.original.barangay }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <template #crop-cell="{ row }">
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="h-2.5 w-2.5 shrink-0 rounded-full"
+                                        :style="{
+                                            background:
+                                                CROP_COLORS[
+                                                    row.original.cycle.crop
+                                                        ?.name ?? ''
+                                                ] ?? '#94a3b8',
+                                        }"
+                                    />
+                                    <span
+                                        class="font-semibold text-slate-700"
+                                    >
+                                        {{ row.original.cycle.crop?.name ?? '—' }}
+                                    </span>
+                                </div>
+                                <div
+                                    v-if="row.original.cycle.variety"
+                                    class="mt-1 pl-4.5 text-xs italic text-slate-400"
+                                >
+                                    {{ row.original.cycle.variety }}
+                                </div>
+                            </template>
+
+                            <template #parcel_code-cell="{ row }">
+                                <NuxtLink
+                                    :to="`/parcels/${row.original.parcel_code}`"
+                                    class="inline-flex rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-700"
+                                >
+                                    {{ row.original.parcel_code }}
+                                </NuxtLink>
+                            </template>
+
+                            <template #area-cell="{ row }">
+                                {{ row.original.area_hectares.toFixed(1) }} ha
+                            </template>
+
+                            <template #planted-cell="{ row }">
+                                {{ row.original.cycle.planting_date ?? '—' }}
+                            </template>
+
+                            <template #harvest-cell="{ row }">
+                                <div class="text-slate-600">
+                                    {{
+                                        row.original.cycle.expected_harvest ??
+                                        '—'
+                                    }}
+                                </div>
+
+                                <div
+                                    v-if="
+                                        cycleStatus(row.original) === 'Harvested'
+                                    "
+                                    class="mt-1 text-xs text-slate-400"
+                                >
+                                    completed
+                                </div>
+
+                                <div
+                                    v-else-if="expectedHint(row.original).hasExpected"
+                                    :class="
+                                        expectedHint(row.original).urgent
+                                            ? 'text-amber-600'
+                                            : 'text-[#2d6a2d]'
+                                    "
+                                    class="mt-1 flex items-center gap-1 text-xs font-semibold"
+                                >
+                                    <UIcon
+                                        name="i-lucide-hourglass"
+                                        class="size-3"
+                                    />
+                                    {{ expectedHint(row.original).text }}
+                                </div>
+                            </template>
+
+                            <template #status-cell="{ row }">
+                                <span
+                                    :class="
+                                        statusClass(
+                                            statusBackground(
+                                                cycleStatus(row.original)
+                                            )
+                                        )
+                                    "
+                                    class="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
+                                >
+                                    <span
+                                        class="h-1.5 w-1.5 rounded-full"
+                                        :style="{
+                                            backgroundColor: statusDot(
+                                                statusBackground(
+                                                    cycleStatus(row.original)
+                                                )
+                                            ),
+                                        }"
+                                    />
+                                    {{ cycleStatus(row.original) }}
+                                </span>
+                            </template>
+
+                            <template #actions-cell="{ row }">
+                                <div
+                                    class="flex items-center justify-end gap-2"
+                                >
+                                    <button
+                                        type="button"
+                                        class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                                        title="Edit planting cycle"
+                                        @click="openEdit(row.original)"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-pencil"
+                                            class="size-3.5"
+                                        />
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                        title="Delete planting cycle"
+                                        @click="askDelete(row.original)"
+                                    >
+                                        <UIcon
+                                            name="i-lucide-trash-2"
+                                            class="size-3.5"
+                                        />
+                                    </button>
+                                </div>
+                            </template>
+
+                            <template #loading>
+                                <span class="inline-flex items-center gap-2">
+                                    <UIcon
+                                        name="i-lucide-loader-circle"
+                                        class="size-4 animate-spin"
+                                    />
+                                    Loading planting cycles...
+                                </span>
+                            </template>
+
+                            <template #empty>
+                                <div v-if="loadError" class="px-5 py-12 text-center">
+                                    <p class="text-sm text-red-600">
+                                        {{ loadError }}
+                                    </p>
+                                    <button
+                                        type="button"
+                                        class="mt-2 text-sm font-semibold text-green-700 underline"
+                                        @click="load"
+                                    >
+                                        Try again
+                                    </button>
+                                </div>
+
+                                <div
+                                    v-else-if="cycles.length === 0"
+                                    class="px-5 py-14 text-center"
+                                >
+                                    <div
+                                        class="flex flex-col items-center gap-2"
+                                    >
+                                        <div
+                                            class="flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-300"
+                                        >
+                                            <UIcon
+                                                name="i-lucide-sprout"
+                                                class="size-6"
+                                            />
+                                        </div>
+                                        <p
+                                            class="text-base font-semibold text-slate-700"
+                                        >
+                                            No planting cycles yet
+                                        </p>
+                                        <p
+                                            class="max-w-sm text-sm text-slate-400"
+                                        >
+                                            Register the first planting cycle
+                                            to begin tracking crops.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div
+                                    v-else
+                                    class="px-5 py-12 text-center text-sm text-slate-400"
+                                >
+                                    No cycles match the current search or
+                                    status filter.
+                                </div>
+                            </template>
+                        </UTable>
                     </div>
                 </div>
             </div>

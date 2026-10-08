@@ -1,5 +1,4 @@
 <script setup lang="ts">
-//@ts-nocheck
 import type { Map as MaplibreMap, StyleSpecification } from 'maplibre-gl'
 
 import { Position } from '@indoorequal/vue-maplibre-gl'
@@ -10,6 +9,8 @@ import { getErrorMessage } from '~/utils/apiError'
 
 import { STATUS_LEGEND } from '~/utils/landStatus'
 import { useParcelHover } from '~/composables/useParcelHover'
+
+definePageMeta({ middleware: 'auth' })
 
 const config = useRuntimeConfig()
 

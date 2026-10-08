@@ -1,5 +1,4 @@
 <script setup lang="ts">
-//@ts-nocheck
 const props = defineProps<{ active: string }>()
 
 const { drawerOpen, isRail, close, toggleCollapsed } = useSidebar()

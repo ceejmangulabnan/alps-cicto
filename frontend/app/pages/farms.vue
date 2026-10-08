@@ -1,18 +1,13 @@
 <script setup lang="ts">
 import { LAND_STATUS_OPTIONS } from '~/composables/useFarmParcelApi'
-
 import type { Farm } from '~/composables/useFarmsApi'
-
 import type { FarmRow } from '~/composables/useFarmsData'
-
 import type { ParcelRow } from '~/composables/useParcelsData'
-
 import { statusDot } from '~/utils/landStatus'
 
 definePageMeta({ middleware: 'auth' })
 
 type RegistryTab = 'farms' | 'parcels'
-
 type StatusFilter = 'All' | (typeof LAND_STATUS_OPTIONS)[number]
 
 const {

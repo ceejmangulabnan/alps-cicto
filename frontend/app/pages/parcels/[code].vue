@@ -7,8 +7,6 @@ import type {
 import { statusClass, statusDot } from '~/utils/landStatus'
 import { avatarColor, initials } from '~/utils/initials'
 
-definePageMeta({ middleware: 'auth' })
-
 const route = useRoute()
 const { getHubByCode } = useFarmParcelApi()
 
@@ -23,9 +21,10 @@ const parcelCode = computed(() => {
 })
 
 /**
- * `server: false` because the token only exists in localStorage after
- * hydration, so any server-phase fetch would go out unauthenticated and 403.
- * The `auth` middleware already redirects before this runs.
+ * Data is loaded client-side (`server: false`) so the hub renders from cache
+ * while photo/patch interactions can refresh it in place. SSR data loading is
+ * intentionally left off for this view; the session cookie is available
+ * server-side, so nothing here is blocked by auth anymore.
  */
 const {
     data: parcel,

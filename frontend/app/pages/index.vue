@@ -10,7 +10,6 @@ import {
     peso,
 } from '~/utils/assistanceStatus'
 
-definePageMeta({ middleware: 'auth' })
 
 const route = useRoute()
 

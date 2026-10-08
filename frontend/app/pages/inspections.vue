@@ -9,7 +9,6 @@ import {
     INSPECTION_STATUS_FILTERS,
 } from '~/utils/inspectionStatus'
 
-definePageMeta({ middleware: 'auth' })
 
 const { inspections, allParcels, loading, loadError, load } =
     useInspectionRegistry()

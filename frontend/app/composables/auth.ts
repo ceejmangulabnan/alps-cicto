@@ -1,27 +1,19 @@
-type Role = {
-    id: number
-    name: string
-    description: string | null
-    type: string
-}
+/**
+ * Auth-composable adapter over `nuxt-auth-utils`.
+ *
+ * All authentication state lives in a single sealed, httpOnly session cookie
+ * managed by nuxt-auth-utils. The access token and refresh token never touch
+ * the browser: `login` seals them into `session.secure` server-side, and the
+ * Strapi proxy (`server/api/strapi/[...].ts`) attaches them when talking to
+ * Strapi, rotating the access token on a 401 before the browser ever sees it.
+ *
+ * The old localStorage token strategy is gone (sessions were silently
+ * invalidated ~10 minutes after login). Anyone logged in under the old scheme
+ * simply logs in once more.
+ */
+import type { User } from '#auth-utils'
 
-type AuthUser = {
-    id: number
-    username: string
-    email: string
-    role?: Role | null
-}
-
-type LoginResponse = {
-    jwt: string
-    user: AuthUser
-}
-
-type RefreshResponse = {
-    jwt: string
-}
-
-interface AuthFetchOptions {
+export interface AuthFetchOptions {
     method?: string
     body?: unknown
     query?: Record<string, unknown>
@@ -30,225 +22,91 @@ interface AuthFetchOptions {
     [key: string]: unknown
 }
 
-/** Refresh this many seconds before the access token actually expires. */
-const TOKEN_REFRESH_SKEW_SECONDS = 60
-
 export const useAuth = () => {
-    const user = useState<AuthUser | null>('auth_user', () => null)
-    const jwt = useState<string | null>('auth_jwt', () => null)
+    const session = useUserSession()
+    // Capture the request-scoped fetch once, here, so `authFetch` calls made
+    // later from event handlers still forward cookies on the server (needed
+    // for SSR data fetches to hit the proxy authenticated).
+    const fetchFn = useRequestFetch()
 
-    const isAuthenticated = computed(() => user.value !== null)
-    const hasRole = (roleType: string) => user.value?.role?.type === roleType
+    const isAuthenticated = computed(() => session.loggedIn.value)
+    const hasRole = (roleType: string) =>
+        session.user.value?.role?.type === roleType
 
     const login = async (identifier: string, password: string) => {
-        const config = useRuntimeConfig()
-        const baseUrl = config.public.strapiUrl
+        await fetchFn('/api/auth/login', {
+            method: 'POST',
+            body: { identifier, password },
+        })
+        // The login route sealed the session cookie server-side; pull it into
+        // the client state.
+        await session.fetch()
+    }
 
-        const response = await $fetch<LoginResponse>(
-            `${baseUrl}/api/auth/local`,
-            {
-                method: 'POST',
-                body: { identifier, password },
-                credentials: 'include',
-            }
-        )
-        const token = response.jwt
-
-        let fullUser: AuthUser = response.user
+    const logout = async () => {
         try {
-            const me = await $fetch<AuthUser>(
-                `${baseUrl}/api/users/me?populate=role`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                    credentials: 'include',
-                }
-            )
-            if (me && me.id) {
-                fullUser = me
-            }
+            await fetchFn('/api/auth/logout', { method: 'POST' })
         } catch {}
-
-        fullUser = { ...fullUser, role: normalizeRole(fullUser.role) }
-
-        user.value = fullUser
-        jwt.value = token
-
-        if (import.meta.client) {
-            localStorage.setItem('user', JSON.stringify(fullUser))
-            localStorage.setItem('jwt', token)
-        }
-    }
-
-    let inflightRefresh: Promise<string> | null = null
-
-    const clearSession = () => {
-        user.value = null
-        jwt.value = null
-
-        if (import.meta.client) {
-            localStorage.removeItem('user')
-            localStorage.removeItem('jwt')
-        }
+        // Clear the local session state (the reference-sealed cookie was
+        // cleared by the logout route).
+        await session.clear()
     }
 
     /**
-     * Strapi is configured with `jwtManagement: 'refresh'` and httpOnly sessions, so
-     * `/api/auth/local` hands back a short-lived access token while the long-lived
-     * refresh token lives in an httpOnly cookie we cannot read. Exchanging the cookie
-     * for a new access token is the only way to keep a session alive.
-     */
-    const refreshAccessToken = async (): Promise<string> => {
-        if (!import.meta.client) {
-            throw new Error('Cannot refresh the session outside the browser')
-        }
-        if (inflightRefresh) return await inflightRefresh
-
-        const config = useRuntimeConfig()
-        const baseUrl = String(config.public.strapiUrl || '').replace(/\/$/, '')
-
-        inflightRefresh = (async () => {
-            try {
-                const response = await $fetch<RefreshResponse>(
-                    `${baseUrl}/api/auth/refresh`,
-                    {
-                        method: 'POST',
-                        credentials: 'include',
-                    }
-                )
-                if (!response?.jwt) {
-                    throw new Error('Refresh response did not include a token')
-                }
-
-                jwt.value = response.jwt
-                localStorage.setItem('jwt', response.jwt)
-
-                return response.jwt
-            } catch (error) {
-                clearSession()
-                throw error
-            } finally {
-                inflightRefresh = null
-            }
-        })()
-
-        return await inflightRefresh
-    }
-
-    /** Proactively rotates the access token so requests never race its expiry. */
-    const ensureAccessToken = async (): Promise<string> => {
-        const token = jwt.value
-        if (!token) return ''
-        if (isTokenExpiring(token, TOKEN_REFRESH_SKEW_SECONDS)) {
-            return await refreshAccessToken()
-        }
-        return token
-    }
-
-    /**
-     * `$fetch` with the bearer token attached, refreshing proactively on expiry and
-     * once more on a 401. A 401 from the auth strategy is raised before the handler
-     * runs, so replaying the request cannot duplicate a write.
+     * `$fetch` against the Nuxt-side Strapi proxy. Absolute Strapi URLs (the
+     * shape the API composables have always built, e.g.
+     * `http://host:1337/api/farms`) are rewritten to the relative
+     * `/api/strapi/...` path so the request stays same-origin and rides the
+     * session cookie. The proxy attaches the Bearer token and handles the
+     * 401 refresh-retry, so a 401 surfacing here means the session is
+     * genuinely dead: clear the local state and let the existing
+     * "session expired" banners do their job.
      */
     const authFetch = async <T>(
         request: string,
         options: AuthFetchOptions = {}
     ): Promise<T> => {
-        const token = await ensureAccessToken()
-        const withAuth = (value: string | null): AuthFetchOptions => ({
-            ...options,
-            credentials: options.credentials ?? 'include',
-            headers: {
-                ...options.headers,
-                ...(value ? { Authorization: `Bearer ${value}` } : {}),
-            },
-        })
-
         try {
-            return await $fetch<T>(request, withAuth(token) as never)
+            return await fetchFn<T>(toProxyPath(request), options as never)
         } catch (error) {
-            if (getErrorStatus(error) !== 401) throw error
-
-            const refreshed = await refreshAccessToken().catch(() => null)
-            if (!refreshed) throw error
-
-            return await $fetch<T>(request, withAuth(refreshed) as never)
-        }
-    }
-
-    const logout = async () => {
-        const config = useRuntimeConfig()
-
-        try {
-            await $fetch(`${config.public.strapiUrl}/api/auth/logout`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { Authorization: `Bearer ${jwt.value}` },
-            })
-        } catch {}
-
-        clearSession()
-    }
-
-    const hydrate = () => {
-        if (!import.meta.client) return
-
-        const savedUser = localStorage.getItem('user')
-        const savedJwt = localStorage.getItem('jwt')
-
-        if (savedUser && savedJwt) {
-            const restoredUser = JSON.parse(savedUser)
-            user.value = {
-                ...restoredUser,
-                role: normalizeRole(restoredUser.role),
+            if (getErrorStatus(error) === 401) {
+                if (import.meta.client) {
+                    await session.clear().catch(() => {})
+                }
             }
-            jwt.value = savedJwt
+            throw error
         }
     }
 
     return {
-        user,
-        jwt,
+        user: session.user,
         isAuthenticated,
         hasRole,
         login,
         logout,
-        hydrate,
-        refreshAccessToken,
-        ensureAccessToken,
         authFetch,
     }
 }
 
-const normalizeRole = (role: unknown): Role | null => {
-    if (role && typeof role === 'object' && 'type' in role) return role as Role
-    return null
-}
+/** Strip the origin and `/api` prefix off a Strapi URL, e.g.
+ * `http://host:1337/api/farms?x=1` → `/api/strapi/farms?x=1`. */
+const toProxyPath = (request: string): string => {
+    if (request.startsWith('/api/strapi')) return request
 
-const decodeTokenExpiry = (token: string): number | null => {
-    const segments = token.split('.')
-    if (segments.length !== 3) return null
-
-    const payloadSegment = segments[1]
-    if (!payloadSegment) return null
-
-    try {
-        const normalized = payloadSegment.replace(/-/g, '+').replace(/_/g, '/')
-        const padded = normalized.padEnd(
-            normalized.length + ((4 - (normalized.length % 4)) % 4),
-            '='
-        )
-        const payload = JSON.parse(atob(padded)) as { exp?: number }
-        return typeof payload.exp === 'number' ? payload.exp : null
-    } catch {
-        return null
+    if (request.startsWith('http')) {
+        try {
+            const url = new URL(request)
+            return `/api/strapi${url.pathname.replace(/^\/api/, '')}${url.search}`
+        } catch {
+            return request
+        }
     }
-}
 
-/** Unknown expiry is treated as expiring so a malformed token gets replaced. */
-const isTokenExpiring = (token: string, skewSeconds: number): boolean => {
-    const expiresAt = decodeTokenExpiry(token)
-    if (expiresAt === null) return true
-    return expiresAt - skewSeconds <= Math.floor(Date.now() / 1000)
+    if (request.startsWith('/api/')) {
+        return `/api/strapi${request.slice(4)}`
+    }
+
+    return request
 }
 
 /**
@@ -276,3 +134,5 @@ export const getErrorStatus = (error: unknown): number | null => {
 
     return null
 }
+
+export type { User }

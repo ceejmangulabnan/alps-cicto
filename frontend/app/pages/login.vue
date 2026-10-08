@@ -48,11 +48,12 @@
                         <div class="flex items-center justify-between gap-4">
                             <div class="flex items-center gap-3">
                                 <div
-                                    class="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white backdrop-blur"
+                                    class="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white shadow-sm"
                                 >
-                                    <UIcon
-                                        name="i-lucide-leaf"
-                                        class="size-6"
+                                    <img
+                                        src="/animap.svg"
+                                        alt="ALPS logo"
+                                        class="size-12 shrink-0 object-cover"
                                     />
                                 </div>
                                 <div>
@@ -172,9 +173,13 @@
                         <!-- Mobile Logo -->
                         <div class="mb-7 flex items-center gap-3 lg:hidden">
                             <div
-                                class="flex size-11 items-center justify-center rounded-2xl bg-[#2d6a2d] text-white shadow-sm"
+                                class="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-emerald-950/10"
                             >
-                                <UIcon name="i-lucide-leaf" class="size-5" />
+                                <img
+                                    src="/animap.svg"
+                                    alt="ALPS logo"
+                                    class="size-11 shrink-0 object-cover"
+                                />
                             </div>
                             <div>
                                 <div
@@ -373,7 +378,7 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ middleware: 'guest', layout: false })
+definePageMeta({ layout: false })
 
 const auth = useAuth()
 const config = useRuntimeConfig()
@@ -393,8 +398,14 @@ const handleSubmit = async () => {
         await auth.login(identifier.value, password.value)
         await navigateTo('/')
     } catch (error: any) {
+        // The login route serializes failures as h3 errors with a
+        // `statusMessage`; fall back to Strapi's direct error shape and a
+        // generic message.
         authError.value =
-            error?.data?.error?.message || 'Invalid username or password.'
+            error?.data?.statusMessage ||
+            error?.data?.error?.message ||
+            error?.data?.message ||
+            'Invalid username or password.'
     } finally {
         loading.value = false
     }

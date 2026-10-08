@@ -143,9 +143,13 @@ const navGroups = computed<NavGroup[]>(() => {
             >
                 <!-- Logo -->
                 <div
-                    class="relative flex size-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-[#58bb63] via-[#3f994a] to-[#236b31] shadow-[0_8px_20px_rgba(0,0,0,0.28)] ring-1 ring-white/20"
+                    class="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-[0_8px_20px_rgba(0,0,0,0.28)] ring-1 ring-emerald-950/40"
                 >
-                    <UIcon name="i-lucide-leaf" class="size-5.5 text-white" />
+                    <img
+                        src="/animap.svg"
+                        alt="ALPS logo"
+                        class="size-11 shrink-0 object-cover"
+                    />
 
                     <span
                         v-if="!isRail"

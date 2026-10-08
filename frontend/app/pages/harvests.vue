@@ -4,7 +4,6 @@ import { harvestStatus } from '~/composables/useCycleRegistry'
 import { useFarmRecordsApi } from '~/composables/useFarmRecordsApi'
 import { num, farmerLabel } from '~/utils/format'
 
-definePageMeta({ middleware: 'auth' })
 
 const { cycleParcels, harvests, loading, loadError, load } = useCycleRegistry()
 

@@ -23,6 +23,7 @@
         "echarts": "^6.1.0",
         "maplibre-gl": "^6.9.0",
         "nuxt": "^4.5.2",
+        "nuxt-auth-utils": "^0.5.30",
         "nuxt-maplibre": "^1.2.2",
         "qs": "^6.16.0",
         "tailwindcss": "^4.3.3",

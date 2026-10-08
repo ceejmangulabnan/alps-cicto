@@ -9,7 +9,6 @@ import {
 } from '~/composables/useAssistanceRegistry'
 import { ASSISTANCE_STATUS_DOT as STATUS_DOT } from '~/utils/assistanceStatus'
 
-definePageMeta({ middleware: 'auth' })
 
 const {
     programs,

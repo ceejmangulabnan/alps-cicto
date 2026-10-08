@@ -4,7 +4,6 @@ import { useRiskRegistry } from '~/composables/useRiskRegistry'
 import { useFarmRecordsApi } from '~/composables/useFarmRecordsApi'
 import { RISK_STATUS_OPTIONS, RISK_STATUS_DOT } from '~/utils/riskStatus'
 
-definePageMeta({ middleware: 'auth' })
 
 const {
     riskReports,

@@ -5,7 +5,6 @@ import { useFarmRecordsApi } from '~/composables/useFarmRecordsApi'
 import { cropColor } from '~/utils/cropColors'
 import { farmerLabel } from '~/utils/format'
 
-definePageMeta({ middleware: 'auth' })
 
 const { parcels, cycles, loading, loadError, load } = useCycleRegistry()
 

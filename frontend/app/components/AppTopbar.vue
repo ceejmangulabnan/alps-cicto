@@ -117,7 +117,9 @@ const handleLogout = async () => {
                         <span
                             class="hidden items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-100 md:inline-flex"
                         >
-                            <span class="size-1.5 rounded-full bg-emerald-500" />
+                            <span
+                                class="size-1.5 rounded-full bg-emerald-500"
+                            />
                             ALPS
                         </span>
                     </div>

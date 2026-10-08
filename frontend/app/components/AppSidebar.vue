@@ -227,10 +227,7 @@ const navGroups = computed<NavGroup[]>(() => {
                         {{ group.label }}
                     </div>
 
-                    <div
-                        v-else
-                        class="mx-auto my-2 h-px w-8 bg-white/10"
-                    />
+                    <div v-else class="mx-auto my-2 h-px w-8 bg-white/10" />
 
                     <!-- Items -->
                     <div class="space-y-1">
@@ -270,10 +267,7 @@ const navGroups = computed<NavGroup[]>(() => {
                                         : 'bg-white/[0.03] text-green-200/55 group-hover:bg-white/[0.07] group-hover:text-emerald-200'
                                 "
                             >
-                                <UIcon
-                                    :name="item.icon"
-                                    class="size-[17px]"
-                                />
+                                <UIcon :name="item.icon" class="size-[17px]" />
                             </span>
 
                             <!-- Label -->
@@ -316,10 +310,7 @@ const navGroups = computed<NavGroup[]>(() => {
                 />
 
                 <span v-else class="flex items-center gap-2">
-                    <UIcon
-                        name="i-lucide-panel-left-close"
-                        class="size-4"
-                    />
+                    <UIcon name="i-lucide-panel-left-close" class="size-4" />
                     Collapse Sidebar
                 </span>
             </button>
@@ -333,16 +324,11 @@ const navGroups = computed<NavGroup[]>(() => {
                     <div
                         class="mt-0.5 flex size-7 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-400/10 text-emerald-300"
                     >
-                        <UIcon
-                            name="i-lucide-building-2"
-                            class="size-3.5"
-                        />
+                        <UIcon name="i-lucide-building-2" class="size-3.5" />
                     </div>
 
                     <div class="min-w-0">
-                        <div
-                            class="text-[10px] font-semibold text-green-50/70"
-                        >
+                        <div class="text-[10px] font-semibold text-green-50/70">
                             City Agriculture Office
                         </div>
 

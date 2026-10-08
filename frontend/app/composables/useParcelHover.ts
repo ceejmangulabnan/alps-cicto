@@ -43,7 +43,11 @@ export interface ParcelHoverOptions {
  * where the pointer is, in map-container pixels, which is also the card's
  * coordinate space.
  */
-export const useParcelHover = ({ drawing, data, enabled }: ParcelHoverOptions) => {
+export const useParcelHover = ({
+    drawing,
+    data,
+    enabled,
+}: ParcelHoverOptions) => {
     const { parcels } = data
 
     const hoverParcel = ref<FarmParcel | null>(null)
@@ -69,9 +73,8 @@ export const useParcelHover = ({ drawing, data, enabled }: ParcelHoverOptions) =
         if (id === highlightedId) return
         highlightedId = id
 
-        const source = drawing.mapInstance.value?.getSource(
-            HOVER_SOURCE_ID
-        ) as GeoJSONSource | undefined
+        const source = drawing.mapInstance.value?.getSource(HOVER_SOURCE_ID) as
+            GeoJSONSource | undefined
         if (!source) return
 
         source.setData(

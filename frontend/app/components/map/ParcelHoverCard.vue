@@ -108,7 +108,7 @@ const placement = computed(() => {
     -->
     <div
         ref="cardEl"
-        class="pointer-events-none absolute z-30 max-w-[260px] rounded-xl border border-white/70 bg-white/95 px-3 py-2 shadow-[0_12px_32px_rgba(15,23,42,0.18)] ring-1 ring-slate-900/5 backdrop-blur-xl"
+        class="pointer-events-none absolute z-30 max-w-65 rounded-xl border border-white/70 bg-white/95 px-3 py-2 shadow-[0_12px_32px_rgba(15,23,42,0.18)] ring-1 ring-slate-900/5 backdrop-blur-xl"
         :style="{
             left: placement.left,
             top: placement.top,

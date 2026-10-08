@@ -25,7 +25,7 @@ function extraFarmerCount(row: FarmRow): number {
 
 <template>
     <div class="overflow-x-auto">
-        <table class="w-full min-w-[860px] text-sm">
+        <table class="w-full min-w-215 text-sm">
             <thead class="border-b border-slate-100 bg-slate-50/70">
                 <tr
                     class="text-[11px] font-semibold uppercase tracking-wide text-slate-500"

@@ -121,7 +121,7 @@ const navGroups = computed<NavGroup[]>(() => {
         class="fixed inset-y-0 left-0 z-50 flex h-screen w-64 -translate-x-full flex-col overflow-hidden border-r border-white/10 bg-[#0f2515] text-white shadow-[12px_0_40px_rgba(15,35,20,0.18)] transition-all duration-300 ease-out lg:relative lg:inset-y-auto lg:z-20 lg:shrink-0 lg:translate-x-0"
         :class="[
             drawerOpen ? 'translate-x-0' : '',
-            isRail ? 'lg:w-[76px]' : 'lg:w-[250px]',
+            isRail ? 'lg:w-19' : 'lg:w-62.5',
         ]"
     >
         <!-- Soft background glow -->
@@ -144,12 +144,9 @@ const navGroups = computed<NavGroup[]>(() => {
             >
                 <!-- Logo -->
                 <div
-                    class="relative flex size-11 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#58bb63] via-[#3f994a] to-[#236b31] shadow-[0_8px_20px_rgba(0,0,0,0.28)] ring-1 ring-white/20"
+                    class="relative flex size-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-[#58bb63] via-[#3f994a] to-[#236b31] shadow-[0_8px_20px_rgba(0,0,0,0.28)] ring-1 ring-white/20"
                 >
-                    <UIcon
-                        name="i-lucide-leaf"
-                        class="size-[22px] text-white"
-                    />
+                    <UIcon name="i-lucide-leaf" class="size-5.5 text-white" />
 
                     <span
                         v-if="!isRail"
@@ -187,7 +184,7 @@ const navGroups = computed<NavGroup[]>(() => {
                     </p>
 
                     <div
-                        class="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white/[0.06] px-2 py-1 text-[9px] font-medium text-green-100/65 ring-1 ring-white/10"
+                        class="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white/6 px-2 py-1 text-[9px] font-medium text-green-100/65 ring-1 ring-white/10"
                     >
                         <UIcon
                             name="i-lucide-landmark"
@@ -236,11 +233,11 @@ const navGroups = computed<NavGroup[]>(() => {
                             :key="item.id"
                             :to="item.to"
                             :title="isRail ? item.label : undefined"
-                            class="group relative flex min-h-[44px] w-full items-center overflow-hidden rounded-xl text-sm font-medium transition-all duration-200"
+                            class="group relative flex min-h-11 w-full items-center overflow-hidden rounded-xl text-sm font-medium transition-all duration-200"
                             :class="[
                                 active === item.id
-                                    ? 'bg-gradient-to-r from-[#357c3e] to-[#286a34] text-white shadow-[0_6px_18px_rgba(0,0,0,0.2)] ring-1 ring-white/10'
-                                    : 'text-green-50/60 hover:bg-white/[0.06] hover:text-white',
+                                    ? 'bg-linear-to-r from-[#357c3e] to-[#286a34] text-white shadow-[0_6px_18px_rgba(0,0,0,0.2)] ring-1 ring-white/10'
+                                    : 'text-green-50/60 hover:bg-white/6 hover:text-white',
                                 isRail
                                     ? 'justify-center px-0'
                                     : 'gap-3 px-3.5 py-2.5',
@@ -255,19 +252,19 @@ const navGroups = computed<NavGroup[]>(() => {
                             <!-- Subtle active glow -->
                             <span
                                 v-if="active === item.id"
-                                class="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/[0.05] to-transparent"
+                                class="pointer-events-none absolute inset-0 bg-linear-to-r from-white/5 to-transparent"
                             />
 
                             <!-- Icon box -->
                             <span
-                                class="relative z-10 flex size-8 flex-shrink-0 items-center justify-center rounded-lg transition-all duration-200"
+                                class="relative z-10 flex size-8 shrink-0 items-center justify-center rounded-lg transition-all duration-200"
                                 :class="
                                     active === item.id
                                         ? 'bg-white/10 text-emerald-200 ring-1 ring-white/10'
-                                        : 'bg-white/[0.03] text-green-200/55 group-hover:bg-white/[0.07] group-hover:text-emerald-200'
+                                        : 'bg-white/3 text-green-200/55 group-hover:bg-white/[0.07] group-hover:text-emerald-200'
                                 "
                             >
-                                <UIcon :name="item.icon" class="size-[17px]" />
+                                <UIcon :name="item.icon" class="size-4.25" />
                             </span>
 
                             <!-- Label -->
@@ -282,7 +279,7 @@ const navGroups = computed<NavGroup[]>(() => {
                             <UIcon
                                 v-if="!isRail && active === item.id"
                                 name="i-lucide-chevron-right"
-                                class="relative z-10 size-3.5 flex-shrink-0 text-emerald-200/70"
+                                class="relative z-10 size-3.5 shrink-0 text-emerald-200/70"
                             />
                         </NuxtLink>
                     </div>
@@ -297,7 +294,7 @@ const navGroups = computed<NavGroup[]>(() => {
             <!-- Collapse -->
             <button
                 type="button"
-                class="hidden w-full items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] py-2.5 text-xs font-medium text-green-100/55 transition-all duration-200 hover:bg-white/[0.08] hover:text-white lg:flex"
+                class="hidden w-full items-center justify-center rounded-xl border border-white/8 bg-white/3 py-2.5 text-xs font-medium text-green-100/55 transition-all duration-200 hover:bg-white/8 hover:text-white lg:flex"
                 :aria-label="
                     isRail ? 'Expand navigation' : 'Collapse navigation'
                 "
@@ -318,11 +315,11 @@ const navGroups = computed<NavGroup[]>(() => {
             <!-- Office footer -->
             <div
                 v-if="!isRail"
-                class="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-3"
+                class="mt-3 rounded-xl border border-white/6 bg-white/2.5 px-3 py-3"
             >
                 <div class="flex items-start gap-2.5">
                     <div
-                        class="mt-0.5 flex size-7 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-400/10 text-emerald-300"
+                        class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-emerald-400/10 text-emerald-300"
                     >
                         <UIcon name="i-lucide-building-2" class="size-3.5" />
                     </div>

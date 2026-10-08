@@ -6,11 +6,11 @@
             aria-hidden="true"
         />
         <div
-            class="absolute left-[-120px] top-[-100px] size-[320px] rounded-full bg-emerald-300/10 blur-3xl"
+            class="absolute -left-30 -top-25 size-80 rounded-full bg-emerald-300/10 blur-3xl"
             aria-hidden="true"
         />
         <div
-            class="absolute bottom-[-130px] right-[-100px] size-[360px] rounded-full bg-blue-300/10 blur-3xl"
+            class="absolute -bottom-32.5 -right-25 size-90 rounded-full bg-blue-300/10 blur-3xl"
             aria-hidden="true"
         />
 
@@ -22,7 +22,7 @@
             >
                 <!-- Visual / Welcome Panel -->
                 <div
-                    class="relative min-h-[300px] overflow-hidden bg-[#143c29] lg:min-h-[720px]"
+                    class="relative min-h-75 overflow-hidden bg-[#143c29] lg:min-h-180"
                 >
                     <div
                         class="absolute inset-0 bg-cover bg-center"

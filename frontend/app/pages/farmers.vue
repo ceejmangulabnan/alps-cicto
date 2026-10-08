@@ -67,7 +67,7 @@ onMounted(async () => {
     <!-- Farmer Detail View -->
     <div
         v-if="selectedFarmer"
-        class="min-h-full bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 p-4 sm:p-6 lg:p-8"
+        class="min-h-full bg-linear-to-br from-slate-50 via-white to-emerald-50/40 p-4 sm:p-6 lg:p-8"
     >
         <div class="mx-auto max-w-[1800px] space-y-6">
             <!-- Back -->
@@ -82,7 +82,7 @@ onMounted(async () => {
 
             <!-- Profile Hero -->
             <div
-                class="relative overflow-hidden rounded-3xl border border-emerald-100/80 bg-gradient-to-r from-white via-white to-emerald-50/70 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-6 lg:p-7"
+                class="relative overflow-hidden rounded-3xl border border-emerald-100/80 bg-linear-to-r from-white via-white to-emerald-50/70 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-6 lg:p-7"
             >
                 <div
                     class="pointer-events-none absolute -right-20 -top-24 size-64 rounded-full bg-emerald-300/15 blur-3xl"
@@ -106,7 +106,7 @@ onMounted(async () => {
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
                                 <span
-                                    class="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-emerald-700"
+                                    class="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-emerald-700"
                                 >
                                     <span
                                         class="size-1.5 rounded-full bg-emerald-500"
@@ -241,7 +241,7 @@ onMounted(async () => {
                 <div
                     v-for="stat in detailStats"
                     :key="stat.label"
-                    class="group relative min-h-[190px] overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.055)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-100 hover:shadow-[0_18px_40px_rgba(15,23,42,0.10)] sm:p-6"
+                    class="group relative min-h-47.5 overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.055)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-100 hover:shadow-[0_18px_40px_rgba(15,23,42,0.10)] sm:p-6"
                 >
                     <div
                         class="absolute inset-x-0 top-0 h-1"
@@ -365,7 +365,7 @@ onMounted(async () => {
                     </div>
 
                     <div v-else class="overflow-x-auto">
-                        <table class="w-full min-w-[700px] text-sm">
+                        <table class="w-full min-w-175 text-sm">
                             <thead
                                 class="border-b border-slate-100 bg-slate-50/70"
                             >
@@ -508,7 +508,7 @@ onMounted(async () => {
 
                     <div
                         v-else
-                        class="max-h-[430px] divide-y divide-slate-100 overflow-y-auto"
+                        class="max-h-107.5 divide-y divide-slate-100 overflow-y-auto"
                     >
                         <div
                             v-for="a in selectedFarmerAssistance"

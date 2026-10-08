@@ -67,7 +67,7 @@ onMounted(async () => {
     <!-- Farmer Detail View -->
     <div
         v-if="selectedFarmer"
-        class="min-h-full bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 p-4 sm:p-6 lg:p-8"
+        class="min-h-full bg-linear-to-br from-slate-50 via-white to-emerald-50/40 p-4 sm:p-6 lg:p-8"
     >
         <div class="w-full">
             <button
@@ -81,11 +81,11 @@ onMounted(async () => {
 
             <!-- Profile Header -->
             <div
-                class="relative mb-6 overflow-hidden rounded-3xl border border-emerald-100/80 bg-gradient-to-br from-white via-white to-emerald-50/60 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.07)] ring-1 ring-white/80 sm:p-7"
+                class="relative mb-6 overflow-hidden rounded-3xl border border-emerald-100/80 bg-linear-to-br from-white via-white to-emerald-50/60 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.07)] ring-1 ring-white/80 sm:p-7"
             >
                 <div class="flex flex-col items-start gap-5 sm:flex-row">
                     <div
-                        class="flex h-20 w-20 shrink-0 items-center justify-center rounded-3xl bg-gradient-to-br from-[#5cba5c] via-[#3d9948] to-[#246c31] text-2xl font-extrabold text-white shadow-[0_12px_30px_rgba(45,106,45,0.25)] ring-4 ring-emerald-50"
+                        class="flex h-20 w-20 shrink-0 items-center justify-center rounded-3xl bg-linear-to-br from-[#5cba5c] via-[#3d9948] to-[#246c31] text-2xl font-extrabold text-white shadow-[0_12px_30px_rgba(45,106,45,0.25)] ring-4 ring-emerald-50"
                     >
                         {{ farmerInitials(selectedFarmer.name) }}
                     </div>
@@ -245,7 +245,7 @@ onMounted(async () => {
                     No parcels registered for this farmer.
                 </div>
                 <div v-else class="overflow-x-auto px-2 pb-2">
-                    <table class="w-full min-w-[560px] text-sm">
+                    <table class="w-full min-w-140 text-sm">
                         <thead>
                             <tr
                                 class="border-b border-slate-100 bg-slate-50/70 text-xs uppercase tracking-wide text-slate-400"
@@ -338,7 +338,7 @@ onMounted(async () => {
                     No assistance recorded for this farmer yet.
                 </div>
                 <div v-else class="overflow-x-auto px-2 pb-2">
-                    <table class="w-full min-w-[560px] text-sm">
+                    <table class="w-full min-w-140 text-sm">
                         <thead>
                             <tr
                                 class="border-b border-slate-100 bg-slate-50/70 text-xs uppercase tracking-wide text-slate-400"
@@ -387,7 +387,7 @@ onMounted(async () => {
                                     <span class="flex items-center gap-1.5">
                                         <UIcon
                                             name="i-lucide-calendar"
-                                            class="size-[10px] text-gray-400"
+                                            class="size-2.5 text-gray-400"
                                         />
                                         {{ a.date ?? '—' }}
                                     </span>

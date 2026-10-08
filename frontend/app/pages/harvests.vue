@@ -135,7 +135,7 @@ onMounted(() => {
 
 <template>
     <div
-        class="min-h-full bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 p-4 sm:p-6 lg:p-8"
+        class="min-h-full bg-linear-to-br from-slate-50 via-white to-emerald-50/40 p-4 sm:p-6 lg:p-8"
     >
         <div class="mx-auto max-w-[1800px] space-y-6">
             <!-- Header -->

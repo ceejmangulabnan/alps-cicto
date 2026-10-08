@@ -143,12 +143,12 @@ function goViewFarm(documentId: string) {
 
 <template>
     <div
-        class="min-h-full bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 p-4 sm:p-6 lg:p-8"
+        class="min-h-full bg-linear-to-br from-slate-50 via-white to-emerald-50/40 p-4 sm:p-6 lg:p-8"
     >
         <div class="mx-auto max-w-[1800px] space-y-6">
             <!-- Page Header -->
             <div
-                class="relative overflow-hidden rounded-3xl border border-emerald-100/80 bg-gradient-to-r from-white via-white to-emerald-50/70 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-6"
+                class="relative overflow-hidden rounded-3xl border border-emerald-100/80 bg-linear-to-r from-white via-white to-emerald-50/70 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-6"
             >
                 <div
                     class="pointer-events-none absolute -right-20 -top-24 size-64 rounded-full bg-emerald-300/15 blur-3xl"
@@ -260,7 +260,7 @@ function goViewFarm(documentId: string) {
                         v-for="option in ['farms', 'parcels'] as const"
                         :key="option"
                         type="button"
-                        class="flex min-w-[130px] items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all"
+                        class="flex min-w-32.5 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all"
                         :class="
                             tab === option
                                 ? 'bg-white text-[#245c2a] shadow-sm ring-1 ring-black/5'
@@ -294,7 +294,7 @@ function goViewFarm(documentId: string) {
             <!-- Farms -->
             <template v-if="tab === 'farms'">
                 <div
-                    class="[&>*]:rounded-3xl [&>*]:border [&>*]:border-slate-200/80 [&>*]:bg-white [&>*]:shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
+                    class="*:rounded-3xl *:border *:border-slate-200/80 *:bg-white *:shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
                 >
                     <FarmsSummaryCards :cards="farmSummaryCards" />
                 </div>
@@ -359,7 +359,7 @@ function goViewFarm(documentId: string) {
                 <!-- Farms awaiting first parcel -->
                 <div
                     v-if="awaitingParcels.length > 0"
-                    class="rounded-3xl border border-amber-200/80 bg-gradient-to-r from-amber-50 via-white to-white p-5 shadow-[0_10px_28px_rgba(15,23,42,0.04)]"
+                    class="rounded-3xl border border-amber-200/80 bg-linear-to-r from-amber-50 via-white to-white p-5 shadow-[0_10px_28px_rgba(15,23,42,0.04)]"
                 >
                     <div class="mb-3 flex items-center gap-2">
                         <span
@@ -432,7 +432,7 @@ function goViewFarm(documentId: string) {
 
                         <FarmsFarmDetail
                             v-if="selectedFarm"
-                            class="w-full shrink-0 overflow-hidden border-l border-slate-100 bg-white xl:w-[360px]"
+                            class="w-full shrink-0 overflow-hidden border-l border-slate-100 bg-white xl:w-90"
                             :farm="selectedFarm"
                             :detail="selectedDetail"
                             :detail-loading="detailLoading"
@@ -447,7 +447,7 @@ function goViewFarm(documentId: string) {
             <!-- Parcels -->
             <template v-else>
                 <div
-                    class="[&>*]:rounded-3xl [&>*]:border [&>*]:border-slate-200/80 [&>*]:bg-white [&>*]:shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
+                    class="*:rounded-3xl *:border *:border-slate-200/80 *:bg-white *:shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
                 >
                     <FarmsSummaryCards :cards="parcelSummaryCards" />
                 </div>
@@ -601,7 +601,7 @@ function goViewFarm(documentId: string) {
 
                         <FarmsParcelDetail
                             v-if="selectedParcel"
-                            class="w-full shrink-0 overflow-hidden border-l border-slate-100 bg-white xl:w-[360px]"
+                            class="w-full shrink-0 overflow-hidden border-l border-slate-100 bg-white xl:w-90"
                             :parcel="selectedParcel"
                             @edit="goEditParcel(selectedParcel.documentId)"
                             @view-farm="

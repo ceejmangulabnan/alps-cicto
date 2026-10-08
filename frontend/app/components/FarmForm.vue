@@ -128,7 +128,8 @@
                             />
                             <span>
                                 A farm code is derived from the barangay, so the
-                                barangay cannot be changed after the farm is created.
+                                barangay cannot be changed after the farm is
+                                created.
                             </span>
                         </p>
 
@@ -144,7 +145,8 @@
                             />
                             <span>
                                 No barangays are available yet. A farm cannot be
-                                created until at least one barangay is registered.
+                                created until at least one barangay is
+                                registered.
                             </span>
                         </p>
                     </div>
@@ -157,10 +159,7 @@
                             <div
                                 class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-white text-emerald-700 ring-1 ring-emerald-100"
                             >
-                                <UIcon
-                                    name="i-lucide-info"
-                                    class="size-4"
-                                />
+                                <UIcon name="i-lucide-info" class="size-4" />
                             </div>
 
                             <div>
@@ -172,9 +171,10 @@
                                 <p
                                     class="mt-0.5 text-xs leading-5 text-emerald-800/75"
                                 >
-                                    Farmers are assigned to a farm's parcels. The
-                                    farm's farmer list and status are calculated
-                                    automatically from those parcel assignments.
+                                    Farmers are assigned to a farm's parcels.
+                                    The farm's farmer list and status are
+                                    calculated automatically from those parcel
+                                    assignments.
                                 </p>
                             </div>
                         </div>

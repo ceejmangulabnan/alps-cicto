@@ -64,6 +64,18 @@ const farmerNamesOf = (parcel: FarmParcel): string[] =>
 const barangayOf = (parcel: FarmParcel): string =>
     parcel.farm?.barangay?.name ?? ''
 
+/** A cycle is Harvested once it holds at least one harvest record. */
+export type PlantingStatus = 'Harvested' | 'Growing'
+
+export const cycleStatus = (row: CycleRow): PlantingStatus =>
+    (row.cycle.harvests?.length ?? 0) > 0 ? 'Harvested' : 'Growing'
+
+/** A harvest is Completed once it carries a production figure. */
+export type HarvestStatus = 'Completed' | 'Upcoming'
+
+export const harvestStatus = (h: HarvestRow): HarvestStatus =>
+    h.production_kg != null ? 'Completed' : 'Upcoming'
+
 export const useCycleRegistry = () => {
     const parcels = ref<FarmParcel[]>([])
     const loading = ref(false)

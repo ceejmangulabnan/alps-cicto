@@ -1,281 +1,149 @@
 <script setup lang="ts">
-//@ts-nocheck
 import { LAND_STATUS_OPTIONS } from '~/composables/useFarmParcelApi'
-
 import type { Farm } from '~/composables/useFarmsApi'
-
 import type { FarmRow } from '~/composables/useFarmsData'
-
 import type { ParcelRow } from '~/composables/useParcelsData'
-
 import { statusDot } from '~/utils/landStatus'
-
-
 
 definePageMeta({ middleware: 'auth' })
 
-
-
 type RegistryTab = 'farms' | 'parcels'
-
 type StatusFilter = 'All' | (typeof LAND_STATUS_OPTIONS)[number]
 
-
-
 const {
-
     farms,
-
     loading: farmsLoading,
-
     loadError: farmsError,
-
     selected: selectedFarm,
-
     selectedDetail,
-
     detailLoading,
-
     search: farmSearch,
-
     filterStatus: farmStatus,
-
     filtered: filteredFarms,
-
     summaryCards: farmSummaryCards,
-
     loadFarms,
-
     upsertFarm,
-
     selectFarm,
-
 } = useFarmsData()
 
-
-
 const {
-
     parcels,
-
     loading: parcelsLoading,
-
     loadError: parcelsError,
-
     search: parcelSearch,
-
     filterStatus: parcelStatus,
-
     filtered: filteredParcels,
-
     summaryCards: parcelSummaryCards,
-
     loadParcels,
-
 } = useParcelsData()
 
-
-
 const { logout } = useAuth()
-
-
-
 const route = useRoute()
 
-
-
 const tab = ref<RegistryTab>('farms')
-
-
-
 const selectedParcel = ref<ParcelRow | null>(null)
-
-
-
 const showFarmForm = ref(false)
-
 const editingFarm = ref<Farm | null>(null)
-
-
-
 const notice = ref<string | null>(null)
 
 let noticeTimer: ReturnType<typeof setTimeout> | undefined
 
-
-
 const parcelStatusFilters = ['All', ...LAND_STATUS_OPTIONS] as StatusFilter[]
 
-
-
 const awaitingParcels = computed(() =>
-
     farms.value.filter((row) => row.parcelCount === 0)
-
 )
 
-
-
 onMounted(async () => {
-
     await Promise.all([loadFarms(), loadParcels()])
 
-
-
     // Deep link from the parcel hub (`?farm=<documentId>`): open that farm's
-
     // card even if the current search or status filter would hide it.
-
     const farmId =
-
         typeof route.query.farm === 'string' ? route.query.farm : undefined
 
     if (farmId) {
-
         const row = farms.value.find((farm) => farm.documentId === farmId)
 
         if (row) selectFarm(row)
-
     }
-
 })
-
-
 
 onBeforeUnmount(() => {
-
     if (noticeTimer) clearTimeout(noticeTimer)
-
 })
 
-
-
 async function signInAgain() {
-
     await logout()
-
     await navigateTo('/login')
-
 }
 
-
-
 function showNotice(message: string) {
-
     notice.value = message
-
-
 
     if (noticeTimer) clearTimeout(noticeTimer)
 
     noticeTimer = setTimeout(() => {
-
         notice.value = null
-
     }, 6000)
-
 }
-
-
 
 function openCreateFarm() {
-
     editingFarm.value = null
-
     showFarmForm.value = true
-
 }
-
-
 
 function openEditFarm(farm: Farm) {
-
     editingFarm.value = farm
-
     showFarmForm.value = true
-
 }
-
-
 
 function handleFarmSaved(farm: Farm) {
-
     upsertFarm(farm)
-
     showNotice(`Farm ${farm.farm_code} saved.`)
-
 }
-
-
 
 function goAddParcel() {
-
     navigateTo('/map?add-parcel=1')
-
 }
-
-
 
 function goEditParcel(documentId: string) {
-
     navigateTo({ path: '/map', query: { 'edit-parcel': documentId } })
-
 }
-
-
 
 function goViewParcel(documentId: string) {
-
     navigateTo({ path: '/map', query: { 'focus-parcel': documentId } })
-
 }
 
-
-
 /**
-
  * Jumps from a parcel to the farm that owns it. The farm may be hidden by the
-
  * current search or status filter, so this selects it directly rather than
-
  * relying on it being in the filtered list.
-
  */
 
 function goViewFarm(documentId: string) {
-
     const row = farms.value.find((farm) => farm.documentId === documentId)
-
-
 
     tab.value = 'farms'
 
-
-
     if (row) {
-
         selectFarm(row)
-
     } else {
-
         showNotice(
-
             'That parcel has no farm yet. Create or fix the parcel first.'
-
         )
-
     }
-
 }
-
 </script>
 
 <template>
-    <div class="min-h-full bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 p-4 sm:p-6 lg:p-8">
+    <div
+        class="min-h-full bg-linear-to-br from-slate-50 via-white to-emerald-50/40 p-4 sm:p-6 lg:p-8"
+    >
         <div class="mx-auto max-w-[1800px] space-y-6">
             <!-- Page Header -->
             <div
-                class="relative overflow-hidden rounded-3xl border border-emerald-100/80 bg-gradient-to-r from-white via-white to-emerald-50/70 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-6"
+                class="relative overflow-hidden rounded-3xl border border-emerald-100/80 bg-linear-to-r from-white via-white to-emerald-50/70 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-6"
             >
                 <div
                     class="pointer-events-none absolute -right-20 -top-24 size-64 rounded-full bg-emerald-300/15 blur-3xl"
@@ -305,7 +173,8 @@ function goViewFarm(documentId: string) {
                                 <span
                                     class="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 shadow-sm"
                                 >
-                                    {{ farms.length }} farms · {{ parcels.length }} parcels
+                                    {{ farms.length }} farms ·
+                                    {{ parcels.length }} parcels
                                 </span>
                             </div>
 
@@ -318,7 +187,8 @@ function goViewFarm(documentId: string) {
                             <p
                                 class="mt-1.5 max-w-2xl text-sm text-gray-500 sm:text-base"
                             >
-                                Manage farm records, parcel assignments, mapped coverage, and land status information.
+                                Manage farm records, parcel assignments, mapped
+                                coverage, and land status information.
                             </p>
                         </div>
                     </div>
@@ -382,9 +252,10 @@ function goViewFarm(documentId: string) {
             >
                 <div class="inline-flex rounded-2xl bg-slate-100/80 p-1">
                     <button
-                        v-for="option in ['farms', 'parcels'] as const" :key="option"
+                        v-for="option in ['farms', 'parcels'] as const"
+                        :key="option"
                         type="button"
-                        class="flex min-w-[130px] items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all"
+                        class="flex min-w-32.5 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all"
                         :class="
                             tab === option
                                 ? 'bg-white text-[#245c2a] shadow-sm ring-1 ring-black/5'
@@ -409,7 +280,8 @@ function goViewFarm(documentId: string) {
                         {{ filteredFarms.length }} of {{ farms.length }} farms
                     </span>
                     <span v-else>
-                        {{ filteredParcels.length }} of {{ parcels.length }} parcels
+                        {{ filteredParcels.length }} of
+                        {{ parcels.length }} parcels
                     </span>
                 </div>
             </div>
@@ -417,7 +289,7 @@ function goViewFarm(documentId: string) {
             <!-- Farms -->
             <template v-if="tab === 'farms'">
                 <div
-                    class="[&>*]:rounded-3xl [&>*]:border [&>*]:border-slate-200/80 [&>*]:bg-white [&>*]:shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
+                    class="*:rounded-3xl *:border *:border-slate-200/80 *:bg-white *:shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
                 >
                     <FarmsSummaryCards :cards="farmSummaryCards" />
                 </div>
@@ -482,7 +354,7 @@ function goViewFarm(documentId: string) {
                 <!-- Farms awaiting first parcel -->
                 <div
                     v-if="awaitingParcels.length > 0"
-                    class="rounded-3xl border border-amber-200/80 bg-gradient-to-r from-amber-50 via-white to-white p-5 shadow-[0_10px_28px_rgba(15,23,42,0.04)]"
+                    class="rounded-3xl border border-amber-200/80 bg-linear-to-r from-amber-50 via-white to-white p-5 shadow-[0_10px_28px_rgba(15,23,42,0.04)]"
                 >
                     <div class="mb-3 flex items-center gap-2">
                         <span
@@ -494,9 +366,7 @@ function goViewFarm(documentId: string) {
                             />
                         </span>
                         <div>
-                            <div
-                                class="text-sm font-semibold text-amber-900"
-                            >
+                            <div class="text-sm font-semibold text-amber-900">
                                 Farms awaiting their first parcel
                             </div>
                             <div class="text-xs text-amber-700/70">
@@ -519,17 +389,20 @@ function goViewFarm(documentId: string) {
                 </div>
 
                 <!-- Farm registry + detail -->
-                <div
-                    class="min-w-0 flex-1"
-                >
+                <div class="min-w-0 flex-1">
                     <div class="border-b border-slate-100 px-6 py-4">
                         <div class="flex items-center justify-between gap-3">
                             <div>
-                                <h2 class="text-base font-bold tracking-tight text-slate-800">
+                                <h2
+                                    class="text-base font-bold tracking-tight text-slate-800"
+                                >
                                     Farm Directory
                                 </h2>
-                                <p class="mt-1 text-xs text-slate-500 sm:text-sm">
-                                    Select a farm to review its profile, assigned parcels, and registry details.
+                                <p
+                                    class="mt-1 text-xs text-slate-500 sm:text-sm"
+                                >
+                                    Select a farm to review its profile,
+                                    assigned parcels, and registry details.
                                 </p>
                             </div>
                             <div
@@ -540,28 +413,28 @@ function goViewFarm(documentId: string) {
                         </div>
                     </div>
                     <div class="flex flex-col gap-4 p-0 xl:flex-row">
-                    <div class="min-w-0 flex-1">
-                        <FarmsFarmTable
-                            class="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
-                            :farms="filteredFarms"
-                            :selected-document-id="
-                                selectedFarm?.documentId ?? null
-                            "
-                            :loading="farmsLoading"
-                            @select="selectFarm"
-                        />
-                    </div>
+                        <div class="min-w-0 flex-1">
+                            <FarmsFarmTable
+                                class="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
+                                :farms="filteredFarms"
+                                :selected-document-id="
+                                    selectedFarm?.documentId ?? null
+                                "
+                                :loading="farmsLoading"
+                                @select="selectFarm"
+                            />
+                        </div>
 
-                    <FarmsFarmDetail
-                        v-if="selectedFarm"
-                        class="w-full shrink-0 overflow-hidden border-l border-slate-100 bg-white xl:w-[360px]"
-                        :farm="selectedFarm"
-                        :detail="selectedDetail"
-                        :detail-loading="detailLoading"
-                        @edit="openEditFarm(selectedFarm.farm)"
-                        @add-parcel="goAddParcel"
-                        @view-on-map="tab = 'parcels'"
-                    />
+                        <FarmsFarmDetail
+                            v-if="selectedFarm"
+                            class="w-full shrink-0 overflow-hidden border-l border-slate-100 bg-white xl:w-90"
+                            :farm="selectedFarm"
+                            :detail="selectedDetail"
+                            :detail-loading="detailLoading"
+                            @edit="openEditFarm(selectedFarm.farm)"
+                            @add-parcel="goAddParcel"
+                            @view-on-map="tab = 'parcels'"
+                        />
                     </div>
                 </div>
             </template>
@@ -569,7 +442,7 @@ function goViewFarm(documentId: string) {
             <!-- Parcels -->
             <template v-else>
                 <div
-                    class="[&>*]:rounded-3xl [&>*]:border [&>*]:border-slate-200/80 [&>*]:bg-white [&>*]:shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
+                    class="*:rounded-3xl *:border *:border-slate-200/80 *:bg-white *:shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
                 >
                     <FarmsSummaryCards :cards="parcelSummaryCards" />
                 </div>
@@ -616,7 +489,8 @@ function goViewFarm(documentId: string) {
                                     Find Parcels
                                 </h2>
                                 <p class="text-xs text-slate-500">
-                                    Search by farmer or parcel code and filter by land status.
+                                    Search by farmer or parcel code and filter
+                                    by land status.
                                 </p>
                             </div>
                         </div>
@@ -624,17 +498,16 @@ function goViewFarm(documentId: string) {
                         <div
                             class="flex items-center gap-1.5 text-sm text-gray-500"
                         >
-                            <UIcon
-                                name="i-lucide-filter"
-                                class="size-3.5"
-                            />
+                            <UIcon name="i-lucide-filter" class="size-3.5" />
                             {{ filteredParcels.length }} of
                             {{ parcels.length }} parcels
                         </div>
                     </div>
 
                     <div class="space-y-4 p-4 sm:p-5">
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <div
+                            class="flex flex-col gap-3 sm:flex-row sm:items-center"
+                        >
                             <div class="relative w-full max-w-md flex-1">
                                 <UIcon
                                     name="i-lucide-search"
@@ -652,10 +525,7 @@ function goViewFarm(documentId: string) {
                                     class="absolute right-2.5 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
                                     @click="parcelSearch = ''"
                                 >
-                                    <UIcon
-                                        name="i-lucide-x"
-                                        class="size-3.5"
-                                    />
+                                    <UIcon name="i-lucide-x" class="size-3.5" />
                                 </button>
                             </div>
                         </div>
@@ -687,17 +557,20 @@ function goViewFarm(documentId: string) {
                 </div>
 
                 <!-- Parcel registry + detail -->
-                <div
-                    class="min-w-0 flex-1"
-                >
+                <div class="min-w-0 flex-1">
                     <div class="border-b border-slate-100 px-6 py-4">
                         <div class="flex items-center justify-between gap-3">
                             <div>
-                                <h2 class="text-base font-bold tracking-tight text-slate-800">
+                                <h2
+                                    class="text-base font-bold tracking-tight text-slate-800"
+                                >
                                     Parcel Directory
                                 </h2>
-                                <p class="mt-1 text-xs text-slate-500 sm:text-sm">
-                                    Select a parcel to review land status, farm assignment, and GIS actions.
+                                <p
+                                    class="mt-1 text-xs text-slate-500 sm:text-sm"
+                                >
+                                    Select a parcel to review land status, farm
+                                    assignment, and GIS actions.
                                 </p>
                             </div>
                             <div
@@ -708,29 +581,31 @@ function goViewFarm(documentId: string) {
                         </div>
                     </div>
                     <div class="flex flex-col gap-4 p-0 xl:flex-row">
-                    <div class="min-w-0 flex-1">
-                        <FarmsParcelTable
-                            class="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
-                            :parcels="filteredParcels"
-                            :selected-document-id="
-                                selectedParcel?.documentId ?? null
-                            "
-                            :loading="parcelsLoading"
-                            :has-error="parcelsError !== null"
-                            @select="selectedParcel = $event"
-                        />
-                    </div>
+                        <div class="min-w-0 flex-1">
+                            <FarmsParcelTable
+                                class="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
+                                :parcels="filteredParcels"
+                                :selected-document-id="
+                                    selectedParcel?.documentId ?? null
+                                "
+                                :loading="parcelsLoading"
+                                :has-error="parcelsError !== null"
+                                @select="selectedParcel = $event"
+                            />
+                        </div>
 
-                    <FarmsParcelDetail
-                        v-if="selectedParcel"
-                        class="w-full shrink-0 overflow-hidden border-l border-slate-100 bg-white xl:w-[360px]"
-                        :parcel="selectedParcel"
-                        @edit="goEditParcel(selectedParcel.documentId)"
-                        @view-farm="goViewFarm(selectedParcel.farmDocumentId)"
-                        @view-on-map="
-                            goViewParcel(selectedParcel.documentId)
-                        "
-                    />
+                        <FarmsParcelDetail
+                            v-if="selectedParcel"
+                            class="w-full shrink-0 overflow-hidden border-l border-slate-100 bg-white xl:w-90"
+                            :parcel="selectedParcel"
+                            @edit="goEditParcel(selectedParcel.documentId)"
+                            @view-farm="
+                                goViewFarm(selectedParcel.farmDocumentId)
+                            "
+                            @view-on-map="
+                                goViewParcel(selectedParcel.documentId)
+                            "
+                        />
                     </div>
                 </div>
             </template>

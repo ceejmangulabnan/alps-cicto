@@ -1,4 +1,4 @@
-import { version } from "./package.json";
+import { version } from './package.json'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -15,7 +15,7 @@ export default defineNuxtConfig({
         public: {
             maptilerKey: '',
             strapiUrl: '',
-            appVersion: version
+            appVersion: version,
         },
     },
 })

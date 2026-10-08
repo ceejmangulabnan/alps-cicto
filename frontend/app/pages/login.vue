@@ -1,18 +1,16 @@
 <template>
-    <main
-        class="relative min-h-screen overflow-hidden bg-[#f4f8f4]"
-    >
+    <main class="relative min-h-screen overflow-hidden bg-[#f4f8f4]">
         <!-- Background -->
         <div
             class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(45,106,45,0.14),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(29,111,164,0.12),transparent_30%)]"
             aria-hidden="true"
         />
         <div
-            class="absolute left-[-120px] top-[-100px] size-[320px] rounded-full bg-emerald-300/10 blur-3xl"
+            class="absolute -left-30 -top-25 size-80 rounded-full bg-emerald-300/10 blur-3xl"
             aria-hidden="true"
         />
         <div
-            class="absolute bottom-[-130px] right-[-100px] size-[360px] rounded-full bg-blue-300/10 blur-3xl"
+            class="absolute -bottom-32.5 -right-25 size-90 rounded-full bg-blue-300/10 blur-3xl"
             aria-hidden="true"
         />
 
@@ -24,11 +22,13 @@
             >
                 <!-- Visual / Welcome Panel -->
                 <div
-                    class="relative min-h-[300px] overflow-hidden bg-[#143c29] lg:min-h-[720px]"
+                    class="relative min-h-75 overflow-hidden bg-[#143c29] lg:min-h-180"
                 >
                     <div
                         class="absolute inset-0 bg-cover bg-center"
-                        style="background-image: url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1600&q=88')"
+                        style="
+                            background-image: url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1600&q=88');
+                        "
                         aria-hidden="true"
                     />
                     <div
@@ -50,7 +50,10 @@
                                 <div
                                     class="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white backdrop-blur"
                                 >
-                                    <UIcon name="i-lucide-leaf" class="size-6" />
+                                    <UIcon
+                                        name="i-lucide-leaf"
+                                        class="size-6"
+                                    />
                                 </div>
                                 <div>
                                     <div
@@ -78,7 +81,9 @@
                             <div
                                 class="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-200/20 bg-amber-100/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-200"
                             >
-                                <span class="size-1.5 rounded-full bg-amber-300" />
+                                <span
+                                    class="size-1.5 rounded-full bg-amber-300"
+                                />
                                 Smart Agricultural Land Management
                             </div>
 
@@ -91,14 +96,12 @@
                             <p
                                 class="mt-5 max-w-lg text-sm leading-7 text-white/70 sm:text-base"
                             >
-                                Map farms, monitor land use, track crop activity,
-                                manage farmer records, and support better planning
-                                across San Fernando, Pampanga.
+                                Map farms, monitor land use, track crop
+                                activity, manage farmer records, and support
+                                better planning across San Fernando, Pampanga.
                             </p>
 
-                            <div
-                                class="mt-7 hidden grid-cols-3 gap-3 sm:grid"
-                            >
+                            <div class="mt-7 hidden grid-cols-3 gap-3 sm:grid">
                                 <div
                                     class="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur"
                                 >
@@ -106,7 +109,9 @@
                                         name="i-lucide-map-pinned"
                                         class="size-5 text-emerald-200"
                                     />
-                                    <div class="mt-3 text-sm font-semibold text-white">
+                                    <div
+                                        class="mt-3 text-sm font-semibold text-white"
+                                    >
                                         GIS Mapping
                                     </div>
                                     <div class="mt-1 text-xs text-white/50">
@@ -121,7 +126,9 @@
                                         name="i-lucide-sprout"
                                         class="size-5 text-emerald-200"
                                     />
-                                    <div class="mt-3 text-sm font-semibold text-white">
+                                    <div
+                                        class="mt-3 text-sm font-semibold text-white"
+                                    >
                                         Crop Monitoring
                                     </div>
                                     <div class="mt-1 text-xs text-white/50">
@@ -136,7 +143,9 @@
                                         name="i-lucide-chart-no-axes-combined"
                                         class="size-5 text-emerald-200"
                                     />
-                                    <div class="mt-3 text-sm font-semibold text-white">
+                                    <div
+                                        class="mt-3 text-sm font-semibold text-white"
+                                    >
                                         Analytics
                                     </div>
                                     <div class="mt-1 text-xs text-white/50">
@@ -161,9 +170,7 @@
                 >
                     <div class="w-full max-w-md">
                         <!-- Mobile Logo -->
-                        <div
-                            class="mb-7 flex items-center gap-3 lg:hidden"
-                        >
+                        <div class="mb-7 flex items-center gap-3 lg:hidden">
                             <div
                                 class="flex size-11 items-center justify-center rounded-2xl bg-[#2d6a2d] text-white shadow-sm"
                             >
@@ -185,7 +192,9 @@
                             <span
                                 class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-emerald-700 ring-1 ring-emerald-100"
                             >
-                                <span class="size-1.5 rounded-full bg-emerald-500" />
+                                <span
+                                    class="size-1.5 rounded-full bg-emerald-500"
+                                />
                                 Secure login
                             </span>
 
@@ -196,7 +205,8 @@
                             </h2>
 
                             <p class="mt-2 text-sm leading-6 text-slate-500">
-                                Use your authorized City Agriculture Office account.
+                                Use your authorized City Agriculture Office
+                                account.
                             </p>
                         </div>
 
@@ -238,7 +248,9 @@
 
                                     <input
                                         v-model="password"
-                                        :type="showPassword ? 'text' : 'password'"
+                                        :type="
+                                            showPassword ? 'text' : 'password'
+                                        "
                                         autocomplete="current-password"
                                         placeholder="Enter your password"
                                         class="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-3 pl-10 pr-11 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10"
@@ -266,7 +278,6 @@
                                 </div>
                             </div>
 
-                        
                             <div
                                 v-if="authError"
                                 class="flex items-start gap-2 rounded-xl border border-red-100 bg-red-50 px-3.5 py-3 text-sm text-red-700"
@@ -312,12 +323,17 @@
                                 </div>
 
                                 <div>
-                                    <div class="text-sm font-semibold text-slate-700">
+                                    <div
+                                        class="text-sm font-semibold text-slate-700"
+                                    >
                                         Protected access
                                     </div>
-                                    <p class="mt-0.5 text-xs leading-5 text-slate-500">
-                                        Authorized personnel only. System activity may
-                                        be logged for security and audit purposes.
+                                    <p
+                                        class="mt-0.5 text-xs leading-5 text-slate-500"
+                                    >
+                                        Authorized personnel only. System
+                                        activity may be logged for security and
+                                        audit purposes.
                                     </p>
                                 </div>
                             </div>
@@ -336,8 +352,12 @@
                             <div
                                 class="mt-3 flex flex-wrap items-center justify-center gap-2 text-[11px] text-slate-400"
                             >
-                                <span>© 2026 City of San Fernando, Pampanga</span>
-                                <span class="hidden size-1 rounded-full bg-slate-300 sm:inline-block" />
+                                <span
+                                    >© 2026 City of San Fernando, Pampanga</span
+                                >
+                                <span
+                                    class="hidden size-1 rounded-full bg-slate-300 sm:inline-block"
+                                />
                                 <span
                                     class="rounded-full bg-slate-100 px-2 py-0.5 font-mono font-semibold text-slate-500"
                                 >
@@ -353,7 +373,6 @@
 </template>
 
 <script setup lang="ts">
-//@ts-nocheck
 definePageMeta({ middleware: 'guest', layout: false })
 
 const auth = useAuth()
@@ -362,7 +381,6 @@ const appVersion = config.public.appVersion
 
 const identifier = ref('')
 const password = ref('')
-const rememberMe = ref(false)
 const showPassword = ref(false)
 const authError = ref('')
 const loading = ref(false)

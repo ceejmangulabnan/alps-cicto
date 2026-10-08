@@ -72,10 +72,7 @@ const emit = defineEmits<{
 
                     <!-- Farmers -->
                     <td class="px-5 py-4">
-                        <div
-                            v-if="p.farmerNames.length > 0"
-                            class="space-y-2"
-                        >
+                        <div v-if="p.farmerNames.length > 0" class="space-y-2">
                             <div
                                 v-for="name in p.farmerNames"
                                 :key="name"

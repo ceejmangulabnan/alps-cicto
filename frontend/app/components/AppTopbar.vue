@@ -1,5 +1,4 @@
 <script setup lang="ts">
-//@ts-nocheck
 const props = defineProps<{ page: string }>()
 
 const auth = useAuth()
@@ -42,7 +41,7 @@ const initials = computed(() =>
     displayName.value
         .split(' ')
         .filter(Boolean)
-        .map((w) => w[0])
+        .map((w: any[]) => w[0])
         .slice(0, 2)
         .join('')
         .toUpperCase()
@@ -80,7 +79,7 @@ const handleLogout = async () => {
 
 <template>
     <header
-        class="relative z-30 flex h-[68px] flex-shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/95 px-4 shadow-[0_1px_12px_rgba(15,23,42,0.035)] backdrop-blur sm:px-5 lg:px-6"
+        class="relative z-30 flex h-17 shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/95 px-4 shadow-[0_1px_12px_rgba(15,23,42,0.035)] backdrop-blur sm:px-5 lg:px-6"
     >
         <!-- Left -->
         <div class="flex min-w-0 items-center gap-3">
@@ -117,7 +116,9 @@ const handleLogout = async () => {
                         <span
                             class="hidden items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-100 md:inline-flex"
                         >
-                            <span class="size-1.5 rounded-full bg-emerald-500" />
+                            <span
+                                class="size-1.5 rounded-full bg-emerald-500"
+                            />
                             ALPS
                         </span>
                     </div>
@@ -158,12 +159,12 @@ const handleLogout = async () => {
 
                     <div class="hidden min-w-0 text-left md:block">
                         <div
-                            class="max-w-[180px] truncate text-sm font-semibold leading-4 text-slate-800"
+                            class="max-w-45 truncate text-sm font-semibold leading-4 text-slate-800"
                         >
                             {{ displayName }}
                         </div>
                         <div
-                            class="mt-1 max-w-[180px] truncate text-[11px] leading-none text-slate-400"
+                            class="mt-1 max-w-45 truncate text-[11px] leading-none text-slate-400"
                         >
                             {{ displayRole }}
                         </div>
@@ -191,7 +192,7 @@ const handleLogout = async () => {
                     >
                         <!-- Account summary -->
                         <div
-                            class="relative overflow-hidden border-b border-slate-100 bg-gradient-to-br from-emerald-50/80 via-white to-white px-4 py-4"
+                            class="relative overflow-hidden border-b border-slate-100 bg-linear-to-br from-emerald-50/80 via-white to-white px-4 py-4"
                         >
                             <div
                                 class="pointer-events-none absolute -right-10 -top-12 size-28 rounded-full bg-emerald-300/10 blur-2xl"

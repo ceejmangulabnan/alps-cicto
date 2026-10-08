@@ -9,6 +9,7 @@ import type { FarmParcel } from '~/composables/useFarmParcelApi'
 import { getErrorMessage } from '~/utils/apiError'
 
 import { STATUS_LEGEND } from '~/utils/landStatus'
+import { useParcelHover } from '~/composables/useParcelHover'
 
 
 
@@ -170,9 +171,10 @@ const {
 
 } = data
 
-
-
 const showSidebar = ref(false)
+
+const hoverEnabled = computed(() => drawMode.value === 'view' && !showSidebar.value)
+const hover = useParcelHover({ drawing, data, enabled: hoverEnabled })
 
 
 
@@ -580,6 +582,14 @@ function onParcelDeselect(id: string | number) {
 
 
 
+function onMapMouseLeave() {
+    hover.clearHover()
+}
+
+function onMapMoveStart() {
+    hover.clearHover()
+}
+
 function onMapLoad(payload: { map: MaplibreMap }) {
 
     initDrawing(payload.map, {
@@ -589,6 +599,7 @@ function onMapLoad(payload: { map: MaplibreMap }) {
         onDeselect: onParcelDeselect,
 
     })
+    hover.initHighlight(payload.map)
 
 
 
@@ -673,6 +684,9 @@ function onMapLoad(payload: { map: MaplibreMap }) {
                             height="100%"
                             width="100%"
                             @map:load="onMapLoad"
+                            @map:mousemove="hover.onMapMouseMove"
+                            @map:mouseout="onMapMouseLeave"
+                            @map:movestart="onMapMoveStart"
                         >
                             <MglNavigationControl
                                 :position="Position.TOP_RIGHT"
@@ -708,6 +722,14 @@ function onMapLoad(payload: { map: MaplibreMap }) {
                 />
                 <div
                     class="pointer-events-none absolute inset-0 z-[2] ring-1 ring-inset ring-black/5"
+                />
+
+                <!-- Parcel hover card -->
+                <MapParcelHoverCard
+                    v-if="hover.hoverParcel.value !== null"
+                    :parcel="hover.hoverParcel.value"
+                    :x="hover.hoverPoint.value.x"
+                    :y="hover.hoverPoint.value.y"
                 />
 
                 <!-- Load / API alert -->

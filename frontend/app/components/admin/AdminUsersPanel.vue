@@ -15,14 +15,11 @@ import type { AdminUser } from '~/utils/adminPresentation'
 
 const props = defineProps<{ users: AdminUser[] }>()
 
-const { search, filterStatus, filtered } = useTableFilters(
-    () => props.users,
-    {
-        statusOptions: ROLE_FILTER_OPTIONS,
-        haystack: (u) => `${u.name} ${u.email} ${u.role}`,
-        matchesStatus: (u, role) => role === 'All' || u.role === role,
-    }
-)
+const { search, filterStatus, filtered } = useTableFilters(() => props.users, {
+    statusOptions: ROLE_FILTER_OPTIONS,
+    haystack: (u) => `${u.name} ${u.email} ${u.role}`,
+    matchesStatus: (u, role) => role === 'All' || u.role === role,
+})
 </script>
 
 <template>
@@ -46,8 +43,7 @@ const { search, filterStatus, filtered } = useTableFilters(
                         System Users
                     </h2>
                     <p class="text-xs text-slate-500 sm:text-sm">
-                        {{ filtered.length }} shown ·
-                        {{ users.length }} total
+                        {{ filtered.length }} shown · {{ users.length }} total
                     </p>
                 </div>
             </div>
@@ -118,16 +114,13 @@ const { search, filterStatus, filtered } = useTableFilters(
                                 <span
                                     class="flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white shadow-sm ring-2 ring-white"
                                     :style="{
-                                        background:
-                                            ROLE_STYLE[u.role].avatar,
+                                        background: ROLE_STYLE[u.role].avatar,
                                     }"
                                 >
                                     {{ userInitials(u.name) }}
                                 </span>
 
-                                <span
-                                    class="font-semibold text-slate-800"
-                                >
+                                <span class="font-semibold text-slate-800">
                                     {{ u.name }}
                                 </span>
                             </div>
@@ -166,9 +159,7 @@ const { search, filterStatus, filtered } = useTableFilters(
                             </span>
                         </td>
 
-                        <td
-                            class="px-5 py-4 font-mono text-xs text-slate-500"
-                        >
+                        <td class="px-5 py-4 font-mono text-xs text-slate-500">
                             {{ lastLoginLabel(u.lastLogin) }}
                         </td>
                     </tr>

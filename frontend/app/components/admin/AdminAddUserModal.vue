@@ -4,7 +4,11 @@
  * collected user (the page appends it to the registry) and resets the form,
  * and any dismissal path emits `close`.
  */
-import type { AdminRole, AdminUserInput, AdminUserStatus } from '~/utils/adminPresentation'
+import type {
+    AdminRole,
+    AdminUserInput,
+    AdminUserStatus,
+} from '~/utils/adminPresentation'
 
 const { show } = defineProps<{ show: boolean }>()
 

@@ -68,9 +68,7 @@ defineProps<Props>()
                     >
                         {{ s.val }}
                     </div>
-                    <div
-                        class="mt-1 text-sm font-semibold text-slate-700"
-                    >
+                    <div class="mt-1 text-sm font-semibold text-slate-700">
                         {{ s.label }}
                     </div>
                 </div>

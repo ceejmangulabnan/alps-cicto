@@ -58,9 +58,7 @@ defineProps<Props>()
                     >
                         {{ info.label }}
                     </div>
-                    <div
-                        class="text-sm font-semibold leading-6 text-slate-700"
-                    >
+                    <div class="text-sm font-semibold leading-6 text-slate-700">
                         {{ info.val }}
                     </div>
                 </div>

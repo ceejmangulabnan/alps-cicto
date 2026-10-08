@@ -71,9 +71,7 @@ function extraFarmerCount(row: FarmRow): number {
                                 >
                                     {{ row.name }}
                                 </div>
-                                <div
-                                    class="mt-0.5 text-xs text-slate-400"
-                                >
+                                <div class="mt-0.5 text-xs text-slate-400">
                                     Farm record
                                 </div>
                             </div>

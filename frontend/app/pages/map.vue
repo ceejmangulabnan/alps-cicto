@@ -10,7 +10,6 @@ import { getErrorMessage } from '~/utils/apiError'
 import { STATUS_LEGEND } from '~/utils/landStatus'
 import { useParcelHover } from '~/composables/useParcelHover'
 
-
 const config = useRuntimeConfig()
 
 const maptilerKey = config.public.maptilerKey as string | undefined
@@ -547,7 +546,7 @@ function onMapLoad(payload: { map: MaplibreMap }) {
                 <MapParcelForm
                     v-if="sidebarPanel === 'add' || sidebarPanel === 'edit'"
                     :key="sidebarKey"
-                    class="absolute inset-y-3 right-3 z-30 overflow-hidden rounded-2xl border border-white/70 bg-white/95 shadow-[0_20px_60px_rgba(15,23,42,0.20)] ring-1 ring-slate-900/5 backdrop-blur-xl sm:relative sm:inset-auto sm:z-auto sm:m-3 sm:ml-0"
+                    class="absolute inset-y-3 right-3 z-30 overflow-hidden rounded-2xl border border-white/70 bg-white/95 shadow-[0_20px_60px_rgba(15,23,42,0.20)] ring-1 ring-slate-900/5 backdrop-blur-xl sm:relative sm:inset-auto sm:z-auto sm:ml-0"
                     :parcel="selectedParcel"
                     :farms="farms"
                     :drawing="drawing"

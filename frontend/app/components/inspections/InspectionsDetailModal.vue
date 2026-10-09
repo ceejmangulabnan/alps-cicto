@@ -18,9 +18,11 @@ import {
 interface Props {
     show: boolean
     row: InspectionRow | null
+    /** Read-only (Viewer role) hides the Edit Inspection action. */
+    canEdit?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), { canEdit: true })
 
 const emit = defineEmits<{
     close: []
@@ -303,6 +305,7 @@ watch(
                         Close
                     </button>
                     <button
+                        v-if="props.canEdit"
                         type="button"
                         class="flex items-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#1f5125]"
                         @click="emit('edit')"

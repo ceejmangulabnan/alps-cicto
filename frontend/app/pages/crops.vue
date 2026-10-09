@@ -5,10 +5,11 @@ import { useFarmRecordsApi } from '~/composables/useFarmRecordsApi'
 import { cropColor } from '~/utils/cropColors'
 import { farmerLabel } from '~/utils/format'
 
-
 const { parcels, cycles, loading, loadError, load } = useCycleRegistry()
 
 const { deletePlantingCycle } = useFarmRecordsApi()
+
+const { canEdit, canDelete } = useAuth()
 
 /* ------------------------------------------------------------------ */
 /* Search + status filter                                               */
@@ -153,6 +154,7 @@ onMounted(() => {
                 description="Track crop cycles, planted areas, varieties, and expected harvest schedules."
                 action-label="Register Planting Cycle"
                 action-icon="i-lucide-sprout"
+                :can-edit="canEdit"
                 @action="openRegister"
             />
 
@@ -187,6 +189,8 @@ onMounted(() => {
                     :total="cycles.length"
                     :loading="loading"
                     :load-error="loadError"
+                    :can-edit="canEdit"
+                    :can-delete="canDelete"
                     class="col-span-12 lg:col-span-7"
                     @edit="openEdit"
                     @delete="askDelete"

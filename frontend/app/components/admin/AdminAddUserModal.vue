@@ -1,16 +1,27 @@
 <script setup lang="ts">
 /**
  * The add-user modal. The form state lives here; submitting emits the
- * collected user (the page appends it to the registry) and resets the form,
- * and any dismissal path emits `close`.
+ * collected user (the page persists it via the Users API) and resets the
+ * form, and any dismissal path emits `close`.
+ *
+ * Role choices come from the live role list (`roleOptions`) so a label can
+ * never map to the wrong Strapi role id, and the form stays disabled until
+ * that list has loaded.
  */
 import type {
     AdminRole,
     AdminUserInput,
-    AdminUserStatus,
+    RoleOption,
 } from '~/utils/adminPresentation'
+import { PASSWORD_MIN_LENGTH } from '~/utils/adminPresentation'
 
-const { show } = defineProps<{ show: boolean }>()
+const props = defineProps<{
+    show: boolean
+    roleOptions: RoleOption[]
+    rolesReady: boolean
+    rolesLoading?: boolean
+    rolesError?: string | null
+}>()
 
 const emit = defineEmits<{
     add: [user: AdminUserInput]
@@ -20,23 +31,65 @@ const emit = defineEmits<{
 const userForm = reactive({
     name: '',
     email: '',
-    role: 'Agriculture Technician',
-    status: 'Active',
+    password: '',
+    confirmPassword: '',
+    role: 'Authenticated' as AdminRole,
 })
 
+const formError = ref<string | null>(null)
+
+// Keep the selected role valid as the live role list arrives (or changes).
+watch(
+    () => props.roleOptions,
+    (options) => {
+        if (options.length === 0) return
+        if (!options.some((o) => o.label === userForm.role)) {
+            userForm.role = options[0]!.label
+        }
+    },
+    { immediate: true }
+)
+
+function reset() {
+    userForm.name = ''
+    userForm.email = ''
+    userForm.password = ''
+    userForm.confirmPassword = ''
+    userForm.role = props.roleOptions[0]?.label ?? 'Authenticated'
+    formError.value = null
+}
+
 function addUser() {
-    if (!userForm.name.trim() || !userForm.email.trim()) return
+    formError.value = null
+
+    if (!props.rolesReady) {
+        formError.value =
+            'Roles are still loading. Please try again in a moment.'
+        return
+    }
+
+    if (!userForm.name.trim() || !userForm.email.trim()) {
+        formError.value = 'Full name and email are required.'
+        return
+    }
+
+    if (userForm.password.length < PASSWORD_MIN_LENGTH) {
+        formError.value = `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`
+        return
+    }
+
+    if (userForm.password !== userForm.confirmPassword) {
+        formError.value = 'Passwords do not match.'
+        return
+    }
 
     emit('add', {
         name: userForm.name.trim(),
         email: userForm.email.trim(),
-        role: userForm.role as AdminRole,
-        status: userForm.status as AdminUserStatus,
+        password: userForm.password,
+        role: userForm.role,
     })
-    userForm.name = ''
-    userForm.email = ''
-    userForm.role = 'Agriculture Technician'
-    userForm.status = 'Active'
+    reset()
 }
 </script>
 
@@ -110,49 +163,83 @@ function addUser() {
                         />
                     </div>
 
+                    <div>
+                        <label
+                            class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                        >
+                            Role
+                        </label>
+
+                        <select
+                            v-model="userForm.role"
+                            :disabled="!rolesReady"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+                        >
+                            <option
+                                v-for="option in roleOptions"
+                                :key="option.id"
+                                :value="option.label"
+                            >
+                                {{ option.label }}
+                            </option>
+                        </select>
+
+                        <p
+                            v-if="rolesError"
+                            class="mt-1.5 text-xs font-medium text-red-600"
+                        >
+                            {{ rolesError }}
+                        </p>
+                        <p
+                            v-else-if="rolesLoading || !rolesReady"
+                            class="mt-1.5 text-xs text-slate-400"
+                        >
+                            Loading available roles…
+                        </p>
+                    </div>
+
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label
                                 class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
-                                Role
+                                Password
                             </label>
-
-                            <select
-                                v-model="userForm.role"
-                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
-                            >
-                                <option
-                                    v-for="r in [
-                                        'System Admin',
-                                        'Agricultural Engineer',
-                                        'Agriculture Technician',
-                                        'Data Encoder',
-                                    ]"
-                                    :key="r"
-                                    :value="r"
-                                >
-                                    {{ r }}
-                                </option>
-                            </select>
+                            <input
+                                v-model="userForm.password"
+                                type="password"
+                                required
+                                :minlength="PASSWORD_MIN_LENGTH"
+                                placeholder="Set a password"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                            />
                         </div>
-
                         <div>
                             <label
                                 class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500"
                             >
-                                Status
+                                Confirm Password
                             </label>
-
-                            <select
-                                v-model="userForm.status"
-                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
-                            >
-                                <option value="Active">Active</option>
-                                <option value="Inactive">Inactive</option>
-                            </select>
+                            <input
+                                v-model="userForm.confirmPassword"
+                                type="password"
+                                required
+                                placeholder="Repeat password"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                            />
                         </div>
                     </div>
+
+                    <p class="text-xs text-slate-400">
+                        Use at least {{ PASSWORD_MIN_LENGTH }} characters.
+                    </p>
+
+                    <p
+                        v-if="formError"
+                        class="rounded-xl bg-red-50 px-3.5 py-2.5 text-sm font-medium text-red-700"
+                    >
+                        {{ formError }}
+                    </p>
 
                     <div
                         class="flex justify-end gap-2 border-t border-slate-100 pt-5"
@@ -167,7 +254,8 @@ function addUser() {
 
                         <button
                             type="submit"
-                            class="flex items-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#1f5125]"
+                            :disabled="!rolesReady"
+                            class="flex items-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#1f5125] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <UIcon name="i-lucide-user-plus" class="size-4" />
                             Add User

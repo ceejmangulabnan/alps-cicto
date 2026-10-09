@@ -1,3 +1,5 @@
+import { ROLE_TYPES } from '~/composables/auth'
+
 // app/middleware/auth.global.ts
 //
 // Single global auth barrier covering every page. `nuxt-auth-utils` prefetches
@@ -30,7 +32,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     // 3. Admin routes are restricted to the administrator role; everyone else
     //    (authenticated or not) is sent to the dashboard.
     if (to.path.startsWith('/admin')) {
-        if (role === 'administrator') {
+        if (role === ROLE_TYPES.admin) {
             return
         }
         return navigateTo('/')

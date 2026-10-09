@@ -17,9 +17,11 @@ import type {
 interface Props {
     insights: AlpsInsight[]
     loading: boolean
+    /** Read-only (Viewer role) hides the report-generation actions. */
+    canEdit?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), { canEdit: true })
 
 const emit = defineEmits<{
     create: []
@@ -185,6 +187,7 @@ const insightTotals = computed(() => ({
                     filed yet.
                 </p>
                 <button
+                    v-if="props.canEdit"
                     type="button"
                     class="mt-2 inline-flex items-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1f5125]"
                     @click="emit('create')"
@@ -335,6 +338,7 @@ const insightTotals = computed(() => ({
 
                         <div class="flex shrink-0 flex-row gap-2 xl:flex-col">
                             <button
+                                v-if="props.canEdit"
                                 type="button"
                                 class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1f5125]"
                                 @click="emit('create-action', insight.title)"

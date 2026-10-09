@@ -133,6 +133,8 @@ const sidebarPanel = computed<MapPanel>(() => {
 const route = useRoute()
 const router = useRouter()
 
+const { canEdit } = useAuth()
+
 function queryId(value: unknown): string | undefined {
     return typeof value === 'string' ? value : undefined
 }
@@ -146,6 +148,8 @@ const isAddingParcel = computed(() => route.query['add-parcel'] !== undefined)
 // ---------------------------------------------------------------------------
 
 function startEditing() {
+    if (!canEdit.value) return
+
     // A parcel can already be open read-only, picked or clicked in view mode.
     // Carrying that selection into edit mode beats closing the panel and making
     // the user find the parcel on the map again.
@@ -171,6 +175,8 @@ function exitEditMode() {
 }
 
 function openAddParcel() {
+    if (!canEdit.value) return
+
     // Clearing the selection runs the deselect handler first, which drops edit
     // mode back to view — so this must happen before enterPlotMode() below.
 
@@ -197,6 +203,8 @@ function closeSidebar() {
 }
 
 async function openParcelForEdit(documentId: string) {
+    if (!canEdit.value) return
+
     try {
         const parcel = await ensureParcel(documentId)
 
@@ -363,15 +371,19 @@ function onMapLoad(payload: { map: MaplibreMap }) {
         await loadAll()
 
         if (isAddingParcel.value) {
-            showSidebar.value = true
+            if (canEdit.value) {
+                showSidebar.value = true
 
-            enterPlotMode()
+                enterPlotMode()
+            }
 
             return
         }
 
         if (editParcelId.value) {
-            await openParcelForEdit(editParcelId.value)
+            if (canEdit.value) {
+                await openParcelForEdit(editParcelId.value)
+            }
 
             return
         }
@@ -400,6 +412,7 @@ function onMapLoad(payload: { map: MaplibreMap }) {
                 :parcels="parcelList"
                 :selected-parcel-id="selectedParcelId"
                 :mode="drawMode"
+                :can-edit="canEdit"
                 @edit="startEditing"
                 @done="exitEditMode"
                 @add="openAddParcel"
@@ -531,6 +544,7 @@ function onMapLoad(payload: { map: MaplibreMap }) {
                     v-if="sidebarPanel === 'details' && selectedParcel"
                     class="absolute inset-y-3 right-3 z-30 overflow-hidden rounded-2xl border border-white/70 bg-white/95 shadow-[0_20px_60px_rgba(15,23,42,0.20)] ring-1 ring-slate-900/5 backdrop-blur-xl sm:relative sm:inset-auto sm:z-auto sm:m-3 sm:ml-0"
                     :parcel="selectedParcel"
+                    :can-edit="canEdit"
                     @close="closeSidebar"
                     @edit="editSelectedParcel"
                 />

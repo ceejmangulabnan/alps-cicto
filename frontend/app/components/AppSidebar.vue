@@ -150,18 +150,6 @@ const navGroups = computed<NavGroup[]>(() => {
                         alt="ALPS logo"
                         class="size-11 shrink-0 object-cover"
                     />
-
-                    <span
-                        v-if="!isRail"
-                        class="absolute -bottom-0.5 -right-0.5 flex size-3"
-                    >
-                        <span
-                            class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-50"
-                        />
-                        <span
-                            class="relative inline-flex size-3 rounded-full border-2 border-[#17371d] bg-emerald-300"
-                        />
-                    </span>
                 </div>
 
                 <!-- Brand text -->

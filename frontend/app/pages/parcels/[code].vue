@@ -9,6 +9,7 @@ import { avatarColor, initials } from '~/utils/initials'
 
 const route = useRoute()
 const { getHubByCode } = useFarmParcelApi()
+const { canEdit } = useAuth()
 
 /**
  * Parcel codes are uppercase in the data model (`PLC-2026-0001`); normalise
@@ -278,6 +279,7 @@ const chipClass =
                     class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6"
                 >
                     <NuxtLink
+                        v-if="canEdit"
                         :to="mapEditLink"
                         :class="[tileClass, tilePrimary]"
                     >
@@ -289,6 +291,7 @@ const chipClass =
                         <span :class="tileLabelClass">Edit Plot on Map</span>
                     </NuxtLink>
                     <button
+                        v-if="canEdit"
                         type="button"
                         :class="[tileClass, tileSecondary]"
                         @click="showEditModal = true"
@@ -304,6 +307,7 @@ const chipClass =
                         <span :class="tileLabelClass">Edit Parcel Details</span>
                     </button>
                     <button
+                        v-if="canEdit"
                         type="button"
                         :class="[tileClass, tileSecondary]"
                         @click="showFarmersModal = true"
@@ -321,6 +325,7 @@ const chipClass =
                         </span>
                     </button>
                     <button
+                        v-if="canEdit"
                         type="button"
                         :class="[tileClass, tileSecondary]"
                         @click="showPlantingModal = true"
@@ -336,6 +341,7 @@ const chipClass =
                         <span :class="tileLabelClass">Log Planting Cycle</span>
                     </button>
                     <button
+                        v-if="canEdit"
                         type="button"
                         :class="[tileClass, tileSecondary]"
                         @click="showRiskModal = true"
@@ -354,6 +360,7 @@ const chipClass =
                         <span :class="tileLabelClass">Report Risk</span>
                     </button>
                     <button
+                        v-if="canEdit"
                         type="button"
                         :class="[tileClass, tileSecondary]"
                         @click="showHarvestModal = true"

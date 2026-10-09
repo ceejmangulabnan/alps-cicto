@@ -4,7 +4,6 @@ import { useRiskRegistry } from '~/composables/useRiskRegistry'
 import { useFarmRecordsApi } from '~/composables/useFarmRecordsApi'
 import { RISK_STATUS_OPTIONS, RISK_STATUS_DOT } from '~/utils/riskStatus'
 
-
 const {
     riskReports,
     openReports,
@@ -18,6 +17,8 @@ const {
 } = useRiskRegistry()
 
 const { deleteRiskReport } = useFarmRecordsApi()
+
+const { canEdit, canDelete } = useAuth()
 
 /* ------------------------------------------------------------------ */
 /* Summary                                                              */
@@ -150,6 +151,7 @@ onMounted(() => {
                 description="Monitor active agricultural risks, ALPS decision support insights, and intervention progress."
                 action-label="Generate Risk Report"
                 action-icon="i-lucide-plus"
+                :can-edit="canEdit"
                 @action="openReport"
             />
 
@@ -167,6 +169,7 @@ onMounted(() => {
             <RisksInsightsPanel
                 :insights="insights"
                 :loading="loading"
+                :can-edit="canEdit"
                 @create="openReport"
                 @create-action="openReport"
             />
@@ -182,6 +185,8 @@ onMounted(() => {
                 :rows="filtered"
                 :total="riskReports.length"
                 :loading="loading"
+                :can-edit="canEdit"
+                :can-delete="canDelete"
                 @edit="openEdit"
                 @delete="askDelete"
                 @retry="load"

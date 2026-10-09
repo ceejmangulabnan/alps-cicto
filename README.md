@@ -208,8 +208,10 @@ alps-cicto/
 
 ## Known limitations
 
-- The **Administration** page currently ships with placeholder statistics and a front-end-only user registry; user management is done in the Strapi admin panel. Wiring it to the Users API is the natural next step.
-- `app/middleware/admin.ts` (redirect non-administrators away from `/admin`) exists but is not yet attached to the page — today only the sidebar hides the link. The `/map` page likewise carries no route guard yet.
+- The **Administration** page's user registry is wired to the Users & Permissions API: create accounts, edit name/email/password/role and block/unblock, with role choices resolved from the live role list (never hardcoded). Deleting a user is still done in the Strapi admin panel.
+- Administration statistics other than the live user count (database records, GIS layers, uptime) and the System Configuration / Backup / Audit Log entries are placeholders.
+- Route access is enforced by the global auth middleware: every registry page requires a session, and `/admin` is additionally restricted to the `administrator` role.
+- The `viewer` role is read-only in the UI: it can browse every registry, search/filter, and export CSV. Create/edit/upload/draw actions hide behind `canEdit` (administrator + authenticated), and deletion hides behind a separate `canDelete` (also administrator + authenticated only). This is presentational — the Strapi API permissions remain the source of truth for writes.
 - Harvest and risk exports reflect a parcel's *current* planting cycle and risk reports (they hang off the parcel's live relations), matching exactly what the registry pages display.
 - CSV is the only export format — it is generated in the browser, so no server-side PDF rendering exists yet.
 

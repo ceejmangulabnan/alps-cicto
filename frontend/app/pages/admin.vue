@@ -1,16 +1,40 @@
 <script setup lang="ts">
 /**
  * System-administration dashboard: static system statistics, the
- * administration-tools panel, a user registry (search/filter/add) and the
+ * administration-tools panel, a user registry (search/filter/add/edit) and the
  * system-information strip. Each region is an isolated Admin* component; the
- * page only owns the data and the add-user wiring.
+ * page owns the data, the role list and the create/edit wiring.
  */
-import type { AdminUser, AdminUserInput } from '~/utils/adminPresentation'
+import AdminEditUserModal from '~/components/admin/AdminEditUserModal.vue'
+import type {
+    AdminRole,
+    AdminUser,
+    AdminUserInput,
+} from '~/utils/adminPresentation'
+import { useAdminUsers } from '~/composables/useAdminUsers'
+import { getErrorMessage } from '~/utils/apiError'
 
-const systemStats = [
+const {
+    users: registryUsers,
+    roleOptions,
+    rolesReady,
+    rolesLoading,
+    rolesError,
+    loading: usersLoading,
+    loadError: usersLoadError,
+    loadUsers,
+    loadRoles,
+    createUser,
+    updateUser,
+} = useAdminUsers()
+
+const toast = useToast()
+const { user: currentUser } = useAuth()
+
+const systemStats = computed(() => [
     {
         label: 'Total System Users',
-        val: '24',
+        val: String(registryUsers.value.length),
         icon: 'i-lucide-users',
         color: '#2d6a2d',
     },
@@ -32,7 +56,7 @@ const systemStats = [
         icon: 'i-lucide-activity',
         color: '#16a34a',
     },
-]
+])
 
 const settingsItems = [
     {
@@ -62,44 +86,6 @@ const settingsItems = [
     },
 ]
 
-const users = ref<AdminUser[]>([
-    {
-        name: 'Admin Reyes',
-        email: 'admin.reyes@sanfernando.gov.ph',
-        role: 'System Admin',
-        status: 'Active',
-        lastLogin: '2024-11-25 09:14',
-    },
-    {
-        name: 'Engr. Jose Lim',
-        email: 'j.lim@sanfernando.gov.ph',
-        role: 'Agricultural Engineer',
-        status: 'Active',
-        lastLogin: '2024-11-25 08:32',
-    },
-    {
-        name: 'Agri. Maria Santos',
-        email: 'm.santos@sanfernando.gov.ph',
-        role: 'Agriculture Technician',
-        status: 'Active',
-        lastLogin: '2024-11-24 14:52',
-    },
-    {
-        name: 'Agri. Carlo Reyes',
-        email: 'c.reyes@sanfernando.gov.ph',
-        role: 'Agriculture Technician',
-        status: 'Active',
-        lastLogin: '2024-11-24 11:20',
-    },
-    {
-        name: 'Encoder Juan Cruz',
-        email: 'j.cruz@sanfernando.gov.ph',
-        role: 'Data Encoder',
-        status: 'Active',
-        lastLogin: '2024-11-23 16:05',
-    },
-])
-
 const systemInfo = [
     {
         label: 'System',
@@ -119,11 +105,136 @@ const systemInfo = [
 ]
 
 const showAddModal = ref(false)
+const showEditModal = ref(false)
+const editingUser = ref<AdminUser | null>(null)
+
+/** Active administrators, used to protect the last one from lock-out. */
+const activeAdmins = computed(() =>
+    registryUsers.value.filter(
+        (u) => u.role === 'Administrator' && u.status === 'Active'
+    )
+)
+
+const editingIsSelf = computed(
+    () => !!editingUser.value && editingUser.value.id === currentUser.value?.id
+)
+
+const editingIsLastAdmin = computed(
+    () =>
+        !!editingUser.value &&
+        editingUser.value.role === 'Administrator' &&
+        editingUser.value.status === 'Active' &&
+        activeAdmins.value.length <= 1
+)
+
+const editLocked = computed(
+    () => editingIsSelf.value || editingIsLastAdmin.value
+)
+
+const editLockReason = computed(() => {
+    if (editingIsSelf.value) {
+        return 'You cannot change your own role or block your own account.'
+    }
+    if (editingIsLastAdmin.value) {
+        return 'This is the only active administrator, so its role and status are locked.'
+    }
+    return ''
+})
+
+function openEdit(u: AdminUser) {
+    editingUser.value = u
+    showEditModal.value = true
+}
+
+function closeEdit() {
+    showEditModal.value = false
+    editingUser.value = null
+}
+
+interface EditPayload {
+    id: number
+    username?: string
+    email?: string
+    password?: string
+    role: AdminRole
+    blocked?: boolean
+}
+
+async function saveEdit(payload: EditPayload) {
+    const target = editingUser.value
+    if (!target) return
+
+    // Defense in depth: the modal disables the role/blocked controls when
+    // self/last-admin, but the server is the final authority, so re-check here.
+    const targetRole = target.role === 'Public' ? 'Authenticated' : target.role
+    const roleChanged = payload.role !== targetRole
+    const blockChanged =
+        (payload.blocked ?? false) !== (target.status === 'Inactive')
+
+    if (editingIsSelf.value && (roleChanged || blockChanged)) {
+        toast.add({
+            title: "You can't change your own role or block your own account.",
+            color: 'error',
+        })
+        return
+    }
+    if (
+        editingIsLastAdmin.value &&
+        (payload.role !== 'Administrator' || payload.blocked)
+    ) {
+        toast.add({
+            title: "You can't remove the last active administrator.",
+            color: 'error',
+        })
+        return
+    }
+
+    try {
+        await updateUser(payload.id, {
+            username: payload.username,
+            email: payload.email,
+            password: payload.password,
+            role: payload.role,
+            blocked: payload.blocked,
+        })
+        closeEdit()
+        await loadUsers()
+        toast.add({ title: 'User updated', color: 'success' })
+    } catch (err) {
+        console.error(err)
+        toast.add({
+            title: 'Failed to update user',
+            description: getErrorMessage(err, 'Please try again.'),
+            color: 'error',
+        })
+    }
+}
 
 function addUser(user: AdminUserInput) {
-    users.value.unshift({ ...user, lastLogin: 'Just now' })
-    showAddModal.value = false
+    createUser({
+        name: user.name,
+        email: user.email,
+        password: user.password,
+        role: user.role,
+    })
+        .then(async () => {
+            showAddModal.value = false
+            await loadUsers()
+            toast.add({ title: 'User created', color: 'success' })
+        })
+        .catch((err) => {
+            console.error(err)
+            toast.add({
+                title: 'Failed to create user',
+                description: getErrorMessage(err, 'Please try again.'),
+                color: 'error',
+            })
+        })
 }
+
+onMounted(async () => {
+    await Promise.all([loadUsers(), loadRoles()])
+})
 </script>
 
 <template>
@@ -132,7 +243,7 @@ function addUser(user: AdminUserInput) {
     >
         <div class="mx-auto max-w-[1800px] space-y-6">
             <AdminHeader
-                :user-count="users.length"
+                :user-count="registryUsers.length"
                 @add="showAddModal = true"
             />
 
@@ -140,7 +251,14 @@ function addUser(user: AdminUserInput) {
 
             <div class="grid grid-cols-12 gap-4">
                 <AdminSettingsPanel :items="settingsItems" />
-                <AdminUsersPanel :users="users" />
+                <AdminUsersPanel
+                    :users="registryUsers"
+                    :loading="usersLoading"
+                    :load-error="usersLoadError"
+                    :roles-error="rolesError"
+                    @retry="loadUsers"
+                    @edit="openEdit"
+                />
             </div>
 
             <AdminSystemInfo :items="systemInfo" />
@@ -149,7 +267,21 @@ function addUser(user: AdminUserInput) {
 
     <AdminAddUserModal
         :show="showAddModal"
+        :role-options="roleOptions"
+        :roles-ready="rolesReady"
+        :roles-loading="rolesLoading"
+        :roles-error="rolesError"
         @add="addUser"
         @close="showAddModal = false"
+    />
+    <AdminEditUserModal
+        :show="showEditModal"
+        :user="editingUser"
+        :role-options="roleOptions"
+        :roles-ready="rolesReady"
+        :locked="editLocked"
+        :lock-reason="editLockReason"
+        @close="closeEdit"
+        @save="saveEdit"
     />
 </template>

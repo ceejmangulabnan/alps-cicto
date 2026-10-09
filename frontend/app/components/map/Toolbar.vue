@@ -7,6 +7,12 @@ defineProps<{
     parcels: FarmParcel[]
     selectedParcelId: string | null
     mode: DrawMode
+    /**
+     * Read-only (Viewer role) hides the drawing surface: there is no Edit or
+     * Add Parcel button, only look-up. The backend refuses writes anyway;
+     * this just keeps the trigger off the screen.
+     */
+    canEdit?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -71,6 +77,7 @@ const emit = defineEmits<{
                 mode is active.
             -->
             <button
+                v-if="canEdit"
                 type="button"
                 :disabled="
                     mode !== 'edit' && (mode === 'plot' || parcelCount === 0)
@@ -92,6 +99,7 @@ const emit = defineEmits<{
                 {{ mode === 'edit' ? 'Done Editing' : 'Edit' }}
             </button>
             <button
+                v-if="canEdit"
                 type="button"
                 :class="[
                     'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white shadow-sm sm:px-4',

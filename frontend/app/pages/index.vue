@@ -12,6 +12,8 @@ import {
 
 const route = useRoute()
 
+const { canEdit } = useAuth()
+
 const {
     farmers,
     loading,
@@ -140,6 +142,7 @@ onMounted(async () => {
                             </div>
                             <div class="flex flex-wrap gap-2">
                                 <button
+                                    v-if="canEdit"
                                     type="button"
                                     class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
                                     @click="openEditModal(selectedFarmer)"
@@ -151,6 +154,7 @@ onMounted(async () => {
                                     Edit Profile
                                 </button>
                                 <button
+                                    v-if="canEdit"
                                     type="button"
                                     class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_6px_16px_rgba(45,106,45,0.22)] transition-all hover:-translate-y-0.5 hover:bg-[#1f5125] hover:shadow-[0_8px_20px_rgba(45,106,45,0.28)]"
                                     @click="openAssistModal(selectedFarmer)"
@@ -426,6 +430,7 @@ onMounted(async () => {
 
     <FarmersTable
         v-else
+        :can-edit="canEdit"
         v-model:search="search"
         v-model:filterBarangay="filterBarangay"
         :barangay-options="barangaysByParcels"

@@ -3,9 +3,14 @@ import type { ParcelRow } from '~/composables/useParcelsData'
 import { statusClass, statusDot } from '~/utils/landStatus'
 import { avatarColor, initials } from '~/utils/initials'
 
-const props = defineProps<{
-    parcel: ParcelRow
-}>()
+const props = withDefaults(
+    defineProps<{
+        parcel: ParcelRow
+        /** Read-only (Viewer role) hides the Edit Parcel action. */
+        canEdit?: boolean
+    }>(),
+    { canEdit: true }
+)
 
 const emit = defineEmits<{
     edit: []
@@ -124,6 +129,7 @@ const detailFields = computed(() => [
 
                 <div class="mt-4 space-y-2">
                     <button
+                        v-if="canEdit"
                         type="button"
                         class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d6a2d] py-2.5 text-xs font-medium text-white hover:bg-[#245524]"
                         @click="emit('edit')"

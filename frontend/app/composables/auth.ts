@@ -13,6 +13,14 @@
  */
 import type { User } from '#auth-utils'
 
+export const ROLE_TYPES = {
+    admin: 'administrator',
+    authenticated: 'authenticated',
+    viewer: 'viewer',
+} as const
+
+export type RoleType = (typeof ROLE_TYPES)[keyof typeof ROLE_TYPES]
+
 export interface AuthFetchOptions {
     method?: string
     body?: unknown
@@ -32,6 +40,35 @@ export const useAuth = () => {
     const isAuthenticated = computed(() => session.loggedIn.value)
     const hasRole = (roleType: string) =>
         session.user.value?.role?.type === roleType
+
+    /**
+     * Roles gate the write surfaces of the app:
+     * - `administrator` (Persona 1): everything, including user management.
+     * - `authenticated` (Persona 2): everything except user management.
+     * - `viewer` (Persona 3): read-only; no create/edit/delete, no upload.
+     */
+    const isAdmin = computed(() => hasRole(ROLE_TYPES.admin))
+    const isViewer = computed(() => hasRole(ROLE_TYPES.viewer))
+
+    /**
+     * May this user mutate records (create/edit/draw/upload)? Everyone but the
+     * read-only Viewer. Write *triggers* in the UI hide behind this; deletion
+     * is gated separately by `canDelete`. The backend still 403s each role's
+     * disallowed actions.
+     */
+    const canEdit = computed(() => isAuthenticated.value && !isViewer.value)
+
+    /**
+     * May this user delete records? Deletion is its own right, narrower than
+     * editing: only `administrator` and `authenticated` may delete. The two
+     * sets coincide today, but stating the rule separately keeps delete rights
+     * intact if a future role can edit without being allowed to delete.
+     */
+    const canDelete = computed(
+        () =>
+            isAuthenticated.value &&
+            (isAdmin.value || hasRole(ROLE_TYPES.authenticated))
+    )
 
     const login = async (identifier: string, password: string) => {
         await fetchFn('/api/auth/login', {
@@ -81,6 +118,10 @@ export const useAuth = () => {
     return {
         user: session.user,
         isAuthenticated,
+        isAdmin,
+        isViewer,
+        canEdit,
+        canDelete,
         hasRole,
         login,
         logout,

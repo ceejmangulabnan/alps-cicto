@@ -9,7 +9,6 @@ import {
 } from '~/composables/useAssistanceRegistry'
 import { ASSISTANCE_STATUS_DOT as STATUS_DOT } from '~/utils/assistanceStatus'
 
-
 const {
     programs,
     farmers,
@@ -21,6 +20,8 @@ const {
 } = useAssistanceRegistry()
 
 const { deleteProgram } = useAssistanceApi()
+
+const { canEdit, canDelete } = useAuth()
 
 /* ------------------------------------------------------------------ */
 /* Summary                                                              */
@@ -140,6 +141,7 @@ onMounted(() => {
                 description="Track seed, fertilizer, equipment, training, and livelihood support released to farmers."
                 action-label="Record Assistance"
                 action-icon="i-lucide-hand-heart"
+                :can-edit="canEdit"
                 @action="openRecord"
             />
 
@@ -152,6 +154,8 @@ onMounted(() => {
                 :total="programs.length"
                 :loading="loading"
                 :load-error="loadError"
+                :can-edit="canEdit"
+                :can-delete="canDelete"
                 @edit="openEdit"
                 @delete="askDelete"
                 @retry="load"

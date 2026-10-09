@@ -18,9 +18,16 @@ interface Props {
     total: number
     loading: boolean
     loadError: string | null
+    /** Read-only (Viewer role): the row actions are hidden. */
+    canEdit?: boolean
+    /** Delete right (administrator + authenticated): shows the delete action. */
+    canDelete?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+    canEdit: true,
+    canDelete: true,
+})
 
 const emit = defineEmits<{
     edit: [row: HarvestRow]
@@ -62,7 +69,12 @@ const statusBackground = (status: HarvestStatus) =>
             <th class="px-5 py-3.5 text-right">Production (kg)</th>
             <th class="px-5 py-3.5 text-left">Date</th>
             <th class="px-5 py-3.5 text-left">Status</th>
-            <th class="px-5 py-3.5 text-right">Actions</th>
+            <th
+                v-if="props.canEdit || props.canDelete"
+                class="px-5 py-3.5 text-right"
+            >
+                Actions
+            </th>
         </template>
 
         <template #body>
@@ -176,9 +188,10 @@ const statusBackground = (status: HarvestStatus) =>
                     </span>
                 </td>
 
-                <td class="px-5 py-4">
+                <td v-if="props.canEdit || props.canDelete" class="px-5 py-4">
                     <div class="flex items-center justify-end gap-2">
                         <button
+                            v-if="props.canEdit"
                             type="button"
                             class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
                             title="Edit harvest"
@@ -188,6 +201,7 @@ const statusBackground = (status: HarvestStatus) =>
                         </button>
 
                         <button
+                            v-if="props.canDelete"
                             type="button"
                             class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                             title="Delete harvest"

@@ -4,10 +4,11 @@ import { harvestStatus } from '~/composables/useCycleRegistry'
 import { useFarmRecordsApi } from '~/composables/useFarmRecordsApi'
 import { num, farmerLabel } from '~/utils/format'
 
-
 const { cycleParcels, harvests, loading, loadError, load } = useCycleRegistry()
 
 const { deleteHarvest } = useFarmRecordsApi()
+
+const { canEdit, canDelete } = useAuth()
 
 /* ------------------------------------------------------------------ */
 /* Search + status filter                                               */
@@ -146,6 +147,7 @@ onMounted(() => {
                 description="Track harvest records, production output, yield performance, and harvested area."
                 action-label="Record Harvest"
                 action-icon="i-lucide-wheat"
+                :can-edit="canEdit"
                 @action="openRecord"
             />
 
@@ -179,6 +181,8 @@ onMounted(() => {
                     :total="harvests.length"
                     :loading="loading"
                     :load-error="loadError"
+                    :can-edit="canEdit"
+                    :can-delete="canDelete"
                     class="col-span-12 lg:col-span-7"
                     @edit="openEdit"
                     @delete="askDelete"

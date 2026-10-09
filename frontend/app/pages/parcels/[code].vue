@@ -7,10 +7,9 @@ import type {
 import { statusClass, statusDot } from '~/utils/landStatus'
 import { avatarColor, initials } from '~/utils/initials'
 
-definePageMeta({ middleware: 'auth' })
-
 const route = useRoute()
 const { getHubByCode } = useFarmParcelApi()
+const { canEdit } = useAuth()
 
 /**
  * Parcel codes are uppercase in the data model (`PLC-2026-0001`); normalise
@@ -23,9 +22,10 @@ const parcelCode = computed(() => {
 })
 
 /**
- * `server: false` because the token only exists in localStorage after
- * hydration, so any server-phase fetch would go out unauthenticated and 403.
- * The `auth` middleware already redirects before this runs.
+ * Data is loaded client-side (`server: false`) so the hub renders from cache
+ * while photo/patch interactions can refresh it in place. SSR data loading is
+ * intentionally left off for this view; the session cookie is available
+ * server-side, so nothing here is blocked by auth anymore.
  */
 const {
     data: parcel,
@@ -279,6 +279,7 @@ const chipClass =
                     class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6"
                 >
                     <NuxtLink
+                        v-if="canEdit"
                         :to="mapEditLink"
                         :class="[tileClass, tilePrimary]"
                     >
@@ -290,6 +291,7 @@ const chipClass =
                         <span :class="tileLabelClass">Edit Plot on Map</span>
                     </NuxtLink>
                     <button
+                        v-if="canEdit"
                         type="button"
                         :class="[tileClass, tileSecondary]"
                         @click="showEditModal = true"
@@ -305,6 +307,7 @@ const chipClass =
                         <span :class="tileLabelClass">Edit Parcel Details</span>
                     </button>
                     <button
+                        v-if="canEdit"
                         type="button"
                         :class="[tileClass, tileSecondary]"
                         @click="showFarmersModal = true"
@@ -322,6 +325,7 @@ const chipClass =
                         </span>
                     </button>
                     <button
+                        v-if="canEdit"
                         type="button"
                         :class="[tileClass, tileSecondary]"
                         @click="showPlantingModal = true"
@@ -337,6 +341,7 @@ const chipClass =
                         <span :class="tileLabelClass">Log Planting Cycle</span>
                     </button>
                     <button
+                        v-if="canEdit"
                         type="button"
                         :class="[tileClass, tileSecondary]"
                         @click="showRiskModal = true"
@@ -355,6 +360,7 @@ const chipClass =
                         <span :class="tileLabelClass">Report Risk</span>
                     </button>
                     <button
+                        v-if="canEdit"
                         type="button"
                         :class="[tileClass, tileSecondary]"
                         @click="showHarvestModal = true"

@@ -2,6 +2,7 @@
 import type { FarmParcel, ParcelCrop } from '~/composables/useFarmParcelApi'
 import { useFarmRecordsApi } from '~/composables/useFarmRecordsApi'
 import { getErrorMessage } from '~/utils/apiError'
+import { selectMenuSlots } from '~/utils/lightSelectMenu'
 
 const props = defineProps<{
     modelValue: boolean
@@ -43,6 +44,17 @@ const cropOptions = computed(() =>
         value: crop.documentId,
     }))
 )
+
+/**
+ * Match the form's hand-rolled inputs instead of Nuxt UI's default theme:
+ * same light grey border, white fill, `text-xs`, green focus ring, and a light
+ * dropdown. `variant="none"` strips Nuxt's variant classes so the trigger is
+ * styled purely from these slots.
+ */
+const menuUi = {
+    ...selectMenuSlots,
+    base: 'gap-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-100',
+}
 
 /** Only one cycle can hang off a parcel, so logging again replaces the old one. */
 const replacesExisting = computed(() => Boolean(props.parcel.planting_cycle))
@@ -223,9 +235,11 @@ async function submit() {
                                 :items="cropOptions"
                                 :loading="cropsLoading"
                                 :disabled="submitting || cropsLoading"
-                                :ui="{ content: 'z-[70]' }"
                                 value-key="value"
                                 placeholder="Select a crop"
+                                variant="none"
+                                size="xs"
+                                :ui="menuUi"
                                 class="w-full"
                             />
                             <p

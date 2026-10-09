@@ -38,10 +38,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
             @click="close"
         />
 
-        <main class="flex min-w-0 flex-1 flex-col overflow-y-auto bg-gray-50">
+        <main class="flex min-w-0 flex-1 flex-col bg-gray-50">
             <AppTopbar :page="activeNav" />
 
-            <NuxtPage />
+            <!--
+                Pages size themselves with `min-h-full`, which resolves against
+                this container. Keeping the scroll here -- below the topbar --
+                means a page's bottom padding stays in the visible viewport
+                instead of landing under the fold (where the topbar used to sit).
+            -->
+            <div class="min-h-0 flex-1 overflow-y-auto">
+                <NuxtPage />
+            </div>
         </main>
     </div>
 </template>

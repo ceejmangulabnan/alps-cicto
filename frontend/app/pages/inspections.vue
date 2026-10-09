@@ -9,11 +9,11 @@ import {
     INSPECTION_STATUS_FILTERS,
 } from '~/utils/inspectionStatus'
 
-definePageMeta({ middleware: 'auth' })
-
 const { inspections, allParcels, loading, loadError, load } =
     useInspectionRegistry()
 const { deleteInspection } = useFarmRecordsApi()
+
+const { canEdit, canDelete } = useAuth()
 
 const kpis = computed(() => {
     const total = inspections.value.length
@@ -162,6 +162,7 @@ onMounted(() => {
                 description="Track GPS-tagged field visits, risk findings, compliance status, and photo documentation."
                 action-label="New Inspection"
                 action-icon="i-lucide-plus"
+                :can-edit="canEdit"
                 @action="openCreate"
             />
 
@@ -191,6 +192,8 @@ onMounted(() => {
                     :no-results="
                         filtered.length === 0 && inspections.length > 0
                     "
+                    :can-edit="canEdit"
+                    :can-delete="canDelete"
                     @view="openDetail"
                     @edit="openEdit"
                     @delete="askDelete"
@@ -231,6 +234,7 @@ onMounted(() => {
     <InspectionsDetailModal
         :show="showDetail"
         :row="detailRow"
+        :can-edit="canEdit"
         @close="closeDetail"
         @edit="editFromDetail"
     />

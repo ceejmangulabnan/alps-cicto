@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { FarmParcel } from '~/composables/useFarmParcelApi'
 import { statusColor } from '~/utils/landStatus'
+import { selectMenuSlots } from '~/utils/lightSelectMenu'
 
 const props = defineProps<{
     parcels: FarmParcel[]
@@ -95,6 +96,17 @@ const selected = computed<string | undefined>({
 const selectedItem = computed(
     () => items.value.find((item) => item.value === props.selectedId) ?? null
 )
+
+/**
+ * Match the toolbar's hand-rolled controls instead of Nuxt UI's default theme:
+ * same light grey border, white fill, `text-xs`, green focus ring, and a light
+ * dropdown. `variant="none"` strips Nuxt's variant classes so the trigger is
+ * styled purely from these slots.
+ */
+const menuUi = {
+    ...selectMenuSlots,
+    base: 'gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-green-500',
+}
 </script>
 
 <template>
@@ -106,6 +118,9 @@ const selectedItem = computed(
             :search-input="{ placeholder: 'Parcel, farm, farmer, barangay…' }"
             placeholder="Find a parcel"
             value-key="value"
+            variant="none"
+            size="xs"
+            :ui="menuUi"
             class="w-full sm:w-72"
         >
             <!--

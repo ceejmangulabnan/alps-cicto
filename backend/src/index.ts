@@ -203,13 +203,11 @@ export default {
                 legacyNames: ['Authenticated'],
                 legacyTypes: ['authenticated'],
                 permissions: [
-                    // Core user permissions (read-only)
+                    // Core user permissions: the user registry is strictly
+                    // admin-only, so Authenticated keeps only its own profile.
                     'plugin::users-permissions.role.find',
                     'plugin::users-permissions.role.findOne',
                     'plugin::users-permissions.user.me',
-                    'plugin::users-permissions.user.find',
-                    'plugin::users-permissions.user.findOne',
-                    'plugin::users-permissions.user.count',
                     // Upload (field inspection photos)
                     'plugin::upload.content-api.upload',
                     // Farm Parcel permissions (full CRUD + custom)
@@ -295,6 +293,68 @@ export default {
                     'api::assistance-program.assistance-program.destroy',
                     'api::assistance-program.assistance-program.count',
                     'api::assistance-program.custom-assistance-program.destroy',
+                ],
+            },
+            {
+                name: 'Viewer',
+                type: 'viewer',
+                legacyNames: ['Viewer'],
+                legacyTypes: ['viewer'],
+                permissions: [
+                    // Read-only role for executives/reviewers: every permission
+                    // is a find/findOne/count (or a read-only custom endpoint).
+                    // No create/update/destroy, no upload, no user access
+                    // beyond the viewer's own profile.
+                    'plugin::users-permissions.user.me',
+                    'plugin::users-permissions.role.find',
+                    'plugin::users-permissions.role.findOne',
+                    // Farm Parcel permissions (read-only + read-only custom)
+                    'api::farm-parcel.farm-parcel.find',
+                    'api::farm-parcel.farm-parcel.findOne',
+                    'api::farm-parcel.farm-parcel.count',
+                    'api::farm-parcel.custom-farm-parcel.idleAtRisk',
+                    'api::farm-parcel.custom-farm-parcel.recommendations',
+                    // Farmer permissions (read-only + read-only custom)
+                    'api::farmer.farmer.find',
+                    'api::farmer.farmer.findOne',
+                    'api::farmer.farmer.count',
+                    'api::farmer.custom-farmer.findDeep',
+                    'api::farmer.custom-farmer.findOneDeep',
+                    'api::farmer.custom-farmer.search',
+                    // Farm permissions (read-only + read-only custom)
+                    'api::farm.farm.find',
+                    'api::farm.farm.findOne',
+                    'api::farm.farm.count',
+                    'api::farm.custom-farm.findWithSummary',
+                    'api::farm.custom-farm.findOneWithSummary',
+                    // Barangay permissions (read-only)
+                    'api::barangay.barangay.find',
+                    'api::barangay.barangay.findOne',
+                    'api::barangay.barangay.count',
+                    // Crop permissions (read-only)
+                    'api::crop.crop.find',
+                    'api::crop.crop.findOne',
+                    'api::crop.crop.count',
+                    // Planting Cycle permissions (read-only)
+                    'api::planting-cycle.planting-cycle.find',
+                    'api::planting-cycle.planting-cycle.findOne',
+                    'api::planting-cycle.planting-cycle.count',
+                    // Inspection permissions (read-only)
+                    'api::inspection.inspection.find',
+                    'api::inspection.inspection.findOne',
+                    'api::inspection.inspection.count',
+                    // Harvest permissions (read-only)
+                    'api::harvest.harvest.find',
+                    'api::harvest.harvest.findOne',
+                    'api::harvest.harvest.count',
+                    // Risk Report permissions (read-only)
+                    'api::risk-report.risk-report.find',
+                    'api::risk-report.risk-report.findOne',
+                    'api::risk-report.risk-report.count',
+                    // Assistance Program permissions (read-only)
+                    'api::assistance-program.assistance-program.find',
+                    'api::assistance-program.assistance-program.findOne',
+                    'api::assistance-program.assistance-program.count',
                 ],
             },
         ]

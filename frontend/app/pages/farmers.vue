@@ -10,9 +10,9 @@ import {
     peso,
 } from '~/utils/assistanceStatus'
 
-definePageMeta({ middleware: 'auth' })
-
 const route = useRoute()
+
+const { canEdit } = useAuth()
 
 const {
     farmers,
@@ -174,6 +174,7 @@ onMounted(async () => {
 
                     <div class="flex flex-wrap gap-2">
                         <button
+                            v-if="canEdit"
                             type="button"
                             class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
                             @click="openEditModal(selectedFarmer)"
@@ -183,6 +184,7 @@ onMounted(async () => {
                         </button>
 
                         <button
+                            v-if="canEdit"
                             type="button"
                             class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_6px_16px_rgba(45,106,45,0.22)] transition-all hover:-translate-y-0.5 hover:bg-[#1f5125] hover:shadow-[0_8px_20px_rgba(45,106,45,0.28)]"
                             @click="openAssistModal(selectedFarmer)"
@@ -586,6 +588,7 @@ onMounted(async () => {
                         class="border-t border-slate-100 bg-slate-50/60 px-5 py-4"
                     >
                         <button
+                            v-if="canEdit"
                             type="button"
                             class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[#1f5125]"
                             @click="openAssistModal(selectedFarmer)"
@@ -611,6 +614,7 @@ onMounted(async () => {
         :load-error="loadError"
         :area-by-farmer="areaByFarmer"
         :farmer-barangay="farmerBarangay"
+        :can-edit="canEdit"
         @select="selectedFarmer = $event"
         @register="showRegisterModal = true"
         @retry="loadFarmers"

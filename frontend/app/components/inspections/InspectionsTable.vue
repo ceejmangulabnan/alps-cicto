@@ -22,6 +22,10 @@ interface Props {
     empty?: boolean
     /** The filter matched nothing. */
     noResults?: boolean
+    /** Read-only (Viewer role) hides the edit / delete row actions. */
+    canEdit?: boolean
+    /** Delete right (administrator + authenticated): shows the delete action. */
+    canDelete?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -29,6 +33,8 @@ const props = withDefaults(defineProps<Props>(), {
     loadError: null,
     empty: false,
     noResults: false,
+    canEdit: true,
+    canDelete: true,
 })
 
 const emit = defineEmits<{
@@ -161,6 +167,7 @@ const countLabel = computed(() => `${props.rows.length} records`)
                                 <UIcon name="i-lucide-eye" class="size-3.5" />
                             </button>
                             <button
+                                v-if="props.canEdit"
                                 type="button"
                                 class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
                                 @click="emit('edit', row)"
@@ -171,6 +178,7 @@ const countLabel = computed(() => `${props.rows.length} records`)
                                 />
                             </button>
                             <button
+                                v-if="props.canDelete"
                                 type="button"
                                 class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                                 @click="emit('delete', row)"

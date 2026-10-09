@@ -8,12 +8,19 @@
 import {
     ROLE_FILTER_OPTIONS,
     ROLE_STYLE,
-    lastLoginLabel,
+    createdAtLabel,
     userInitials,
 } from '~/utils/adminPresentation'
 import type { AdminUser } from '~/utils/adminPresentation'
 
-const props = defineProps<{ users: AdminUser[] }>()
+const props = defineProps<{
+    users: AdminUser[]
+    loading?: boolean
+    loadError?: string | null
+    rolesError?: string | null
+}>()
+
+const emit = defineEmits<{ retry: []; edit: [user: AdminUser] }>()
 
 const { search, filterStatus, filtered } = useTableFilters(() => props.users, {
     statusOptions: ROLE_FILTER_OPTIONS,
@@ -71,6 +78,15 @@ const { search, filterStatus, filtered } = useTableFilters(() => props.users, {
         </div>
 
         <div
+            v-if="props.rolesError"
+            class="flex items-center gap-2 border-b border-amber-100 bg-amber-50 px-5 py-3 text-xs font-medium text-amber-800 sm:px-6"
+        >
+            <UIcon name="i-lucide-triangle-alert" class="size-4 shrink-0" />
+            {{ props.rolesError }} User roles cannot be changed until this is
+            resolved.
+        </div>
+
+        <div
             class="flex flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/60 px-5 py-3 sm:px-6"
         >
             <button
@@ -89,7 +105,10 @@ const { search, filterStatus, filtered } = useTableFilters(() => props.users, {
             </button>
         </div>
 
-        <div v-if="filtered.length" class="overflow-x-auto">
+        <div
+            v-if="filtered.length || props.loading || props.loadError"
+            class="overflow-x-auto"
+        >
             <table class="w-full min-w-[760px] text-sm">
                 <thead class="border-b border-slate-100 bg-slate-50/70">
                     <tr
@@ -99,70 +118,125 @@ const { search, filterStatus, filtered } = useTableFilters(() => props.users, {
                         <th class="px-5 py-3.5 text-left">Email</th>
                         <th class="px-5 py-3.5 text-left">Role</th>
                         <th class="px-5 py-3.5 text-left">Status</th>
-                        <th class="px-5 py-3.5 text-left">Last Login</th>
+                        <th class="px-5 py-3.5 text-left">Created</th>
+                        <th class="px-5 py-3.5 text-right">Actions</th>
                     </tr>
                 </thead>
 
                 <tbody>
-                    <tr
-                        v-for="u in filtered"
-                        :key="u.email"
-                        class="border-b border-slate-100 bg-white transition-colors last:border-0 hover:bg-emerald-50/40"
-                    >
-                        <td class="px-5 py-4">
-                            <div class="flex items-center gap-3">
-                                <span
-                                    class="flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white shadow-sm ring-2 ring-white"
-                                    :style="{
-                                        background: ROLE_STYLE[u.role].avatar,
-                                    }"
-                                >
-                                    {{ userInitials(u.name) }}
-                                </span>
-
-                                <span class="font-semibold text-slate-800">
-                                    {{ u.name }}
-                                </span>
-                            </div>
-                        </td>
-
-                        <td class="px-5 py-4 text-slate-600">
-                            {{ u.email }}
-                        </td>
-
-                        <td class="px-5 py-4">
-                            <span
-                                class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
-                                :style="{
-                                    background: ROLE_STYLE[u.role].bg,
-                                    color: ROLE_STYLE[u.role].text,
-                                }"
-                            >
-                                <span
-                                    class="size-1.5 rounded-full"
-                                    :style="{
-                                        background: ROLE_STYLE[u.role].dot,
-                                    }"
+                    <tr v-if="props.loading">
+                        <td
+                            :colspan="6"
+                            class="px-5 py-12 text-center text-sm text-slate-400"
+                        >
+                            <span class="inline-flex items-center gap-2">
+                                <UIcon
+                                    name="i-lucide-loader-circle"
+                                    class="size-4 animate-spin"
                                 />
-                                {{ u.role }}
+                                Loading users...
                             </span>
-                        </td>
-
-                        <td class="px-5 py-4">
-                            <span
-                                class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"
-                            >
-                                <span
-                                    class="size-1.5 rounded-full bg-emerald-500"
-                                />
-                                {{ u.status }}
-                            </span>
-                        </td>
-
-                        <td class="px-5 py-4 font-mono text-xs text-slate-500">
-                            {{ lastLoginLabel(u.lastLogin) }}
                         </td>
                     </tr>
+                    <tr v-else-if="props.loadError">
+                        <td :colspan="6" class="px-5 py-12 text-center">
+                            <p class="text-sm text-red-600">
+                                {{ props.loadError }}
+                            </p>
+                            <button
+                                type="button"
+                                class="mt-2 text-sm font-semibold text-green-700 underline"
+                                @click="emit('retry')"
+                            >
+                                Try again
+                            </button>
+                        </td>
+                    </tr>
+                    <tr v-else-if="filtered.length === 0">
+                        <td
+                            :colspan="6"
+                            class="px-5 py-12 text-center text-sm text-slate-400"
+                        >
+                            No users found
+                        </td>
+                    </tr>
+                    <template v-else>
+                        <tr
+                            v-for="u in filtered"
+                            :key="u.id"
+                            class="border-b border-slate-100 bg-white transition-colors last:border-0 hover:bg-emerald-50/40"
+                        >
+                            <td class="px-5 py-4">
+                                <div class="flex items-center gap-3">
+                                    <span
+                                        class="flex size-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white shadow-sm ring-2 ring-white"
+                                        :style="{
+                                            background:
+                                                ROLE_STYLE[u.role].avatar,
+                                        }"
+                                    >
+                                        {{ userInitials(u.name) }}
+                                    </span>
+
+                                    <span class="font-semibold text-slate-800">
+                                        {{ u.name }}
+                                    </span>
+                                </div>
+                            </td>
+
+                            <td class="px-5 py-4 text-slate-600">
+                                {{ u.email }}
+                            </td>
+
+                            <td class="px-5 py-4">
+                                <span
+                                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5"
+                                    :style="{
+                                        background: ROLE_STYLE[u.role].bg,
+                                        color: ROLE_STYLE[u.role].text,
+                                    }"
+                                >
+                                    <span
+                                        class="size-1.5 rounded-full"
+                                        :style="{
+                                            background: ROLE_STYLE[u.role].dot,
+                                        }"
+                                    />
+                                    {{ u.role }}
+                                </span>
+                            </td>
+
+                            <td class="px-5 py-4">
+                                <span
+                                    class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"
+                                >
+                                    <span
+                                        class="size-1.5 rounded-full bg-emerald-500"
+                                    />
+                                    {{ u.status }}
+                                </span>
+                            </td>
+
+                            <td
+                                class="px-5 py-4 font-mono text-xs text-slate-500"
+                            >
+                                {{ createdAtLabel(u.createdAt) }}
+                            </td>
+                            <td class="px-5 py-4 text-right">
+                                <button
+                                    type="button"
+                                    class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
+                                    @click="$emit('edit', u)"
+                                >
+                                    <UIcon
+                                        name="i-lucide-pencil"
+                                        class="size-3.5"
+                                    />
+                                    Edit
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
                 </tbody>
             </table>
         </div>

@@ -8,7 +8,6 @@
  */
 import { useReportAnalytics } from '~/composables/useReportAnalytics'
 
-definePageMeta({ middleware: 'auth' })
 
 const {
     load,

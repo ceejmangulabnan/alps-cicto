@@ -5,8 +5,6 @@ import type { FarmRow } from '~/composables/useFarmsData'
 import type { ParcelRow } from '~/composables/useParcelsData'
 import { statusDot } from '~/utils/landStatus'
 
-definePageMeta({ middleware: 'auth' })
-
 type RegistryTab = 'farms' | 'parcels'
 type StatusFilter = 'All' | (typeof LAND_STATUS_OPTIONS)[number]
 
@@ -37,7 +35,7 @@ const {
     loadParcels,
 } = useParcelsData()
 
-const { logout } = useAuth()
+const { logout, canEdit } = useAuth()
 const route = useRoute()
 
 const tab = ref<RegistryTab>('farms')
@@ -195,6 +193,7 @@ function goViewFarm(documentId: string) {
 
                     <div class="flex flex-wrap gap-2">
                         <UButton
+                            v-if="canEdit"
                             class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
                             @click="openCreateFarm"
                         >
@@ -203,6 +202,7 @@ function goViewFarm(documentId: string) {
                         </UButton>
 
                         <UButton
+                            v-if="canEdit"
                             class="inline-flex items-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_6px_16px_rgba(45,106,45,0.22)] transition-all hover:-translate-y-0.5 hover:bg-[#1f5125] hover:shadow-[0_8px_20px_rgba(45,106,45,0.28)]"
                             @click="goAddParcel"
                         >
@@ -288,9 +288,7 @@ function goViewFarm(documentId: string) {
 
             <!-- Farms -->
             <template v-if="tab === 'farms'">
-                <div
-                    class="*:rounded-3xl *:border *:border-slate-200/80 *:bg-white *:shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
-                >
+                <div>
                     <FarmsSummaryCards :cards="farmSummaryCards" />
                 </div>
 
@@ -431,6 +429,7 @@ function goViewFarm(documentId: string) {
                             :farm="selectedFarm"
                             :detail="selectedDetail"
                             :detail-loading="detailLoading"
+                            :can-edit="canEdit"
                             @edit="openEditFarm(selectedFarm.farm)"
                             @add-parcel="goAddParcel"
                             @view-on-map="tab = 'parcels'"
@@ -441,9 +440,7 @@ function goViewFarm(documentId: string) {
 
             <!-- Parcels -->
             <template v-else>
-                <div
-                    class="*:rounded-3xl *:border *:border-slate-200/80 *:bg-white *:shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
-                >
+                <div>
                     <FarmsSummaryCards :cards="parcelSummaryCards" />
                 </div>
 
@@ -598,6 +595,7 @@ function goViewFarm(documentId: string) {
                             v-if="selectedParcel"
                             class="w-full shrink-0 overflow-hidden border-l border-slate-100 bg-white xl:w-90"
                             :parcel="selectedParcel"
+                            :can-edit="canEdit"
                             @edit="goEditParcel(selectedParcel.documentId)"
                             @view-farm="
                                 goViewFarm(selectedParcel.farmDocumentId)

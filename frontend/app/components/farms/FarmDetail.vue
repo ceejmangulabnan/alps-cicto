@@ -5,12 +5,17 @@ import { STATUS_COLOR, STATUS_LEGEND } from '~/utils/landStatus'
 import { farmStatusClass, farmStatusDot } from '~/utils/farmStatus'
 import { avatarColor, initials } from '~/utils/initials'
 
-const props = defineProps<{
-    farm: FarmRow
-    /** The one-farm fetch, which carries the parcels by code. */
-    detail: Farm | null
-    detailLoading: boolean
-}>()
+const props = withDefaults(
+    defineProps<{
+        farm: FarmRow
+        /** The one-farm fetch, which carries the parcels by code. */
+        detail: Farm | null
+        detailLoading: boolean
+        /** Read-only (Viewer role) hides the Edit / Add Parcel actions. */
+        canEdit?: boolean
+    }>(),
+    { canEdit: true }
+)
 
 const emit = defineEmits<{
     edit: []
@@ -217,6 +222,7 @@ const tenantNames = (farmers: Array<{ name: string }>) =>
 
                 <div class="mt-4 space-y-2">
                     <button
+                        v-if="canEdit"
                         type="button"
                         class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d6a2d] py-2.5 text-xs font-medium text-white hover:bg-[#245524]"
                         @click="emit('edit')"
@@ -225,6 +231,7 @@ const tenantNames = (farmers: Array<{ name: string }>) =>
                         Edit Farm
                     </button>
                     <button
+                        v-if="canEdit"
                         type="button"
                         class="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
                         @click="emit('addParcel')"

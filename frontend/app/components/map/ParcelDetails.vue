@@ -5,6 +5,8 @@ import { statusDot } from '~/utils/landStatus'
 
 const props = defineProps<{
     parcel: FarmParcel
+    /** Read-only (Viewer role): the panel has no edit trigger. */
+    canEdit?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -204,6 +206,7 @@ const details = computed(() => [
 
         <div class="mt-5 space-y-2 border-t border-gray-100 pt-4">
             <button
+                v-if="canEdit"
                 type="button"
                 class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2d6a2d] py-2.5 text-xs font-medium text-white hover:bg-[#245524]"
                 @click="emit('edit')"

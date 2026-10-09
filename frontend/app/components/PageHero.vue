@@ -18,9 +18,14 @@ interface Props {
     /** Iconify name on the primary action button. */
     actionIcon: string
     tone?: 'emerald' | 'red'
+    /**
+     * Read-only (Viewer role) hides the primary action: the page shows the
+     * data but nothing that creates or edits a record.
+     */
+    canEdit?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), { tone: 'emerald' })
+const props = withDefaults(defineProps<Props>(), { tone: 'emerald', canEdit: true })
 
 const emit = defineEmits<{ action: [] }>()
 
@@ -99,6 +104,7 @@ const tones = computed(() =>
             </div>
 
             <button
+                v-if="canEdit"
                 type="button"
                 class="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all hover:-translate-y-0.5"
                 :class="tones.action"

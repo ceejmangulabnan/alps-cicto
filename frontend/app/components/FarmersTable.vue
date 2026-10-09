@@ -36,9 +36,16 @@ interface Props {
     areaByFarmer: Map<string, number>
     /** A farmer's location: residence first, then their parcels' barangays. */
     farmerBarangay: (farmer: Farmer) => string
+    /**
+     * Read-only (Viewer role) hides the Register Farmer action; the registry
+     * itself stays fully browsable.
+     */
+    canEdit?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+    canEdit: true,
+})
 
 const emit = defineEmits<{
     'update:search': [value: string]
@@ -188,6 +195,7 @@ function onFarmerSelect(_event: Event, row: TableRow<FarmerRow>) {
                 </div>
 
                 <button
+                    v-if="props.canEdit"
                     type="button"
                     class="inline-flex items-center gap-2 rounded-xl bg-[#245c2a] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(45,106,45,0.22)] transition-all hover:-translate-y-0.5 hover:bg-[#1f5125] hover:shadow-[0_10px_24px_rgba(45,106,45,0.28)]"
                     @click="emit('register')"
@@ -257,12 +265,6 @@ function onFarmerSelect(_event: Event, row: TableRow<FarmerRow>) {
                         >
                             <UIcon name="i-lucide-x" class="size-3" />
                         </UButton>
-                    </div>
-                    <div
-                        class="flex items-center gap-1.5 text-sm font-medium text-slate-500 sm:ml-auto"
-                    >
-                        <UIcon name="i-lucide-filter" class="size-3" />
-                        {{ rows.length }} of {{ total }} farmers
                     </div>
                 </div>
                 <div

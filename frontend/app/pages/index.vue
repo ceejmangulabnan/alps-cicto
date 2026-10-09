@@ -10,7 +10,6 @@ import {
     peso,
 } from '~/utils/assistanceStatus'
 
-
 const route = useRoute()
 
 const {
@@ -66,7 +65,7 @@ onMounted(async () => {
     <!-- Farmer Detail View -->
     <div
         v-if="selectedFarmer"
-        class="min-h-full bg-linear-to-br from-slate-50 via-white to-emerald-50/40 p-4 sm:p-6 lg:p-8"
+        class="min-h-full bg-linear-to-br from-slate-50 via-white to-emerald-50/40 p-4 sm:p-6 lg:p-8 my-8"
     >
         <div class="w-full">
             <button

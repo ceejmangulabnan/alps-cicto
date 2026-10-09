@@ -83,7 +83,7 @@ withDefaults(defineProps<Props>(), { tone: 'emerald' })
                 </div>
 
                 <div
-                    class="mt-auto flex items-center gap-2 border-t border-slate-100 pt-3 text-xs leading-5 text-slate-400"
+                    class="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3 text-xs leading-5 text-slate-400"
                 >
                     <UIcon
                         name="i-lucide-circle-check"

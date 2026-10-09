@@ -143,7 +143,7 @@ const navGroups = computed<NavGroup[]>(() => {
             >
                 <!-- Logo -->
                 <div
-                    class="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-[0_8px_20px_rgba(0,0,0,0.28)] ring-1 ring-emerald-950/40"
+                    class="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-[0_8px_20px_rgba(0,0,0,0.28)] ring-1 ring-emerald-950/40 border"
                 >
                     <img
                         src="/animap.svg"
@@ -167,16 +167,8 @@ const navGroups = computed<NavGroup[]>(() => {
                 <!-- Brand text -->
                 <div v-if="!isRail" class="min-w-0 flex-1">
                     <div class="flex items-center gap-2">
-                        <span
-                            class="text-[15px] font-extrabold tracking-[0.22em] text-white"
-                        >
-                            ALPS
-                        </span>
-
-                        <span
-                            class="rounded-full bg-emerald-400/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-200 ring-1 ring-emerald-300/10"
-                        >
-                            Live
+                        <span class="text-[15px] font-extrabold text-white">
+                            AniMap
                         </span>
                     </div>
 
@@ -193,7 +185,7 @@ const navGroups = computed<NavGroup[]>(() => {
                             name="i-lucide-landmark"
                             class="size-3 text-emerald-300"
                         />
-                        LGU San Fernando
+                        City of San Fernando
                     </div>
                 </div>
 
@@ -329,7 +321,7 @@ const navGroups = computed<NavGroup[]>(() => {
 
                     <div class="min-w-0">
                         <div class="text-[10px] font-semibold text-green-50/70">
-                            City Agriculture Office
+                            City Agriculture and Veterinary Office
                         </div>
 
                         <div

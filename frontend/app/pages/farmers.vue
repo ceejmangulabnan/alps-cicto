@@ -10,7 +10,6 @@ import {
     peso,
 } from '~/utils/assistanceStatus'
 
-
 const route = useRoute()
 
 const {

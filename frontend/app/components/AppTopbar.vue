@@ -103,7 +103,8 @@ const handleLogout = async () => {
                     <div
                         class="hidden truncate text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400 sm:block"
                     >
-                        City Agriculture Office · San Fernando, Pampanga
+                        City Agriculture and Veterinary Office · San Fernando,
+                        Pampanga
                     </div>
 
                     <div class="flex min-w-0 items-center gap-2">
@@ -112,15 +113,6 @@ const handleLogout = async () => {
                         >
                             {{ currentTitle }}
                         </span>
-
-                        <span
-                            class="hidden items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-100 md:inline-flex"
-                        >
-                            <span
-                                class="size-1.5 rounded-full bg-emerald-500"
-                            />
-                            ALPS
-                        </span>
                     </div>
                 </div>
             </div>
@@ -128,16 +120,6 @@ const handleLogout = async () => {
 
         <!-- Right -->
         <div class="flex items-center gap-2">
-            <div
-                class="hidden items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-xs text-slate-500 xl:flex"
-            >
-                <UIcon
-                    name="i-lucide-shield-check"
-                    class="size-3.5 text-emerald-600"
-                />
-                <span>Secure Session</span>
-            </div>
-
             <div class="relative">
                 <button
                     type="button"

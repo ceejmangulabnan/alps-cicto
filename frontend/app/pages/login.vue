@@ -15,10 +15,10 @@
         />
 
         <div
-            class="relative mx-auto flex min-h-screen w-full max-w-[1500px] items-center justify-center px-4 py-6 sm:px-6 lg:px-8"
+            class="relative mx-auto flex min-h-screen w-full max-w-375 items-center justify-center px-4 py-6 sm:px-6 lg:px-8"
         >
             <section
-                class="grid w-full max-w-6xl overflow-hidden rounded-[32px] border border-white/80 bg-white shadow-[0_30px_90px_rgba(15,23,42,0.14)] ring-1 ring-slate-900/5 lg:grid-cols-[1.08fr_0.92fr]"
+                class="grid w-full max-w-6xl overflow-hidden rounded-4xl border border-white/80 bg-white shadow-[0_30px_90px_rgba(15,23,42,0.14)] ring-1 ring-slate-900/5 lg:grid-cols-[1.08fr_0.92fr]"
             >
                 <!-- Visual / Welcome Panel -->
                 <div
@@ -32,7 +32,7 @@
                         aria-hidden="true"
                     />
                     <div
-                        class="absolute inset-0 bg-gradient-to-br from-[#0f3423]/96 via-[#1b5e3d]/84 to-[#2d6a2d]/72"
+                        class="absolute inset-0 bg-linear-to-br from-[#0f3423]/96 via-[#1b5e3d]/84 to-[#2d6a2d]/72"
                         aria-hidden="true"
                     />
 
@@ -42,7 +42,7 @@
                     />
 
                     <div
-                        class="relative z-10 flex h-full min-h-[300px] flex-col justify-between p-6 sm:p-8 lg:p-10 xl:p-12"
+                        class="relative z-10 flex h-full min-h-75 flex-col justify-between p-6 sm:p-8 lg:p-10 xl:p-12"
                     >
                         <!-- Brand -->
                         <div class="flex items-center justify-between gap-4">
@@ -52,7 +52,7 @@
                                 >
                                     <img
                                         src="/animap.svg"
-                                        alt="ALPS logo"
+                                        alt="AniMap logo"
                                         class="size-12 shrink-0 object-cover"
                                     />
                                 </div>
@@ -60,7 +60,7 @@
                                     <div
                                         class="text-lg font-extrabold tracking-[0.14em] text-white"
                                     >
-                                        ALPS
+                                        AniMap
                                     </div>
                                     <div
                                         class="mt-0.5 text-[11px] font-medium text-white/65"
@@ -69,25 +69,10 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <span
-                                class="hidden rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70 backdrop-blur sm:inline-flex"
-                            >
-                                City Agriculture Office
-                            </span>
                         </div>
 
                         <!-- Main Message -->
                         <div class="max-w-xl py-10 lg:py-0">
-                            <div
-                                class="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-200/20 bg-amber-100/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-200"
-                            >
-                                <span
-                                    class="size-1.5 rounded-full bg-amber-300"
-                                />
-                                Smart Agricultural Land Management
-                            </div>
-
                             <h1
                                 class="text-4xl font-bold leading-tight tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl"
                             >
@@ -159,7 +144,7 @@
                         <div
                             class="hidden items-center justify-between border-t border-white/10 pt-5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/35 lg:flex"
                         >
-                            <span>Office of the City Agriculture</span>
+                            <span>City Agriculture and Veterinary Office</span>
                             <span>San Fernando, Pampanga</span>
                         </div>
                     </div>
@@ -177,7 +162,7 @@
                             >
                                 <img
                                     src="/animap.svg"
-                                    alt="ALPS logo"
+                                    alt="AniMap logo"
                                     class="size-11 shrink-0 object-cover"
                                 />
                             </div>
@@ -185,7 +170,7 @@
                                 <div
                                     class="text-lg font-extrabold tracking-[0.14em] text-slate-900"
                                 >
-                                    ALPS
+                                    AniMap
                                 </div>
                                 <div class="text-xs text-slate-500">
                                     Agricultural Land Profiling System
@@ -194,24 +179,14 @@
                         </div>
 
                         <div class="mb-8">
-                            <span
-                                class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-emerald-700 ring-1 ring-emerald-100"
-                            >
-                                <span
-                                    class="size-1.5 rounded-full bg-emerald-500"
-                                />
-                                Secure login
-                            </span>
-
                             <h2
                                 class="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl"
                             >
-                                Sign in to ALPS
+                                Sign in to AniMap
                             </h2>
 
                             <p class="mt-2 text-sm leading-6 text-slate-500">
-                                Use your authorized City Agriculture Office
-                                account.
+                                Use your authorized AniMap account.
                             </p>
                         </div>
 
@@ -233,6 +208,7 @@
                                         type="text"
                                         autocomplete="username"
                                         placeholder="Enter your username or email"
+                                        autofocus
                                         class="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10"
                                     />
                                 </div>

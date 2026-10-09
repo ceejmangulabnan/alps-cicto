@@ -5,7 +5,6 @@ import type { FarmRow } from '~/composables/useFarmsData'
 import type { ParcelRow } from '~/composables/useParcelsData'
 import { statusDot } from '~/utils/landStatus'
 
-
 type RegistryTab = 'farms' | 'parcels'
 type StatusFilter = 'All' | (typeof LAND_STATUS_OPTIONS)[number]
 
@@ -287,9 +286,7 @@ function goViewFarm(documentId: string) {
 
             <!-- Farms -->
             <template v-if="tab === 'farms'">
-                <div
-                    class="*:rounded-3xl *:border *:border-slate-200/80 *:bg-white *:shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
-                >
+                <div>
                     <FarmsSummaryCards :cards="farmSummaryCards" />
                 </div>
 
@@ -440,9 +437,7 @@ function goViewFarm(documentId: string) {
 
             <!-- Parcels -->
             <template v-else>
-                <div
-                    class="*:rounded-3xl *:border *:border-slate-200/80 *:bg-white *:shadow-[0_10px_30px_rgba(15,23,42,0.055)]"
-                >
+                <div>
                     <FarmsSummaryCards :cards="parcelSummaryCards" />
                 </div>
 

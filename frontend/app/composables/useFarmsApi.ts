@@ -284,6 +284,17 @@ export const useFarmsApi = () => {
         )
     }
 
+    /**
+     * Deletes a farm through the custom route. Stock REST destroy 403s on
+     * API-created records, and the server refuses (409) while the farm still
+     * has parcels.
+     */
+    const remove = async (documentId: string): Promise<void> => {
+        await authFetch(`${baseUrl}/delete/${documentId}`, {
+            method: 'DELETE',
+        })
+    }
+
     return {
         getAll,
         getAllForSelect,
@@ -292,5 +303,6 @@ export const useFarmsApi = () => {
         update,
         getAllWithSummary,
         getOneWithSummary,
+        remove,
     }
 }

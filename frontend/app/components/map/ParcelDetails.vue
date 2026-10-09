@@ -3,15 +3,21 @@ import type { FarmParcel, ParcelFarmer } from '~/composables/useFarmParcelApi'
 import { avatarColor, initials } from '~/utils/initials'
 import { statusDot } from '~/utils/landStatus'
 
-const props = defineProps<{
-    parcel: FarmParcel
-    /** Read-only (Viewer role): the panel has no edit trigger. */
-    canEdit?: boolean
-}>()
+const props = withDefaults(
+    defineProps<{
+        parcel: FarmParcel
+        /** Read-only (Viewer role): the panel has no edit trigger. */
+        canEdit?: boolean
+        /** Delete right (administrator + authenticated): shows the delete action. */
+        canDelete?: boolean
+    }>(),
+    { canDelete: true }
+)
 
 const emit = defineEmits<{
     close: []
     edit: []
+    delete: []
 }>()
 
 const farm = computed(() => props.parcel.farm ?? null)
@@ -213,6 +219,15 @@ const details = computed(() => [
             >
                 <UIcon name="i-lucide-pencil" class="size-3.5" />
                 Edit Parcel
+            </button>
+            <button
+                v-if="canDelete"
+                type="button"
+                class="flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                @click="emit('delete')"
+            >
+                <UIcon name="i-lucide-trash-2" class="size-3.5" />
+                Delete Parcel
             </button>
             <NuxtLink
                 :to="`/parcels/${parcel.parcel_code}`"

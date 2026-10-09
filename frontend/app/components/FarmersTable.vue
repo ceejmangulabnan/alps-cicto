@@ -41,10 +41,13 @@ interface Props {
      * itself stays fully browsable.
      */
     canEdit?: boolean
+    /** Delete right (administrator + authenticated): shows the row delete action. */
+    canDelete?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
     canEdit: true,
+    canDelete: true,
 })
 
 const emit = defineEmits<{
@@ -52,6 +55,7 @@ const emit = defineEmits<{
     'update:filterBarangay': [value: string]
     select: [row: FarmerRow]
     register: []
+    delete: [row: FarmerRow]
     retry: []
 }>()
 
@@ -351,17 +355,29 @@ function onFarmerSelect(_event: Event, row: TableRow<FarmerRow>) {
                         {{ row.getValue('barangay') }}
                     </span>
                 </template>
-                <template #view-cell>
-                    <div
-                        class="flex items-center justify-end gap-1.5 opacity-0 transition-opacity group-hover:opacity-100"
-                    >
-                        <span class="text-sm font-semibold text-[#245c2a]">
-                            View
-                        </span>
-                        <UIcon
-                            name="i-lucide-chevron-right"
-                            class="size-3.5 text-gray-400 transition-all group-hover:translate-x-0.5 group-hover:text-[#2d6a2d]"
-                        />
+                <template #view-cell="{ row }">
+                    <div class="flex items-center justify-end gap-2">
+                        <button
+                            v-if="props.canDelete"
+                            type="button"
+                            class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                            title="Delete farmer"
+                            @click.stop="emit('delete', row.original)"
+                        >
+                            <UIcon name="i-lucide-trash-2" class="size-3.5" />
+                        </button>
+
+                        <div
+                            class="flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100"
+                        >
+                            <span class="text-sm font-semibold text-[#245c2a]">
+                                View
+                            </span>
+                            <UIcon
+                                name="i-lucide-chevron-right"
+                                class="size-3.5 text-gray-400 transition-all group-hover:translate-x-0.5 group-hover:text-[#2d6a2d]"
+                            />
+                        </div>
                     </div>
                 </template>
                 <template #loading>

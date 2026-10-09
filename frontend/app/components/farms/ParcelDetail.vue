@@ -8,14 +8,17 @@ const props = withDefaults(
         parcel: ParcelRow
         /** Read-only (Viewer role) hides the Edit Parcel action. */
         canEdit?: boolean
+        /** Delete right (administrator + authenticated): shows the delete action. */
+        canDelete?: boolean
     }>(),
-    { canEdit: true }
+    { canEdit: true, canDelete: true }
 )
 
 const emit = defineEmits<{
     edit: []
     viewOnMap: []
     viewFarm: []
+    delete: []
 }>()
 
 const detailFields = computed(() => [
@@ -160,6 +163,15 @@ const detailFields = computed(() => [
                     >
                         <UIcon name="i-lucide-map-pin" class="size-3.5" />
                         View on Map
+                    </button>
+                    <button
+                        v-if="canDelete"
+                        type="button"
+                        class="flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
+                        @click="emit('delete')"
+                    >
+                        <UIcon name="i-lucide-trash-2" class="size-3.5" />
+                        Delete Parcel
                     </button>
                 </div>
             </div>

@@ -122,6 +122,7 @@ export default {
                     'api::farm-parcel.custom-farm-parcel.idleAtRisk',
                     'api::farm-parcel.custom-farm-parcel.recommendations',
                     'api::farm-parcel.custom-farm-parcel.createFromMap',
+                    'api::farm-parcel.custom-farm-parcel.destroy',
                     // Farmer permissions (full CRUD + custom)
                     'api::farmer.farmer.find',
                     'api::farmer.farmer.findOne',
@@ -132,6 +133,7 @@ export default {
                     'api::farmer.custom-farmer.findDeep',
                     'api::farmer.custom-farmer.findOneDeep',
                     'api::farmer.custom-farmer.search',
+                    'api::farmer.custom-farmer.destroy',
                     // Farm permissions (full CRUD + custom)
                     'api::farm.farm.find',
                     'api::farm.farm.findOne',
@@ -141,6 +143,7 @@ export default {
                     'api::farm.farm.count',
                     'api::farm.custom-farm.findWithSummary',
                     'api::farm.custom-farm.findOneWithSummary',
+                    'api::farm.custom-farm.destroy',
                     // Barangay permissions
                     'api::barangay.barangay.find',
                     'api::barangay.barangay.findOne',
@@ -220,6 +223,7 @@ export default {
                     'api::farm-parcel.custom-farm-parcel.idleAtRisk',
                     'api::farm-parcel.custom-farm-parcel.recommendations',
                     'api::farm-parcel.custom-farm-parcel.createFromMap',
+                    'api::farm-parcel.custom-farm-parcel.destroy',
                     // Farmer permissions (full CRUD + custom)
                     'api::farmer.farmer.find',
                     'api::farmer.farmer.findOne',
@@ -230,6 +234,7 @@ export default {
                     'api::farmer.custom-farmer.findDeep',
                     'api::farmer.custom-farmer.findOneDeep',
                     'api::farmer.custom-farmer.search',
+                    'api::farmer.custom-farmer.destroy',
                     // Farm permissions (full CRUD + custom)
                     'api::farm.farm.find',
                     'api::farm.farm.findOne',
@@ -239,6 +244,7 @@ export default {
                     'api::farm.farm.count',
                     'api::farm.custom-farm.findWithSummary',
                     'api::farm.custom-farm.findOneWithSummary',
+                    'api::farm.custom-farm.destroy',
                     // Barangay permissions
                     'api::barangay.barangay.find',
                     'api::barangay.barangay.findOne',

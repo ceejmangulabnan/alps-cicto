@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { getErrorStatus } from '~/composables/auth'
 import type {
+    FarmParcel,
     RiskParcelStatus,
     RiskSeverity,
 } from '~/composables/useFarmParcelApi'
@@ -8,8 +9,8 @@ import { statusClass, statusDot } from '~/utils/landStatus'
 import { avatarColor, initials } from '~/utils/initials'
 
 const route = useRoute()
-const { getHubByCode } = useFarmParcelApi()
-const { canEdit } = useAuth()
+const { getHubByCode, deleteParcel } = useFarmParcelApi()
+const { canEdit, canDelete } = useAuth()
 
 /**
  * Parcel codes are uppercase in the data model (`PLC-2026-0001`); normalise
@@ -81,6 +82,28 @@ const showHarvestModal = ref(false)
 async function handleSaved() {
     await refresh()
 }
+
+/**
+ * Confirm-to-delete flow for the parcel this hub is showing. The server
+ * refuses (409) while a planting cycle, inspection or risk report still
+ * references the parcel; the reason shows in the modal. On success the hub
+ * has nothing left to render, so it returns to the registry.
+ */
+const {
+    open: showDeleteModal,
+    target: deleteTarget,
+    deleting,
+    error: deleteError,
+    ask: askDelete,
+    close: closeDelete,
+    confirm: confirmDelete,
+} = useDeleteModal<FarmParcel>({
+    remove: (target) => deleteParcel(target.documentId),
+    onDeleted: async () => {
+        await navigateTo('/farms')
+    },
+    failureMessage: 'Failed to delete the parcel. Please try again.',
+})
 
 const farm = computed(() => parcel.value?.farm ?? null)
 const barangay = computed(() => farm.value?.barangay ?? null)
@@ -374,6 +397,21 @@ const chipClass =
                             <UIcon name="i-lucide-wheat" class="size-4" />
                         </span>
                         <span :class="tileLabelClass">Record Harvest</span>
+                    </button>
+                    <button
+                        v-if="canDelete"
+                        type="button"
+                        :class="[tileClass, tileSecondary]"
+                        @click="askDelete(parcel)"
+                    >
+                        <span
+                            :class="[tileIconClass, 'bg-red-50 text-red-600']"
+                        >
+                            <UIcon name="i-lucide-trash-2" class="size-4" />
+                        </span>
+                        <span :class="[tileLabelClass, 'text-red-600']">
+                            Delete Parcel
+                        </span>
                     </button>
                 </div>
             </div>
@@ -776,6 +814,24 @@ const chipClass =
                 :parcel="parcel"
                 @saved="handleSaved"
             />
+
+            <!-- Delete Parcel Modal -->
+            <ConfirmDeleteModal
+                :show="showDeleteModal"
+                title="Delete Parcel"
+                :deleting="deleting"
+                :error="deleteError"
+                @close="closeDelete"
+                @confirm="confirmDelete"
+            >
+                Remove parcel
+                <span class="font-mono font-semibold text-slate-700">
+                    {{ deleteTarget?.parcel_code ?? '' }}
+                </span>
+                from the registry? A parcel with a planting cycle, inspections
+                or risk reports cannot be deleted; clear those first. This
+                action cannot be undone.
+            </ConfirmDeleteModal>
         </template>
     </div>
 </template>

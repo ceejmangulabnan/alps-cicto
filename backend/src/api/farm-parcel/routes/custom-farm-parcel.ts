@@ -32,5 +32,14 @@ export default {
                 middlewares: [],
             },
         },
+        {
+            method: 'DELETE',
+            path: '/farm-parcels/delete/:documentId',
+            handler: 'api::farm-parcel.custom-farm-parcel.destroy',
+            config: {
+                policies: [],
+                middlewares: [],
+            },
+        },
     ],
 }

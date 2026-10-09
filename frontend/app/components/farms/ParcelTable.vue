@@ -3,16 +3,22 @@ import type { ParcelRow } from '~/composables/useParcelsData'
 import { statusClass, statusDot } from '~/utils/landStatus'
 import { avatarColor, initials } from '~/utils/initials'
 
-defineProps<{
-    parcels: ParcelRow[]
-    selectedDocumentId: string | null
-    loading: boolean
-    /** Suppresses the empty state while an error banner is already showing. */
-    hasError: boolean
-}>()
+const props = withDefaults(
+    defineProps<{
+        parcels: ParcelRow[]
+        selectedDocumentId: string | null
+        loading: boolean
+        /** Suppresses the empty state while an error banner is already showing. */
+        hasError: boolean
+        /** Delete right (administrator + authenticated): shows the delete action. */
+        canDelete?: boolean
+    }>(),
+    { canDelete: true }
+)
 
 const emit = defineEmits<{
     select: [parcel: ParcelRow]
+    delete: [parcel: ParcelRow]
 }>()
 </script>
 
@@ -152,9 +158,22 @@ const emit = defineEmits<{
                         <span v-else class="text-slate-400">—</span>
                     </td>
 
-                    <!-- View -->
+                    <!-- Actions -->
                     <td class="px-5 py-4">
                         <div class="flex items-center justify-end gap-1.5">
+                            <button
+                                v-if="props.canDelete"
+                                type="button"
+                                class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                title="Delete parcel"
+                                @click.stop="emit('delete', p)"
+                            >
+                                <UIcon
+                                    name="i-lucide-trash-2"
+                                    class="size-3.5"
+                                />
+                            </button>
+
                             <span
                                 class="text-sm font-semibold text-[#245c2a] opacity-0 transition-opacity group-hover:opacity-100"
                             >

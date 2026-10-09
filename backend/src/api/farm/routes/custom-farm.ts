@@ -23,5 +23,14 @@ export default {
                 middlewares: [],
             },
         },
+        {
+            method: 'DELETE',
+            path: '/farms/delete/:documentId',
+            handler: 'api::farm.custom-farm.destroy',
+            config: {
+                policies: [],
+                middlewares: [],
+            },
+        },
     ],
 }

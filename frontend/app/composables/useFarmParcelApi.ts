@@ -341,6 +341,17 @@ export const useFarmParcelApi = () => {
         )
     }
 
+    /**
+     * Deletes a parcel through the custom route. Stock REST destroy 403s on
+     * API-created records, and the server refuses (409) while a planting cycle,
+     * inspection or risk report still references the parcel.
+     */
+    const deleteParcel = async (documentId: string): Promise<void> => {
+        await authFetch(`${baseUrl}/delete/${documentId}`, {
+            method: 'DELETE',
+        })
+    }
+
     return {
         createFromMap,
         getAll,
@@ -348,5 +359,6 @@ export const useFarmParcelApi = () => {
         getHubById,
         getHubByCode,
         update,
+        deleteParcel,
     }
 }

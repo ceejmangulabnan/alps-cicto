@@ -3,6 +3,7 @@
  */
 
 import { factories } from '@strapi/strapi'
+import { errors } from '@strapi/utils'
 
 export default factories.createCoreController(
     'api::farm.farm',
@@ -161,6 +162,64 @@ export default factories.createCoreController(
                 ctx.throw(
                     500,
                     err instanceof Error ? err.message : 'An error occurred'
+                )
+            }
+        },
+
+        /**
+         * DELETE /farms/delete/:documentId
+         *
+         * The stock REST destroy action 403s on documents created through the
+         * API (they carry no createdBy) even though the destroy permission is
+         * granted. The Document Service deletes them fine, so this wraps it in
+         * a route the app's token is authorized for.
+         *
+         * A farm is not deletable while it still has parcels:
+         * `farm-parcel.farm` is required, so removing the farm would leave its
+         * parcels pointing at nothing. They are removed from the Parcels
+         * registry first.
+         */
+        async destroy(ctx) {
+            const { documentId } = ctx.params as { documentId?: string }
+
+            if (!documentId) {
+                return ctx.badRequest('A documentId is required.')
+            }
+
+            const parcelCount = await strapi
+                .documents('api::farm-parcel.farm-parcel')
+                .count({ filters: { farm: { documentId } } })
+
+            if (parcelCount > 0) {
+                ctx.throw(
+                    409,
+                    `This farm still has ${parcelCount} ${
+                        parcelCount === 1 ? 'parcel' : 'parcels'
+                    }. Delete them from the Parcels registry first.`
+                )
+            }
+
+            try {
+                const deleted = await strapi
+                    .documents('api::farm.farm')
+                    .delete({ documentId })
+
+                if (!deleted) {
+                    return ctx.notFound()
+                }
+
+                ctx.body = { data: deleted }
+            } catch (err) {
+                if (err instanceof errors.NotFoundError) {
+                    return ctx.notFound()
+                }
+                if (err instanceof errors.ApplicationError) {
+                    throw err
+                }
+                throw new errors.ApplicationError(
+                    err instanceof Error
+                        ? err.message
+                        : 'Failed to delete the farm.'
                 )
             }
         },

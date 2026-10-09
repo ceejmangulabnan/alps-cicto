@@ -3,6 +3,7 @@
  */
 
 import { factories } from '@strapi/strapi'
+import { errors } from '@strapi/utils'
 
 export default factories.createCoreController(
     'api::farmer.farmer',
@@ -167,6 +168,64 @@ export default factories.createCoreController(
                 ctx.throw(
                     500,
                     err instanceof Error ? err.message : 'An error occurred'
+                )
+            }
+        },
+
+        /**
+         * DELETE /farmers/delete/:documentId
+         *
+         * The stock REST destroy action 403s on documents created through the
+         * API (they carry no createdBy) even though the destroy permission is
+         * granted. The Document Service deletes them fine, so this wraps it in
+         * a route the app's token is authorized for.
+         *
+         * A farmer is not deletable while it still has assistance records:
+         * `assistance-program.farmer` is required, so removing the farmer would
+         * leave those records pointing at nothing. They are removed from the
+         * Assistance registry first.
+         */
+        async destroy(ctx) {
+            const { documentId } = ctx.params as { documentId?: string }
+
+            if (!documentId) {
+                return ctx.badRequest('A documentId is required.')
+            }
+
+            const assistanceCount = await strapi
+                .documents('api::assistance-program.assistance-program')
+                .count({ filters: { farmer: { documentId } } })
+
+            if (assistanceCount > 0) {
+                ctx.throw(
+                    409,
+                    `This farmer still has ${assistanceCount} assistance ${
+                        assistanceCount === 1 ? 'record' : 'records'
+                    }. Delete them from the Assistance registry first.`
+                )
+            }
+
+            try {
+                const deleted = await strapi
+                    .documents('api::farmer.farmer')
+                    .delete({ documentId })
+
+                if (!deleted) {
+                    return ctx.notFound()
+                }
+
+                ctx.body = { data: deleted }
+            } catch (err) {
+                if (err instanceof errors.NotFoundError) {
+                    return ctx.notFound()
+                }
+                if (err instanceof errors.ApplicationError) {
+                    throw err
+                }
+                throw new errors.ApplicationError(
+                    err instanceof Error
+                        ? err.message
+                        : 'Failed to delete the farmer.'
                 )
             }
         },

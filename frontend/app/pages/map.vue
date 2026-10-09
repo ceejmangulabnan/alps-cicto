@@ -93,6 +93,7 @@ const {
     retryLoad,
     upsertParcel,
     ensureParcel,
+    deleteParcel,
     fitToParcel,
     fitToAllParcels,
 } = data
@@ -133,7 +134,7 @@ const sidebarPanel = computed<MapPanel>(() => {
 const route = useRoute()
 const router = useRouter()
 
-const { canEdit } = useAuth()
+const { canEdit, canDelete } = useAuth()
 
 function queryId(value: unknown): string | undefined {
     return typeof value === 'string' ? value : undefined
@@ -298,6 +299,25 @@ async function signInAgain() {
     await logout()
     await navigateTo('/login')
 }
+
+/**
+ * Confirm-to-delete flow for the parcel shown in the details panel. The
+ * server refuses (409) while a planting cycle, inspection or risk report still
+ * references the parcel, and the reason is surfaced through the modal.
+ */
+const {
+    open: showDeleteModal,
+    target: deleteTarget,
+    deleting,
+    error: deleteError,
+    ask: askDelete,
+    close: closeDelete,
+    confirm: confirmDelete,
+} = useDeleteModal<FarmParcel>({
+    remove: (parcel) => deleteParcel(parcel.documentId),
+    onDeleted: closeSidebar,
+    failureMessage: 'Failed to delete the parcel. Please try again.',
+})
 
 // ---------------------------------------------------------------------------
 // Map + terra-draw wiring
@@ -545,8 +565,10 @@ function onMapLoad(payload: { map: MaplibreMap }) {
                     class="absolute inset-y-3 right-3 z-30 overflow-hidden rounded-2xl border border-white/70 bg-white/95 shadow-[0_20px_60px_rgba(15,23,42,0.20)] ring-1 ring-slate-900/5 backdrop-blur-xl sm:relative sm:inset-auto sm:z-auto sm:m-3 sm:ml-0"
                     :parcel="selectedParcel"
                     :can-edit="canEdit"
+                    :can-delete="canDelete"
                     @close="closeSidebar"
                     @edit="editSelectedParcel"
+                    @delete="askDelete(selectedParcel)"
                 />
             </Transition>
 
@@ -571,4 +593,22 @@ function onMapLoad(payload: { map: MaplibreMap }) {
             </Transition>
         </div>
     </div>
+
+    <!-- Delete Parcel Modal -->
+    <ConfirmDeleteModal
+        :show="showDeleteModal"
+        title="Delete Parcel"
+        :deleting="deleting"
+        :error="deleteError"
+        @close="closeDelete"
+        @confirm="confirmDelete"
+    >
+        Remove parcel
+        <span class="font-mono font-semibold text-slate-700">
+            {{ deleteTarget?.parcel_code ?? '' }}
+        </span>
+        from the registry? A parcel with a planting cycle, inspections or risk
+        reports cannot be deleted; clear those first. This action cannot be
+        undone.
+    </ConfirmDeleteModal>
 </template>

@@ -159,5 +159,16 @@ export const useFarmersApi = () => {
         return response.data
     }
 
-    return { getAll, getAllForSelect, create, update }
+    /**
+     * Deletes a farmer through the custom route. Stock REST destroy 403s on
+     * API-created records, and the server refuses (409) while assistance
+     * records still reference the farmer.
+     */
+    const remove = async (documentId: string): Promise<void> => {
+        await authFetch(`${baseUrl}/delete/${documentId}`, {
+            method: 'DELETE',
+        })
+    }
+
+    return { getAll, getAllForSelect, create, update, remove }
 }

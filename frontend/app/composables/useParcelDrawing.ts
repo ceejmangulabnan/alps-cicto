@@ -366,6 +366,7 @@ export const useParcelDrawing = () => {
         clearSelection,
         discardDraft,
         addParcelFeatures,
+        removeFeature,
         syncParcel,
         commitDraft,
     }

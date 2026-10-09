@@ -54,7 +54,8 @@ function toParcelRow(parcel: FarmParcel): ParcelRow {
  * and status filters, and the summary cards.
  */
 export const useParcelsData = () => {
-    const { getAll: getAllParcels } = useFarmParcelApi()
+    const { getAll: getAllParcels, deleteParcel: removeParcel } =
+        useFarmParcelApi()
 
     const parcels = ref<ParcelRow[]>([])
     const loading = ref(false)
@@ -136,6 +137,19 @@ export const useParcelsData = () => {
         }
     }
 
+    /**
+     * Deletes a parcel and drops it from the registry. The server refuses
+     * (409) while a planting cycle, inspection or risk report still references
+     * the parcel, so a successful call here means it was clear.
+     */
+    async function deleteParcel(documentId: string) {
+        await removeParcel(documentId)
+
+        parcels.value = parcels.value.filter(
+            (item) => item.documentId !== documentId
+        )
+    }
+
     return {
         parcels,
         loading,
@@ -145,5 +159,6 @@ export const useParcelsData = () => {
         filtered,
         summaryCards,
         loadParcels,
+        deleteParcel,
     }
 }

@@ -60,7 +60,7 @@ export const useFarmersRegistry = () => {
         return names.length > 0 ? names.join(', ') : 'No parcel assigned'
     }
 
-    const { getAll, create, update } = useFarmersApi()
+    const { getAll, create, update, remove } = useFarmersApi()
     const { getAll: getAllParcels } = useFarmParcelApi()
     const { getAllForSelect: getAllBarangays } = useBarangayApi()
     const { create: createAssistance } = useAssistanceApi()
@@ -572,6 +572,23 @@ export const useFarmersRegistry = () => {
         if (row) selectedFarmer.value = row
     }
 
+    /**
+     * Deletes a farmer and drops it from the registry. The profile is closed
+     * when it is showing the record that was just removed. The server refuses
+     * (409) while assistance records still reference the farmer.
+     */
+    async function deleteFarmer(documentId: string) {
+        await remove(documentId)
+
+        farmers.value = farmers.value.filter(
+            (farmer) => farmer.documentId !== documentId
+        )
+
+        if (selectedFarmer.value?.documentId === documentId) {
+            selectedFarmer.value = null
+        }
+    }
+
     return {
         farmers,
         loading,
@@ -614,5 +631,6 @@ export const useFarmersRegistry = () => {
         loadFarmers,
         backToRegistry,
         openFromQuery,
+        deleteFarmer,
     }
 }

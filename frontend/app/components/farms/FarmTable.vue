@@ -3,14 +3,20 @@ import type { FarmRow } from '~/composables/useFarmsData'
 import { farmStatusClass, farmStatusDot } from '~/utils/farmStatus'
 import { avatarColor, initials } from '~/utils/initials'
 
-defineProps<{
-    farms: FarmRow[]
-    selectedDocumentId: string | null
-    loading: boolean
-}>()
+const props = withDefaults(
+    defineProps<{
+        farms: FarmRow[]
+        selectedDocumentId: string | null
+        loading: boolean
+        /** Delete right (administrator + authenticated): shows the delete action. */
+        canDelete?: boolean
+    }>(),
+    { canDelete: true }
+)
 
 const emit = defineEmits<{
     select: [farm: FarmRow]
+    delete: [farm: FarmRow]
 }>()
 
 /** The farmer shown in the row, or a dash when the farm has none yet. */
@@ -180,9 +186,22 @@ function extraFarmerCount(row: FarmRow): number {
                         </span>
                     </td>
 
-                    <!-- View -->
+                    <!-- Actions -->
                     <td class="px-5 py-4">
                         <div class="flex items-center justify-end gap-1.5">
+                            <button
+                                v-if="props.canDelete"
+                                type="button"
+                                class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                title="Delete farm"
+                                @click.stop="emit('delete', row)"
+                            >
+                                <UIcon
+                                    name="i-lucide-trash-2"
+                                    class="size-3.5"
+                                />
+                            </button>
+
                             <span
                                 class="text-sm font-semibold text-[#245c2a] opacity-0 transition-opacity group-hover:opacity-100"
                             >

@@ -71,7 +71,7 @@ function toFarmRow(farm: Farm): FarmRow {
  * and status filters, the summary cards, and the current selection.
  */
 export const useFarmsData = () => {
-    const { getAllWithSummary, getOneWithSummary } = useFarmsApi()
+    const { getAllWithSummary, getOneWithSummary, remove } = useFarmsApi()
 
     const farms = ref<FarmRow[]>([])
     const loading = ref(false)
@@ -197,6 +197,25 @@ export const useFarmsData = () => {
         }
     }
 
+    /**
+     * Deletes a farm and drops it from the registry, closing the detail panel
+     * when it was showing the farm that was just removed. The server refuses
+     * (409) while the farm still has parcels, so a successful call here means
+     * it was empty.
+     */
+    async function deleteFarm(documentId: string) {
+        await remove(documentId)
+
+        farms.value = farms.value.filter(
+            (item) => item.documentId !== documentId
+        )
+
+        if (selected.value?.documentId === documentId) {
+            selected.value = null
+            selectedDetail.value = null
+        }
+    }
+
     return {
         farms,
         loading,
@@ -211,5 +230,6 @@ export const useFarmsData = () => {
         loadFarms,
         upsertFarm,
         selectFarm,
+        deleteFarm,
     }
 }

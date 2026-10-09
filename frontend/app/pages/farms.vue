@@ -22,6 +22,7 @@ const {
     loadFarms,
     upsertFarm,
     selectFarm,
+    deleteFarm,
 } = useFarmsData()
 
 const {
@@ -33,9 +34,10 @@ const {
     filtered: filteredParcels,
     summaryCards: parcelSummaryCards,
     loadParcels,
+    deleteParcel,
 } = useParcelsData()
 
-const { logout, canEdit } = useAuth()
+const { logout, canEdit, canDelete } = useAuth()
 const route = useRoute()
 
 const tab = ref<RegistryTab>('farms')
@@ -132,6 +134,43 @@ function goViewFarm(documentId: string) {
         )
     }
 }
+
+/**
+ * Confirm-to-delete flow for both registries. Deleting a farm is only allowed
+ * once it has no parcels; deleting a parcel only once nothing (planting cycle,
+ * inspection, risk report) still references it. The server enforces both and
+ * answers 409 with the reason when they are not met.
+ */
+const {
+    open: showFarmDeleteModal,
+    target: farmDeleteTarget,
+    deleting: deletingFarm,
+    error: farmDeleteError,
+    ask: askDeleteFarm,
+    close: closeFarmDelete,
+    confirm: confirmFarmDelete,
+} = useDeleteModal<FarmRow>({
+    remove: (row) => deleteFarm(row.documentId),
+    failureMessage: 'Failed to delete the farm. Please try again.',
+})
+
+const {
+    open: showParcelDeleteModal,
+    target: parcelDeleteTarget,
+    deleting: deletingParcel,
+    error: parcelDeleteError,
+    ask: askDeleteParcel,
+    close: closeParcelDelete,
+    confirm: confirmParcelDelete,
+} = useDeleteModal<ParcelRow>({
+    remove: (row) => {
+        if (selectedParcel.value?.documentId === row.documentId) {
+            selectedParcel.value = null
+        }
+        return deleteParcel(row.documentId)
+    },
+    failureMessage: 'Failed to delete the parcel. Please try again.',
+})
 </script>
 
 <template>
@@ -419,7 +458,9 @@ function goViewFarm(documentId: string) {
                                     selectedFarm?.documentId ?? null
                                 "
                                 :loading="farmsLoading"
+                                :can-delete="canDelete"
                                 @select="selectFarm"
+                                @delete="askDeleteFarm"
                             />
                         </div>
 
@@ -430,9 +471,11 @@ function goViewFarm(documentId: string) {
                             :detail="selectedDetail"
                             :detail-loading="detailLoading"
                             :can-edit="canEdit"
+                            :can-delete="canDelete"
                             @edit="openEditFarm(selectedFarm.farm)"
                             @add-parcel="goAddParcel"
                             @view-on-map="tab = 'parcels'"
+                            @delete="askDeleteFarm(selectedFarm)"
                         />
                     </div>
                 </div>
@@ -587,7 +630,9 @@ function goViewFarm(documentId: string) {
                                 "
                                 :loading="parcelsLoading"
                                 :has-error="parcelsError !== null"
+                                :can-delete="canDelete"
                                 @select="selectedParcel = $event"
+                                @delete="askDeleteParcel"
                             />
                         </div>
 
@@ -596,6 +641,7 @@ function goViewFarm(documentId: string) {
                             class="w-full shrink-0 overflow-hidden border-l border-slate-100 bg-white xl:w-90"
                             :parcel="selectedParcel"
                             :can-edit="canEdit"
+                            :can-delete="canDelete"
                             @edit="goEditParcel(selectedParcel.documentId)"
                             @view-farm="
                                 goViewFarm(selectedParcel.farmDocumentId)
@@ -603,6 +649,7 @@ function goViewFarm(documentId: string) {
                             @view-on-map="
                                 goViewParcel(selectedParcel.documentId)
                             "
+                            @delete="askDeleteParcel(selectedParcel)"
                         />
                     </div>
                 </div>
@@ -613,6 +660,43 @@ function goViewFarm(documentId: string) {
                 :farm="editingFarm"
                 @saved="handleFarmSaved"
             />
+
+            <!-- Delete Farm Modal -->
+            <ConfirmDeleteModal
+                :show="showFarmDeleteModal"
+                title="Delete Farm"
+                :deleting="deletingFarm"
+                :error="farmDeleteError"
+                @close="closeFarmDelete"
+                @confirm="confirmFarmDelete"
+            >
+                Remove
+                <span class="font-semibold text-slate-700">
+                    {{ farmDeleteTarget?.name ?? 'this farm' }}
+                </span>
+                (<span class="font-mono">
+                    {{ farmDeleteTarget?.farm_code ?? '' }} </span
+                >) from the registry? A farm that still has parcels cannot be
+                deleted; remove its parcels first. This action cannot be undone.
+            </ConfirmDeleteModal>
+
+            <!-- Delete Parcel Modal -->
+            <ConfirmDeleteModal
+                :show="showParcelDeleteModal"
+                title="Delete Parcel"
+                :deleting="deletingParcel"
+                :error="parcelDeleteError"
+                @close="closeParcelDelete"
+                @confirm="confirmParcelDelete"
+            >
+                Remove parcel
+                <span class="font-mono font-semibold text-slate-700">
+                    {{ parcelDeleteTarget?.parcel_code ?? '' }}
+                </span>
+                from the registry? A parcel with a planting cycle, inspections
+                or risk reports cannot be deleted; clear those first. This
+                action cannot be undone.
+            </ConfirmDeleteModal>
         </div>
     </div>
 </template>

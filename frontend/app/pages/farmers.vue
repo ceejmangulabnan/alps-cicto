@@ -4,6 +4,7 @@
  * `useFarmersRegistry`; this page orchestrates the shared `FarmersTable`
  * list, the farmer detail view, and the register / edit / assistance modals.
  */
+import type { FarmerRow } from '~/composables/useFarmersRegistry'
 import {
     ASSISTANCE_STATUS_DOT,
     ASSISTANCE_STATUS_STYLE,
@@ -12,7 +13,7 @@ import {
 
 const route = useRoute()
 
-const { canEdit } = useAuth()
+const { canEdit, canDelete } = useAuth()
 
 const {
     farmers,
@@ -55,7 +56,21 @@ const {
     loadFarmers,
     backToRegistry,
     openFromQuery,
+    deleteFarmer,
 } = useFarmersRegistry()
+
+const {
+    open: showDeleteModal,
+    target: deleteTarget,
+    deleting,
+    error: deleteError,
+    ask: askDelete,
+    close: closeDelete,
+    confirm: confirmDelete,
+} = useDeleteModal<FarmerRow>({
+    remove: (row) => deleteFarmer(row.documentId),
+    failureMessage: 'Failed to delete the farmer. Please try again.',
+})
 
 onMounted(async () => {
     await loadFarmers()
@@ -191,6 +206,16 @@ onMounted(async () => {
                         >
                             <UIcon name="i-lucide-hand-heart" class="size-4" />
                             Add Assistance
+                        </button>
+
+                        <button
+                            v-if="canDelete"
+                            type="button"
+                            class="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 shadow-sm transition-all hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-50"
+                            @click="askDelete(selectedFarmer)"
+                        >
+                            <UIcon name="i-lucide-trash-2" class="size-4" />
+                            Delete Farmer
                         </button>
                     </div>
                 </div>
@@ -615,8 +640,10 @@ onMounted(async () => {
         :area-by-farmer="areaByFarmer"
         :farmer-barangay="farmerBarangay"
         :can-edit="canEdit"
+        :can-delete="canDelete"
         @select="selectedFarmer = $event"
         @register="showRegisterModal = true"
+        @delete="askDelete"
         @retry="loadFarmers"
     />
 
@@ -651,4 +678,20 @@ onMounted(async () => {
         @submit="submitAssist"
         @cancel="closeAssistModal"
     />
+
+    <!-- Delete Farmer Modal -->
+    <ConfirmDeleteModal
+        :show="showDeleteModal"
+        title="Delete Farmer"
+        :deleting="deleting"
+        :error="deleteError"
+        @close="closeDelete"
+        @confirm="confirmDelete"
+    >
+        Remove
+        <span class="font-semibold text-slate-700">
+            {{ deleteTarget?.name ?? 'this farmer' }}
+        </span>
+        from the registry? This action cannot be undone.
+    </ConfirmDeleteModal>
 </template>

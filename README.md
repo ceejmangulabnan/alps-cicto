@@ -212,6 +212,7 @@ alps-cicto/
 - Administration statistics other than the live user count (database records, GIS layers, uptime) and the System Configuration / Backup / Audit Log entries are placeholders.
 - Route access is enforced by the global auth middleware: every registry page requires a session, and `/admin` is additionally restricted to the `administrator` role.
 - The `viewer` role is read-only in the UI: it can browse every registry, search/filter, and export CSV. Create/edit/upload/draw actions hide behind `canEdit` (administrator + authenticated), and deletion hides behind a separate `canDelete` (also administrator + authenticated only). This is presentational — the Strapi API permissions remain the source of truth for writes.
+- Deletes are refused while dependents exist (no cascades, no orphans): a farmer with assistance records, a farm with parcels, or a parcel with a planting cycle, inspections or risk reports cannot be removed. The server answers **409** with the count and reason, shown in the confirmation modal; clear those records first. Pure many-to-many links (farm↔farmers, farmer↔parcels/farms) unlink cleanly and do not block. Delete actions appear on the farmers registry and dashboard, both farm-registry tabs, the map parcel panel and the parcel hub.
 - Harvest and risk exports reflect a parcel's *current* planting cycle and risk reports (they hang off the parcel's live relations), matching exactly what the registry pages display.
 - CSV is the only export format — it is generated in the browser, so no server-side PDF rendering exists yet.
 

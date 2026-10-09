@@ -25,7 +25,11 @@ const PARCEL_POPULATE = ['farm', 'farm.barangay', 'farm.farmers', 'farmers']
  * they surface problems through, and the camera helpers.
  */
 export const useParcelData = (drawing: ParcelDrawing) => {
-    const { getAll: getAllParcels, getById: getParcelById } = useFarmParcelApi()
+    const {
+        getAll: getAllParcels,
+        getById: getParcelById,
+        deleteParcel: removeParcel,
+    } = useFarmParcelApi()
     const { getAllForSelect: getFarms } = useFarmsApi()
 
     const parcels = ref<FarmParcel[]>([])
@@ -136,6 +140,25 @@ export const useParcelData = (drawing: ParcelDrawing) => {
         return response.data
     }
 
+    /**
+     * Deletes a parcel, drops it from the list and lifts its polygon off the
+     * map, clearing the selection if it was the selected one. The server
+     * refuses (409) while a planting cycle, inspection or risk report still
+     * references the parcel, so a successful call here means it was clear.
+     */
+    async function deleteParcel(documentId: string) {
+        await removeParcel(documentId)
+
+        parcels.value = parcels.value.filter(
+            (parcel) => parcel.documentId !== documentId
+        )
+        drawing.removeFeature(documentId)
+
+        if (drawing.selectedParcelId.value === documentId) {
+            drawing.clearSelection()
+        }
+    }
+
     function fitToParcel(parcel: FarmParcel) {
         const instance = drawing.mapInstance.value
         const coordinates = getParcelGeometry(parcel).coordinates[0]
@@ -197,6 +220,7 @@ export const useParcelData = (drawing: ParcelDrawing) => {
         retryLoad,
         upsertParcel,
         ensureParcel,
+        deleteParcel,
         fitToParcel,
         fitToAllParcels,
     }

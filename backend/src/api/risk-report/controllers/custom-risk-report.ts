@@ -23,6 +23,10 @@ export default factories.createCoreController(
          * published version explicitly: the callers read that version, and the
          * default status should not be what decides whether a filed report
          * actually goes away.
+         *
+         * A report filed from a finding is refused: deleting it would silently
+         * drop the inspection's observation. The finding has to be removed from
+         * the inspection form instead, which owns the report's lifecycle.
          */
         async destroy(ctx) {
             const { documentId } = ctx.params as { documentId?: string }
@@ -32,6 +36,20 @@ export default factories.createCoreController(
             }
 
             try {
+                const report = (await strapi
+                    .documents(RISK_REPORT_UID)
+                    .findOne({
+                        documentId,
+                        populate: ['inspection'],
+                        status: 'published',
+                    })) as { inspection?: { documentId: string } | null } | null
+
+                if (report?.inspection) {
+                    return ctx.badRequest(
+                        'This report was filed from a field inspection. Remove the finding from the inspection instead.'
+                    )
+                }
+
                 const deleted = await strapi
                     .documents(RISK_REPORT_UID)
                     .delete({ documentId, status: 'published' })

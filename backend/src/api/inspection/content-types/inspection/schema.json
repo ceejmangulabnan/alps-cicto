@@ -38,15 +38,16 @@
             "type": "string",
             "default": "Pre-harvest Assessment"
         },
-        "risk_level": {
-            "type": "enumeration",
-            "enum": ["None", "Low", "Medium", "High"],
-            "default": "None"
-        },
         "status": {
             "type": "enumeration",
             "enum": ["Pending", "In Progress", "Completed"],
             "default": "Pending"
+        },
+        "risk_reports": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "api::risk-report.risk-report",
+            "mappedBy": "inspection"
         },
         "photos": {
             "type": "media",

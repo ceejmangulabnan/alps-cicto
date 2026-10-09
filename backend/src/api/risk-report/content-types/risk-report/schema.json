@@ -32,6 +32,12 @@
             "target": "api::farm-parcel.farm-parcel",
             "inversedBy": "risk_reports"
         },
+        "inspection": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::inspection.inspection",
+            "inversedBy": "risk_reports"
+        },
         "risk_type": {
             "type": "string",
             "required": true

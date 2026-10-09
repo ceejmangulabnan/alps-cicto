@@ -58,15 +58,29 @@ export type RiskSeverity = 'Low' | 'Medium' | 'High' | 'Critical'
 
 export type RiskParcelStatus = 'Active' | 'Monitoring' | 'Resolved'
 
+/** The inspection a report was filed from, when it has one. */
+export interface ParcelRiskReportInspection {
+    documentId: string
+    date?: string | null
+    inspection_type?: string | null
+}
+
 export interface ParcelRiskReport {
     documentId: string
     risk_type?: string | null
     observed_at?: string | null
     severity?: RiskSeverity | null
     parcel_status?: RiskParcelStatus | null
+    /** Present when the report came from a finding; absent for manual reports. */
+    inspection?: ParcelRiskReportInspection | null
 }
 
-export type RiskInspectionLevel = 'None' | 'Low' | 'Medium' | 'High'
+/**
+ * The derived risk level shown for an inspection. It is not a stored field:
+ * it is the worst severity among the inspection's linked reports, or `None`
+ * when the visit observed no risk.
+ */
+export type RiskInspectionLevel = RiskSeverity | 'None'
 
 export type InspectionStatus = 'Pending' | 'In Progress' | 'Completed'
 
@@ -85,10 +99,11 @@ export interface ParcelInspection {
     condition?: string | null
     notes?: string | null
     inspection_type?: string | null
-    risk_level?: RiskInspectionLevel | null
     status?: InspectionStatus | null
     /** Free text entered by the officer; kept verbatim in the JSON column. */
     gps_point?: unknown
+    /** The reports this visit produced, one per finding. */
+    risk_reports?: ParcelRiskReport[]
     photos?: ParcelInspectionPhoto[]
 }
 
@@ -179,7 +194,9 @@ const HUB_POPULATE = [
     'planting_cycle.crop',
     'planting_cycle.harvests',
     'inspections',
+    'inspections.risk_reports',
     'risk_reports',
+    'risk_reports.inspection',
 ]
 
 const hubPopulateQuery = qs.stringify(

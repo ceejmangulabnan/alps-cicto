@@ -1,8 +1,14 @@
 import type { FarmParcel } from '~/composables/useFarmParcelApi'
-import type { AlpsInsight, AtRiskParcel, RiskRow } from '~/utils/riskInsights'
+import type {
+    AlpsInsight,
+    AtRiskParcel,
+    RiskPriority,
+    RiskRow,
+} from '~/utils/riskInsights'
 import {
     foldAtRiskParcels,
     foldInsights,
+    foldOpportunities,
     openRiskRows,
     toRiskRows,
 } from '~/utils/riskInsights'
@@ -17,7 +23,26 @@ const RISK_SUBJECT: LoadErrorSubject = {
     contentType: 'risk-report',
 }
 
-const RISK_POPULATE = ['farm', 'farm.barangay', 'farmers', 'risk_reports']
+/**
+ * The inspection relation has to come along: a report filed from a finding is
+ * the same row as any other here, but the table marks its source and the form
+ * guards its delete on where it came from.
+ */
+const RISK_POPULATE = [
+    'farm',
+    'farm.barangay',
+    'farmers',
+    'planting_cycle',
+    'risk_reports',
+    'risk_reports.inspection',
+]
+
+/** Most urgent first, for the merged insight list. */
+const PRIORITY_RANK: Record<RiskPriority, number> = {
+    High: 0,
+    Medium: 1,
+    Low: 2,
+}
 
 /**
  * Reads risk reports through the parcel hub and folds them into the rollups the
@@ -53,9 +78,27 @@ export const useRiskRegistry = () => {
         openRiskRows(riskReports.value)
     )
 
-    /** One insight per `risk_type` across the open reports. */
-    const insights = computed<AlpsInsight[]>(() =>
+    /** One insight per normalised `risk_type` across the open reports. */
+    const reportInsights = computed<AlpsInsight[]>(() =>
         foldInsights(openReports.value)
+    )
+
+    /** Unworked idle/fallow ground that could be brought back into use. */
+    const opportunities = computed<AlpsInsight[]>(() =>
+        foldOpportunities(parcels.value)
+    )
+
+    /**
+     * Everything the insights section shows, most urgent first. Findings and
+     * opportunities are folded separately because they answer different
+     * questions, then merged so the page has one ranked list.
+     */
+    const insights = computed<AlpsInsight[]>(() =>
+        [...reportInsights.value, ...opportunities.value].sort(
+            (a, b) =>
+                PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] ||
+                b.affectedArea - a.affectedArea
+        )
     )
 
     /** Parcels still carrying an open report, worst first. */
@@ -76,6 +119,8 @@ export const useRiskRegistry = () => {
     return {
         riskReports,
         openReports,
+        reportInsights,
+        opportunities,
         insights,
         atRiskParcels,
         allParcels,

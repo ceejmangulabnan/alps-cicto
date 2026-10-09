@@ -37,14 +37,17 @@ const emit = defineEmits<{
     delete: [row: RiskRow]
     retry: []
 }>()
+
+/** A report filed from a finding cannot be deleted here; the examination owns it. */
+const isInspectionRow = (row: RiskRow): boolean => row.fromInspection
 </script>
 
 <template>
     <RecordsTable
         title="Risk Reports"
         description="Review risk type, parcel, farmer, severity, and intervention status."
-        :colspan="8"
-        min-width="min-w-[980px]"
+        :colspan="9"
+        min-width="min-w-[1120px]"
         :loading="props.loading"
         loading-text="Loading risk reports..."
         :empty="props.total === 0"
@@ -69,6 +72,7 @@ const emit = defineEmits<{
             <th class="px-5 py-3.5 text-left">Parcel</th>
             <th class="px-5 py-3.5 text-left">Farmer</th>
             <th class="px-5 py-3.5 text-left">Observed</th>
+            <th class="px-5 py-3.5 text-left">Source</th>
             <th class="px-5 py-3.5 text-left">Severity</th>
             <th class="px-5 py-3.5 text-left">Status</th>
             <th

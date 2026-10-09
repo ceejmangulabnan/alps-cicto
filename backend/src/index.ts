@@ -6,6 +6,7 @@ import { generateFarmerCode } from './api/farmer/services/farmer-code'
 import { generateParcelCode } from './api/farm-parcel/services/parcel-code'
 import { generateAssistanceReferenceCode } from './api/assistance-program/services/reference-code'
 import { validateGeoJSONPolygon } from './api/farm-parcel/utils/geo'
+import { registerInspectionFindings } from './api/inspection/services/findings-sync'
 
 const FARM_UID = 'api::farm.farm'
 const FARMER_UID = 'api::farmer.farmer'
@@ -84,6 +85,7 @@ export default {
      */
     register({ strapi }: { strapi: Core.Strapi }) {
         registerGeneratedFields(strapi)
+        registerInspectionFindings(strapi)
     },
 
     /**
@@ -119,8 +121,6 @@ export default {
                     'api::farm-parcel.farm-parcel.update',
                     'api::farm-parcel.farm-parcel.destroy',
                     'api::farm-parcel.farm-parcel.count',
-                    'api::farm-parcel.custom-farm-parcel.idleAtRisk',
-                    'api::farm-parcel.custom-farm-parcel.recommendations',
                     'api::farm-parcel.custom-farm-parcel.createFromMap',
                     'api::farm-parcel.custom-farm-parcel.destroy',
                     // Farmer permissions (full CRUD + custom)
@@ -220,8 +220,6 @@ export default {
                     'api::farm-parcel.farm-parcel.update',
                     'api::farm-parcel.farm-parcel.destroy',
                     'api::farm-parcel.farm-parcel.count',
-                    'api::farm-parcel.custom-farm-parcel.idleAtRisk',
-                    'api::farm-parcel.custom-farm-parcel.recommendations',
                     'api::farm-parcel.custom-farm-parcel.createFromMap',
                     'api::farm-parcel.custom-farm-parcel.destroy',
                     // Farmer permissions (full CRUD + custom)
@@ -318,8 +316,6 @@ export default {
                     'api::farm-parcel.farm-parcel.find',
                     'api::farm-parcel.farm-parcel.findOne',
                     'api::farm-parcel.farm-parcel.count',
-                    'api::farm-parcel.custom-farm-parcel.idleAtRisk',
-                    'api::farm-parcel.custom-farm-parcel.recommendations',
                     // Farmer permissions (read-only + read-only custom)
                     'api::farmer.farmer.find',
                     'api::farmer.farmer.findOne',

@@ -180,11 +180,11 @@ const insightTotals = computed(() => ({
                     <UIcon name="i-lucide-shield-check" class="size-6" />
                 </div>
                 <p class="text-base font-semibold text-slate-700">
-                    No active risks
+                    No active insights
                 </p>
                 <p class="max-w-md text-sm text-slate-400">
-                    Every filed risk report has been resolved, or none have been
-                    filed yet.
+                    Every filed risk report has been resolved, and no idle or
+                    fallow ground is waiting to be brought back into use.
                 </p>
                 <button
                     v-if="props.canEdit"
@@ -275,6 +275,19 @@ const insightTotals = computed(() => ({
                                 </p>
 
                                 <div
+                                    v-if="insight.signals.length > 0"
+                                    class="mt-3 flex flex-wrap items-center gap-1.5"
+                                >
+                                    <span
+                                        v-for="signal in insight.signals"
+                                        :key="signal"
+                                        class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500"
+                                    >
+                                        {{ signal }}
+                                    </span>
+                                </div>
+
+                                <div
                                     class="mt-4 rounded-xl border border-slate-100 bg-slate-50/70 px-3.5 py-3"
                                 >
                                     <div
@@ -338,7 +351,10 @@ const insightTotals = computed(() => ({
 
                         <div class="flex shrink-0 flex-row gap-2 xl:flex-col">
                             <button
-                                v-if="props.canEdit"
+                                v-if="
+                                    props.canEdit &&
+                                    insight.type !== 'opportunity'
+                                "
                                 type="button"
                                 class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#2d6a2d] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1f5125]"
                                 @click="emit('create-action', insight.title)"
@@ -348,7 +364,7 @@ const insightTotals = computed(() => ({
                             </button>
 
                             <NuxtLink
-                                :to="`/map?parcel=${insight.rows[0]?.parcelDocumentId ?? ''}`"
+                                :to="`/map?parcel=${insight.parcelDocumentId ?? insight.rows[0]?.parcelDocumentId ?? ''}`"
                                 class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
                             >
                                 <UIcon name="i-lucide-eye" class="size-4" />
@@ -356,7 +372,13 @@ const insightTotals = computed(() => ({
                             </NuxtLink>
 
                             <span class="text-right text-xs text-slate-400">
-                                {{ insight.rows.length }} open reports
+                                <template v-if="insight.type === 'opportunity'">
+                                    {{ insight.affectedParcels }} parcels
+                                    available
+                                </template>
+                                <template v-else>
+                                    {{ insight.rows.length }} open reports
+                                </template>
                             </span>
                         </div>
                     </div>

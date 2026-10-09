@@ -6,7 +6,6 @@ import type {
     ParcelInspectionPhoto,
     ParcelPlantingCycle,
     ParcelRiskReport,
-    RiskInspectionLevel,
     RiskParcelStatus,
     RiskSeverity,
 } from '~/composables/useFarmParcelApi'
@@ -48,7 +47,8 @@ export interface CreateInspectionData {
     inspector: string
     date: string
     inspection_type: string
-    risk_level: RiskInspectionLevel
+    /** The reports to file, one per risk the visit observed. */
+    findings?: InspectionFindingInput[]
     status: InspectionStatus
     gps_point?: unknown
     notes?: string | null
@@ -56,12 +56,26 @@ export interface CreateInspectionData {
     photos?: number[]
 }
 
+/**
+ * One risk the inspection observed. `reportDocumentId` points at the report the
+ * finding already has (blank for a new one); the backend uses it to reconcile
+ * the inspection's reports against this list, creating, updating and deleting
+ * as needed. It is the only channel through which an inspection's risk reports
+ * are written.
+ */
+export interface InspectionFindingInput {
+    reportDocumentId?: string | null
+    risk_type: string
+    severity: RiskSeverity
+}
+
 export interface UpdateInspectionData {
     parcel?: string
     inspector?: string
     date?: string
     inspection_type?: string
-    risk_level?: RiskInspectionLevel
+    /** The full replacement list of findings (replace semantics). */
+    findings?: InspectionFindingInput[]
     status?: InspectionStatus
     gps_point?: unknown
     notes?: string | null
@@ -306,10 +320,12 @@ export const useFarmRecordsApi = () => {
                         inspector: data.inspector,
                         date: data.date,
                         inspection_type: data.inspection_type,
-                        risk_level: data.risk_level,
                         status: data.status,
                         gps_point: toGpsPoint(data.gps_point),
                         notes: data.notes || null,
+                        ...(data.findings !== undefined
+                            ? { findings: data.findings }
+                            : {}),
                         ...(data.photos?.length ? { photos: data.photos } : {}),
                     },
                 },
@@ -332,10 +348,12 @@ export const useFarmRecordsApi = () => {
                         inspector: data.inspector,
                         date: data.date,
                         inspection_type: data.inspection_type,
-                        risk_level: data.risk_level,
                         status: data.status,
                         gps_point: toGpsPoint(data.gps_point),
                         notes: data.notes || null,
+                        ...(data.findings !== undefined
+                            ? { findings: data.findings }
+                            : {}),
                         ...(data.photos !== undefined
                             ? { photos: data.photos }
                             : {}),

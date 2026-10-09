@@ -1,17 +1,18 @@
-import type {
-    InspectionStatus,
-    RiskInspectionLevel,
-} from '~/composables/useFarmParcelApi'
+import type { InspectionStatus } from '~/composables/useFarmParcelApi'
+import type { RiskInspectionLevel } from '~/composables/useFarmParcelApi'
 
 /**
- * Presentation for the inspections registry: the risk-level and workflow
- * status pills (colour classes + dot colours), plus the option lists the
- * form selects and the filter pills share.
+ * Presentation for the inspections registry: the derived risk-level and
+ * workflow status pills (colour classes + dot colours), plus the option lists
+ * the form selects and the filter pills share.
  *
- * The `INSPECTION_` prefix matches the FARM_/ASSISTANCE_/RISK_ helpers and
- * keeps these clear of the generic land-status auto-imports.
+ * The risk level is not a stored field: it is the worst severity among the
+ * inspection's linked findings, or `None`. The `INSPECTION_` prefix matches the
+ * FARM_/ASSISTANCE_/RISK_ helpers and keeps these clear of the generic
+ * land-status auto-imports.
  */
 export const INSPECTION_RISK_STYLE: Record<RiskInspectionLevel, string> = {
+    Critical: 'bg-red-100 text-red-800',
     High: 'bg-red-100 text-red-700',
     Medium: 'bg-orange-100 text-orange-700',
     Low: 'bg-yellow-100 text-yellow-700',
@@ -19,6 +20,7 @@ export const INSPECTION_RISK_STYLE: Record<RiskInspectionLevel, string> = {
 }
 
 export const INSPECTION_RISK_DOT: Record<RiskInspectionLevel, string> = {
+    Critical: '#7f1d1d',
     High: '#b91c1c',
     Medium: '#c2410c',
     Low: '#a16207',
@@ -47,13 +49,6 @@ export const INSPECTION_TYPES = [
     'Irrigation Audit',
     'Harvest Monitoring',
 ] as const
-
-export const INSPECTION_RISK_LEVELS: RiskInspectionLevel[] = [
-    'None',
-    'Low',
-    'Medium',
-    'High',
-]
 
 export const INSPECTION_STATUS_OPTIONS: InspectionStatus[] = [
     'Pending',

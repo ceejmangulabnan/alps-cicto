@@ -792,10 +792,10 @@ export interface ApiInspectionInspection extends Struct.CollectionTypeSchema {
             true
         >
         publishedAt: Schema.Attribute.DateTime
-        risk_level: Schema.Attribute.Enumeration<
-            ['None', 'Low', 'Medium', 'High']
-        > &
-            Schema.Attribute.DefaultTo<'None'>
+        risk_reports: Schema.Attribute.Relation<
+            'oneToMany',
+            'api::risk-report.risk-report'
+        >
         status: Schema.Attribute.Enumeration<
             ['Pending', 'In Progress', 'Completed']
         > &
@@ -860,6 +860,10 @@ export interface ApiRiskReportRiskReport extends Struct.CollectionTypeSchema {
         farm_parcel: Schema.Attribute.Relation<
             'manyToOne',
             'api::farm-parcel.farm-parcel'
+        >
+        inspection: Schema.Attribute.Relation<
+            'manyToOne',
+            'api::inspection.inspection'
         >
         locale: Schema.Attribute.String & Schema.Attribute.Private
         localizations: Schema.Attribute.Relation<

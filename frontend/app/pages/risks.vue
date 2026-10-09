@@ -7,6 +7,7 @@ import { RISK_STATUS_OPTIONS, RISK_STATUS_DOT } from '~/utils/riskStatus'
 const {
     riskReports,
     openReports,
+    reportInsights,
     insights,
     atRiskParcels,
     allParcels,
@@ -176,7 +177,7 @@ onMounted(() => {
 
             <!-- Charts -->
             <div class="grid grid-cols-12 gap-4">
-                <RisksDistributionCard :insights="insights" />
+                <RisksDistributionCard :insights="reportInsights" />
                 <RisksAtRiskParcelsCard :at-risk-parcels="atRiskParcels" />
             </div>
 

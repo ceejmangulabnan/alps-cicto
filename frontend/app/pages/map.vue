@@ -390,7 +390,7 @@ function onMapLoad(payload: { map: MaplibreMap }) {
 
 <template>
     <div
-        class="relative flex h-[calc(100vh-56px)] w-full flex-col overflow-hidden bg-slate-100"
+        class="relative flex h-full w-full flex-col overflow-hidden bg-slate-100"
     >
         <!-- Modern toolbar shell -->
         <div

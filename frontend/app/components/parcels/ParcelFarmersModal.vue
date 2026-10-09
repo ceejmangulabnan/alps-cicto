@@ -2,6 +2,7 @@
 import type { Farmer } from '~/composables/useFarmersApi'
 import type { FarmParcel } from '~/composables/useFarmParcelApi'
 import { getErrorMessage } from '~/utils/apiError'
+import { selectMenuSlots } from '~/utils/lightSelectMenu'
 
 const props = defineProps<{
     modelValue: boolean
@@ -28,6 +29,17 @@ const farmerOptions = computed(() =>
         value: farmer.documentId,
     }))
 )
+
+/**
+ * Match the form's hand-rolled inputs instead of Nuxt UI's default theme:
+ * same light grey border, white fill, `text-xs`, green focus ring, and a light
+ * dropdown. `variant="none"` strips Nuxt's variant classes so the trigger is
+ * styled purely from these slots.
+ */
+const menuUi = {
+    ...selectMenuSlots,
+    base: 'gap-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-100',
+}
 
 const canSave = computed(() => !submitting.value && !farmersLoading.value)
 const saved = ref(false)
@@ -177,10 +189,12 @@ async function submit() {
                             :items="farmerOptions"
                             :disabled="submitting || farmersLoading"
                             :loading="farmersLoading"
-                            :ui="{ content: 'z-[70]' }"
                             multiple
                             value-key="value"
                             placeholder="Select farmers"
+                            variant="none"
+                            size="xs"
+                            :ui="menuUi"
                             class="w-full"
                         />
                         <p

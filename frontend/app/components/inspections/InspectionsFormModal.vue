@@ -10,7 +10,6 @@ import type { InspectionRow } from '~/composables/useInspectionRegistry'
 import { FIELD_CLASS } from '~/utils/formStyles'
 import { todayUtc } from '~/utils/format'
 import {
-    gpsLabel,
     INSPECTION_RISK_LEVELS,
     INSPECTION_STATUS_OPTIONS,
     INSPECTION_TYPES,
@@ -42,7 +41,6 @@ const form = reactive({
     inspection_type: INSPECTION_TYPES[0] as string,
     date: '',
     inspector: '',
-    gps: '',
     risk_level: 'None' as RiskInspectionLevel,
     status: 'Pending' as InspectionStatus,
     notes: '',
@@ -134,7 +132,6 @@ function reset() {
     form.inspection_type = row?.inspection_type ?? INSPECTION_TYPES[0]
     form.date = row?.date ?? todayUtc()
     form.inspector = row?.inspector ?? ''
-    form.gps = row ? gpsLabel(row.gps_point) : ''
     form.risk_level = row?.riskLevel ?? 'None'
     form.status = row?.status ?? 'Pending'
     form.notes = row?.notes ?? ''
@@ -162,7 +159,6 @@ async function save() {
         inspection_type: form.inspection_type,
         risk_level: form.risk_level,
         status: form.status,
-        gps_point: form.gps.trim() || null,
         notes: form.notes.trim() || null,
     }
 
@@ -299,16 +295,6 @@ async function save() {
                 </select>
             </FormField>
         </div>
-
-        <FormField label="GPS Coordinates">
-            <input
-                v-model="form.gps"
-                type="text"
-                :disabled="submitting"
-                placeholder="15.03° N, 120.69° E"
-                :class="`${FIELD_CLASS} placeholder:text-slate-400`"
-            />
-        </FormField>
 
         <FormField label="Findings">
             <textarea

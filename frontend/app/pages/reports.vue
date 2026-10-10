@@ -9,6 +9,8 @@
 import { useReportAnalytics } from '~/composables/useReportAnalytics'
 
 
+useHead({ title: 'Reports & Analytics' })
+
 const {
     load,
     loading,

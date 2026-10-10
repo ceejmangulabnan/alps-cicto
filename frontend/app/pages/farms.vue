@@ -5,6 +5,8 @@ import type { FarmRow } from '~/composables/useFarmsData'
 import type { ParcelRow } from '~/composables/useParcelsData'
 import { statusDot } from '~/utils/landStatus'
 
+useHead({ title: 'Farms & Parcels' })
+
 type RegistryTab = 'farms' | 'parcels'
 type StatusFilter = 'All' | (typeof LAND_STATUS_OPTIONS)[number]
 

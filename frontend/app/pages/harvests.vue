@@ -4,6 +4,8 @@ import { harvestStatus } from '~/composables/useCycleRegistry'
 import { useFarmRecordsApi } from '~/composables/useFarmRecordsApi'
 import { num, farmerLabel } from '~/utils/format'
 
+useHead({ title: 'Harvests' })
+
 const { cycleParcels, harvests, loading, loadError, load } = useCycleRegistry()
 
 const { deleteHarvest } = useFarmRecordsApi()

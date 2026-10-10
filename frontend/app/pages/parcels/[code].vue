@@ -8,6 +8,8 @@ import type {
 import { statusClass, statusDot } from '~/utils/landStatus'
 import { avatarColor, initials } from '~/utils/initials'
 
+useHead({ title: 'Parcel Details' })
+
 const route = useRoute()
 const { getHubByCode, deleteParcel } = useFarmParcelApi()
 const { canEdit, canDelete } = useAuth()

@@ -3,7 +3,7 @@ import type { StyleSpecification } from 'maplibre-gl'
 import type { RiskPriority } from '~/utils/riskInsights'
 import { initials, avatarColor } from '~/utils/initials'
 
-definePageMeta({ middleware: 'auth' })
+useHead({ title: 'Dashboard' })
 
 const { logout } = useAuth()
 

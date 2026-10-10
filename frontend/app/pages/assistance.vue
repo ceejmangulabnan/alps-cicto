@@ -9,6 +9,8 @@ import {
 } from '~/composables/useAssistanceRegistry'
 import { ASSISTANCE_STATUS_DOT as STATUS_DOT } from '~/utils/assistanceStatus'
 
+useHead({ title: 'Assistance' })
+
 const {
     programs,
     farmers,

@@ -5,6 +5,8 @@ import { useFarmRecordsApi } from '~/composables/useFarmRecordsApi'
 import { cropColor } from '~/utils/cropColors'
 import { farmerLabel } from '~/utils/format'
 
+useHead({ title: 'Planting & Crops' })
+
 const { parcels, cycles, loading, loadError, load } = useCycleRegistry()
 
 const { deletePlantingCycle } = useFarmRecordsApi()

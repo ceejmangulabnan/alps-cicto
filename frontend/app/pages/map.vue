@@ -10,6 +10,8 @@ import { getErrorMessage } from '~/utils/apiError'
 import { STATUS_LEGEND } from '~/utils/landStatus'
 import { useParcelHover } from '~/composables/useParcelHover'
 
+useHead({ title: 'Agricultural Map' })
+
 const config = useRuntimeConfig()
 
 const maptilerKey = config.public.maptilerKey as string | undefined

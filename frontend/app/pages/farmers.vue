@@ -11,6 +11,8 @@ import {
     peso,
 } from '~/utils/assistanceStatus'
 
+useHead({ title: 'Farmers' })
+
 const route = useRoute()
 
 const { canEdit, canDelete } = useAuth()

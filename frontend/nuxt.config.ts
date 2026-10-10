@@ -21,6 +21,9 @@ export default defineNuxtConfig({
     css: ['~/assets/css/main.css'],
     app: {
         head: {
+            // Pages set their own `useHead({ title })`; the template appends the
+            // product name so the browser tab reads "<Page> · AniMap".
+            titleTemplate: '%s · AniMap',
             link: [
                 {
                     rel: 'icon',

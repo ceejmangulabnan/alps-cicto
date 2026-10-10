@@ -9,6 +9,8 @@ import {
     INSPECTION_STATUS_FILTERS,
 } from '~/utils/inspectionStatus'
 
+useHead({ title: 'Inspections' })
+
 const { inspections, allParcels, loading, loadError, load } =
     useInspectionRegistry()
 const { deleteInspection } = useFarmRecordsApi()

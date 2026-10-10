@@ -354,6 +354,8 @@
 </template>
 
 <script setup lang="ts">
+useHead({ title: 'Sign In' })
+
 definePageMeta({ layout: false })
 
 const auth = useAuth()

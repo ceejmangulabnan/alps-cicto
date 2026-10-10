@@ -14,6 +14,8 @@ import type {
 import { useAdminUsers } from '~/composables/useAdminUsers'
 import { getErrorMessage } from '~/utils/apiError'
 
+useHead({ title: 'Administration' })
+
 const {
     users: registryUsers,
     roleOptions,
